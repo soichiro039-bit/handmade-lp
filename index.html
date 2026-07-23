@@ -81,7 +81,7 @@
       <li><strong>販路ごとの手取りを一発比較</strong> — 上の計算が作品ごとに自動で</li>
       <li><strong>「いくらで売るべきか」を提案</strong> — 時給と目標利益から推奨価格を逆算</li>
     </ul>
-    <button class="cta" id="register">事前登録して先行案内を受け取る(無料)</button>
+    <a class="cta" id="register" href="https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform" target="_blank" rel="noopener">事前登録して先行案内を受け取る(無料)</a>
     <p class="note">登録者にはリリース時の優先案内と、機能への要望アンケートをお送りします。メールアドレスはこの目的以外に使用しません。</p>
   </div>
 
@@ -121,9 +121,6 @@
   }
   document.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
   calc();
-  document.getElementById("register").addEventListener("click", () => {
-    alert("(プロトタイプ)公開版では事前登録フォームに接続します");
-  });
 </script>
 </body>
 </html>
