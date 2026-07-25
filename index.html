@@ -34,6 +34,21 @@
   .pain li { margin: 8px 0 8px 1.2em; }
   .cta { display: block; width: 100%; text-align: center; background: var(--accent); color: #fff; padding: 14px; border-radius: 999px; font-size: 1.05rem; text-decoration: none; margin-top: 16px; border: none; cursor: pointer; }
   .note { font-size: .75rem; color: var(--muted); margin-top: 14px; }
+  .jump { display: inline-block; margin-top: 18px; background: var(--accent); color: #fff;
+          padding: 13px 26px; border-radius: 999px; text-decoration: none; font-size: 1rem; font-weight: bold; }
+  .after { list-style: none; margin-top: 14px; font-size: .85rem; color: var(--text); }
+  .after li { position: relative; padding-left: 1.4em; margin: 7px 0; line-height: 1.65; }
+  .after li::before { content: "✓"; position: absolute; left: 0; color: var(--ok); font-weight: bold; }
+  .verdict { margin-top: 16px; padding: 15px 16px; border-radius: 10px; font-size: .92rem; line-height: 1.7; }
+  .verdict.low { background: #fdf1ee; border-left: 5px solid #b0533f; }
+  .verdict.ok { background: #eef5ef; border-left: 5px solid var(--ok); }
+  .verdict .hl { font-size: 1.25rem; font-weight: bold; }
+  .verdict .sub { display: block; margin-top: 8px; font-size: .85rem; color: var(--text); }
+  .cta.soft { background: #fff; color: var(--accent); border: 2px solid var(--accent); font-size: .95rem; padding: 12px; }
+  @media (max-width: 400px) {
+    table { font-size: .82rem; }
+    th, td { padding: 7px 3px; }
+  }
   footer { font-size: .75rem; color: var(--muted); padding: 24px 16px 48px; text-align: center; }
 </style>
 </head>
@@ -41,21 +56,12 @@
 <header>
   <h1>その作品、いくらで売れば<br>手元にいくら残るか、すぐ言えますか?</h1>
   <p class="sub">販売手数料を差し引いた「本当の手取り」と、あなたの時給まで含めた「適正価格」がわかる、ハンドメイド作家のための値付けアプリを開発中です。</p>
+  <a class="jump" href="#calc">まずは無料の計算ツールを試す ↓</a>
 </header>
 
 <div class="wrap">
 
-  <div class="card pain">
-    <h2>こんな経験ありませんか?</h2>
-    <ul>
-      <li>材料費は覚えてるけど、手数料を引いた残りは計算したことがない</li>
-      <li>Excelの原価表がパーツ増加で更新崩壊した</li>
-      <li>値上げしたいけど適正価格の根拠がない</li>
-      <li>販売サイトごとの手数料の違いがよく分からない</li>
-    </ul>
-  </div>
-
-  <div class="card">
+  <div class="card" id="calc">
     <h2>お試し版:販路別の手取りをその場で計算</h2>
     <label>販売価格(送料込みの購入者支払額・円)
       <input type="number" id="price" value="3000" min="0">
@@ -77,7 +83,20 @@
       <thead><tr><th>販路</th><th>販売手数料</th><th>手取り</th><th>時給込み利益</th></tr></thead>
       <tbody></tbody>
     </table>
+
+    <div id="verdict" class="verdict"></div>
+
     <p class="note">手数料率の出典: minne・Creema・BASE・メルカリShopsの各公式告知ページ(2026年7月23日時点の概算)。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。振込手数料・決済オプション等は含みません。</p>
+  </div>
+
+  <div class="card pain">
+    <h2>こんな経験、ありませんか?</h2>
+    <ul>
+      <li>材料費は覚えてるけど、手数料を引いた残りは計算したことがない</li>
+      <li>Excelの原価表がパーツ増加で更新崩壊した</li>
+      <li>値上げしたいけど適正価格の根拠がない</li>
+      <li>販売サイトごとの手数料の違いがよく分からない</li>
+    </ul>
   </div>
 
   <div class="card">
@@ -87,8 +106,13 @@
       <li><strong>販路ごとの手取りを一発比較</strong> — 上の計算が作品ごとに自動で</li>
       <li><strong>「いくらで売るべきか」を提案</strong> — 時給と目標利益から推奨価格を逆算</li>
     </ul>
-    <a class="cta" id="register" href="https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform" target="_blank" rel="noopener">事前登録して先行案内を受け取る(無料)</a>
-    <p class="note">登録者にはリリース時の優先案内と、機能への要望アンケートをお送りします。メールアドレスはこの目的以外に使用しません。</p>
+    <a class="cta" id="register" href="https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform" target="_blank" rel="noopener">リリースを待たずに先行案内を受け取る(無料)</a>
+    <ul class="after">
+      <li>登録は<strong>メールアドレスと選択式の質問だけ</strong>。1分ほどで終わります</li>
+      <li>リリースしたら<strong>いちばん最初にご案内</strong>します</li>
+      <li>「こんな機能が欲しい」を伺うアンケートをお送りします（回答は任意です）</li>
+      <li>メールアドレスは<strong>この目的以外に使いません</strong>。第三者への提供もしません</li>
+    </ul>
   </div>
 
 </div>
@@ -108,21 +132,56 @@
     { name: "メルカリShops", fee: t => t * 0.10 }
   ];
   const yen = n => Math.round(n).toLocaleString() + "円";
+  const FORM = "https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform";
   function calc() {
     const p = +document.getElementById("price").value || 0;
     const m = +document.getElementById("material").value || 0;
     const s = +document.getElementById("ship").value || 0;
-    const labor = ((+document.getElementById("minutes").value || 0) / 60) * (+document.getElementById("wage").value || 0);
+    const mins = +document.getElementById("minutes").value || 0;
+    const wage = +document.getElementById("wage").value || 0;
+    const labor = (mins / 60) * wage;
     const tbody = document.querySelector("#result tbody");
     tbody.innerHTML = "";
+    let bestNet = -Infinity;
     for (const c of channels) {
       const fee = c.fee(p);
       const net = p - fee - m - s;
       const profit = net - labor;
+      if (net > bestNet) bestNet = net;
       tbody.insertAdjacentHTML("beforeend",
         `<tr><td>${c.name}</td><td class="minus">-${yen(fee)}</td>` +
         `<td class="net">${yen(net)}</td>` +
         `<td class="${profit >= 0 ? "net" : "minus"}">${yen(profit)}</td></tr>`);
+    }
+    renderVerdict(p, mins, wage, bestNet);
+  }
+
+  /* 計算結果が出た直後に、数字の意味を一言で伝える。
+     ここが最も心が動く瞬間のため、案内もこの位置に置く。 */
+  function renderVerdict(price, mins, wage, bestNet) {
+    const el = document.getElementById("verdict");
+    if (price <= 0) { el.className = "verdict"; el.innerHTML = ""; return; }
+    // 特定の販路名を「一番お得」と読める形で示さない(景表法D5)。
+    // 「最も手取りが多くなる条件で計算しても」という計算方法の説明に留める。
+    const cta = `<a class="cta soft" href="${FORM}" target="_blank" rel="noopener">この計算を自動でやるアプリの先行案内を受け取る(無料)</a>`;
+    if (mins <= 0) {
+      el.className = "verdict ok";
+      el.innerHTML = `手数料と材料費を引くと、手元に残るのは上の表で最も多い場合で <span class="hl">${yen(bestNet)}</span>。
+        <span class="sub">制作時間を入れると、時給がいくらになるかも出せます。</span>${cta}`;
+      return;
+    }
+    const hourly = bestNet / (mins / 60);
+    if (wage > 0 && hourly < wage) {
+      el.className = "verdict low";
+      el.innerHTML = `手取りが最も多くなる販路で計算しても、いまの価格だと
+        <span class="hl">時給 ${yen(hourly)}</span>。目標の ${yen(wage)} には ${yen(wage - hourly)} 届いていません。
+        <span class="sub">材料費も手数料も、作品ごとに毎回この計算が必要です。それを自動でやって、
+        いくらで売れば手間が報われるかまで出すアプリを開発中です。</span>${cta}`;
+    } else {
+      el.className = "verdict ok";
+      el.innerHTML = `手数料と材料費を引いても、手取りが最も多くなる販路なら <span class="hl">時給 ${yen(hourly)}</span> が残ります。
+        ${wage > 0 ? `目標の ${yen(wage)} を満たせています。` : ""}
+        <span class="sub">作品が増えても、パーツの仕入れ値が変わっても、この計算を全作品に自動で反映するアプリを開発中です。</span>${cta}`;
     }
   }
   document.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
