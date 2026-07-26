@@ -330,6 +330,17 @@
     <input type="number" id="cfgSales" min="1" onchange="saveCfg()">
     <div class="note">振込は月1回として計算します。売れる点数が少ないほど、1点が負担する振込費用は大きくなります。BASEのように振込額2万円未満で事務手数料がかかる販路では、ここの数字で有利・不利が変わります。</div>
   </div>
+  <!-- ご意見箱（2026-07-26 深夜・新設）
+       なぜ置くか: 直接競合が3ヶ月連続で★5を取れている理由は機能ではなく
+       「ご意見箱→数週間で実装」というユーザーとの往復（生の声台帳 #172 #173）。
+       その起点がこれ。触れる場所は今日できたが、言う場所がまだ無かった。
+       ※このアプリ自体は何も送信しない（原則11）。押すとフォームが別タブで開くだけ。 -->
+  <div class="card">
+    <h2>ご意見箱</h2>
+    <p style="font-size:.88rem;color:var(--muted)">使ってみて<strong>困ったこと・欲しい機能・分かりにくかったところ</strong>を教えてください。開発中なので、いただいた声から順に直していきます。ひとことでも助かります。</p>
+    <a class="btn" id="feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">意見・要望を送る（別のページが開きます）</a>
+    <div class="note">送信フォームは外部のページです。このアプリに入力した金額や作品の情報が、そちらへ送られることはありません。</div>
+  </div>
   <div class="card">
     <h2>データ</h2>
     <p style="font-size:.88rem;color:var(--muted)">すべてこの端末の中だけに保存されています。アカウント登録も、どこかのサーバーへの送信もありません。</p>
