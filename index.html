@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ハンドメイドの値段の付け方・手取り計算 | minne/Creema/BASE手数料込み値付けアプリ(開発中)</title>
-<meta name="description" content="minne・Creema・BASE・メルカリShopsの販売手数料を差し引いた「本当の手取り」と、時給まで含めた「適正価格」がその場でわかる無料計算ツール。ハンドメイド作家のための値付けアプリを開発中、事前登録受付中です。">
+<meta name="description" content="minne・Creema・BASEの販売手数料に加えて、見落としがちな振込にかかる費用まで差し引いた「本当の手取り」と、時給まで含めた「適正価格」がその場でわかる無料計算ツール。ハンドメイド作家のための値付けアプリを開発中、事前登録受付中です。">
 <meta property="og:title" content="ハンドメイドの値段の付け方・手取り計算アプリ(開発中)">
-<meta property="og:description" content="販売手数料を差し引いた「本当の手取り」と適正価格がすぐわかる、ハンドメイド作家のための値付けアプリ。無料の手取り計算ツールを今すぐ試せます。">
+<meta property="og:description" content="販売手数料と振込にかかる費用まで差し引いた「本当の手取り」と適正価格がすぐわかる、ハンドメイド作家のための値付けアプリ。無料の手取り計算ツールを今すぐ試せます。">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary">
@@ -24,13 +24,20 @@
   .card { background: var(--card); border-radius: 12px; padding: 20px; margin: 16px 0; box-shadow: 0 2px 8px rgba(61,50,41,.08); }
   h2 { font-size: 1.1rem; color: var(--main); margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 10px; }
   label { display: block; font-size: .85rem; color: var(--muted); margin-top: 12px; }
-  input[type=number] { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ddd0c5; border-radius: 8px; margin-top: 4px; }
+  /* 入力欄の高さは44px以上を確保する(指で押せる最小サイズ。iOS HIG / WCAG 2.2 SC2.5.8)。
+     2026-07-26 デザイン部の実測で40pxだったため min-height で下限を固定した。 */
+  input[type=number], select { width: 100%; min-height: 44px; padding: 11px 10px; font-size: 1rem;
+    border: 1px solid #ddd0c5; border-radius: 8px; margin-top: 4px; background: #fff; color: var(--text); }
   table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: .92rem; }
   th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid #eee3d8; }
   th:first-child, td:first-child { text-align: left; }
   thead th { color: var(--muted); font-weight: normal; font-size: .8rem; }
   .net { font-weight: bold; color: var(--ok); }
   .minus { color: #b0533f; }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > label { flex: 1; min-width: 0; }
+  .thsub { font-size: .72rem; }
+  .unverified { color: var(--muted); font-size: .78rem; text-align: right; }
   .pain li { margin: 8px 0 8px 1.2em; }
   .cta { display: block; width: 100%; text-align: center; background: var(--accent); color: #fff; padding: 14px; border-radius: 999px; font-size: 1.05rem; text-decoration: none; margin-top: 16px; border: none; cursor: pointer; }
   .note { font-size: .75rem; color: var(--muted); margin-top: 14px; }
@@ -55,14 +62,14 @@
 <body>
 <header>
   <h1>その作品、いくらで売れば<br>手元にいくら残るか、すぐ言えますか?</h1>
-  <p class="sub">販売手数料を差し引いた「本当の手取り」と、あなたの時給まで含めた「適正価格」がわかる、ハンドメイド作家のための値付けアプリを開発中です。</p>
+  <p class="sub">販売手数料<strong>と振込にかかる費用</strong>まで差し引いた「本当の手取り」と、あなたの時給まで含めた「適正価格」がわかる、ハンドメイド作家のための値付けアプリを開発中です。</p>
   <a class="jump" href="#calc">まずは無料の計算ツールを試す ↓</a>
 </header>
 
 <div class="wrap">
 
   <div class="card" id="calc">
-    <h2>お試し版:販路別の手取りをその場で計算</h2>
+    <h2>お試し版:振込費用まで引いた「本当の手取り」をその場で計算</h2>
     <label>販売価格(送料込みの購入者支払額・円)
       <input type="number" id="price" value="3000" min="0">
     </label>
@@ -78,15 +85,33 @@
     <label>あなたの目標時給(円)
       <input type="number" id="wage" value="1000" min="0">
     </label>
+    <!-- 前提の2項目は横並びにして、計算結果と登録の案内が画面の下へ遠ざからないようにする
+         (2026-07-26 デザイン部の指摘: 最初の登録CTAが48%地点) -->
+    <div class="row2">
+      <label>あなたの主な販路
+        <select id="ch">
+          <option value="minne">minne</option>
+          <option value="creema">Creema</option>
+          <option value="base">BASE</option>
+          <option value="mercari">メルカリShops</option>
+        </select>
+      </label>
+      <label>ひと月に売れる点数
+        <input type="number" id="sales" value="5" min="1">
+      </label>
+    </div>
+    <p class="note" style="margin-top:6px">※振込にかかる費用を1点あたりに割り振るために使います</p>
 
     <table id="result">
-      <thead><tr><th>販路</th><th>販売手数料</th><th>手取り</th><th>時給込み利益</th></tr></thead>
+      <thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用<br><span class="thsub">1点あたり</span></th><th>手取り</th></tr></thead>
       <tbody></tbody>
     </table>
 
     <div id="verdict" class="verdict"></div>
 
-    <p class="note">手数料率の出典: minne・Creema・BASE・メルカリShopsの各公式告知ページ(2026年7月23日時点の概算)。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。振込手数料・決済オプション等は含みません。</p>
+    <p class="note">手元に残る額は<strong>販売手数料だけでは決まりません</strong>。売上を自分の口座へ振り込む時にも費用がかかるため、この表はそれも引いた後の金額を出しています。たとえばBASEは販売手数料の率が低い一方、振込1回ごとに250円、振込額が2万円未満の月はさらに事務手数料500円がかかります。<br>
+    前提: 振込は月1回・ひと月に上記の点数を販売。<strong>どの販路が有利かは販売点数・振込回数・振込先の銀行で変わるため、この表は順位づけではありません。</strong>メルカリShopsは振込にかかる費用が確認できていないため、他と同じ土俵には並べていません。<br>
+    出典: 販売手数料は各公式告知ページ(2026年7月23日時点)、振込にかかる費用は各公式ヘルプ等(2026年7月25日時点)の概算。※印は公式ヘルプでの確認が取れず、複数の二次情報が一致した値です。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。</p>
   </div>
 
   <div class="card pain">
@@ -103,7 +128,7 @@
     <h2>開発中のアプリでできること</h2>
     <ul class="pain">
       <li><strong>パーツ登録だけで原価がわかる</strong> — 仕入れ値を変えれば全作品に自動反映</li>
-      <li><strong>販路ごとの手取りを一発比較</strong> — 上の計算が作品ごとに自動で</li>
+      <li><strong>販路ごとの手取りを一発比較</strong> — 振込にかかる費用まで含めた計算が作品ごとに自動で</li>
       <li><strong>「いくらで売るべきか」を提案</strong> — 時給と目標利益から推奨価格を逆算</li>
     </ul>
     <a class="cta" id="register" href="https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform" target="_blank" rel="noopener">リリースを待たずに先行案内を受け取る(無料)</a>
@@ -125,12 +150,37 @@
 
 <script>
   // 手数料率(2026-07-23時点の概算)。改定時はここを更新し、上の取得日表記も更新すること。
+  // 【原則6・災害級】この配列の数値はプロトタイプの CHANNELS と1円もずれてはならない
+  // (invariants_check.py が公開中LPを取得して照合する)。振込費用の数値をここへ混ぜないこと。
   const channels = [
-    { name: "minne",        fee: t => t * 0.10659 },
-    { name: "Creema",       fee: t => t * 0.1067 },
-    { name: "BASE",         fee: t => t * 0.066 + 40 },
-    { name: "メルカリShops", fee: t => t * 0.10 }
+    { key: "minne",   name: "minne",        fee: t => t * 0.10659 },
+    { key: "creema",  name: "Creema",       fee: t => t * 0.1067 },
+    { key: "base",    name: "BASE",         fee: t => t * 0.066 + 40 },
+    { key: "mercari", name: "メルカリShops", fee: t => t * 0.10 }
   ];
+
+  /* ===== 振込にかかる費用(原則10) =====
+     販売手数料だけで販路を比べると順位が逆転する。BASEは販売手数料の率が低いが、
+     振込1回ごとに250円、振込額2万円未満だとさらに事務手数料500円が乗る。
+     月に数点売る作家=本命ターゲットはまさに2万円未満に該当するため、
+     これを含めるとBASEの手取りは最上位から最下位へ変わる。含めずに比べさせてはならない。
+     値の正本: 07_開発移行/料率マスタ/fee_master_v0.json (schema_version 2)
+     プロトタイプの PAYOUT と同じ値を持つ。CHANNELS(=channels)とは必ず別に持つ。 */
+  const PAYOUT = {
+    minne:   { fee: () => 220,                                  note: "※" },
+    creema:  { fee: amt => amt >= 30000 ? 275 : 176,            note: "※" },
+    base:    { fee: amt => 250 + (amt < 20000 ? 500 : 0),       note: ""  },
+    mercari: { fee: null,                                       note: ""  }  // 未確認: 推測値で埋めない
+  };
+  /** 1点あたりが負担する振込費用。振込は月1回・ひと月に n 点売る前提。
+      費用が未確認の販路は null を返す(ゼロとして並べると不当に有利に見えるため)。 */
+  function payoutPerItem(c, price, n) {
+    const p = PAYOUT[c.key];
+    if (!p || !p.fee) return null;
+    n = Math.max(1, n || 1);
+    const monthly = Math.max(0, price - (price > 0 ? c.fee(price) : 0)) * n; // 月の振込見込み額
+    return p.fee(monthly) / n;
+  }
   const yen = n => Math.round(n).toLocaleString() + "円";
   const FORM = "https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform";
   function calc() {
@@ -139,52 +189,67 @@
     const s = +document.getElementById("ship").value || 0;
     const mins = +document.getElementById("minutes").value || 0;
     const wage = +document.getElementById("wage").value || 0;
-    const labor = (mins / 60) * wage;
+    const n = Math.max(1, +document.getElementById("sales").value || 1);
+    const key = document.getElementById("ch").value;
     const tbody = document.querySelector("#result tbody");
     tbody.innerHTML = "";
-    let bestNet = -Infinity;
+    let mine = null;
     for (const c of channels) {
       const fee = c.fee(p);
-      const net = p - fee - m - s;
-      const profit = net - labor;
-      if (net > bestNet) bestNet = net;
+      const payout = payoutPerItem(c, p, n);
+      // 振込費用が未確認の販路は、確認済みの販路と同じ土俵に並べない(原則10)。
+      // 手取りだけ出すと「振込費用ゼロの販路」に見えてしまうため、行ごと伏せる。
+      if (payout === null) {
+        tbody.insertAdjacentHTML("beforeend",
+          `<tr><td>${c.name}</td><td class="minus">-${yen(fee)}</td>` +
+          `<td colspan="2" class="unverified">振込にかかる費用が未確認のため比較対象外(調査中)</td></tr>`);
+        if (c.key === key) mine = { c, fee, payout: null, net: p - fee - m - s };
+        continue;
+      }
+      const net = p - fee - m - s - payout;
       tbody.insertAdjacentHTML("beforeend",
         `<tr><td>${c.name}</td><td class="minus">-${yen(fee)}</td>` +
-        `<td class="net">${yen(net)}</td>` +
-        `<td class="${profit >= 0 ? "net" : "minus"}">${yen(profit)}</td></tr>`);
+        `<td class="minus">-${yen(payout)}${PAYOUT[c.key].note}</td>` +
+        `<td class="net">${yen(net)}</td></tr>`);
+      if (c.key === key) mine = { c, fee, payout, net };
     }
-    renderVerdict(p, mins, wage, bestNet);
+    renderVerdict(p, mins, wage, mine);
   }
 
   /* 計算結果が出た直後に、数字の意味を一言で伝える。
      ここが最も心が動く瞬間のため、案内もこの位置に置く。 */
-  function renderVerdict(price, mins, wage, bestNet) {
+  function renderVerdict(price, mins, wage, mine) {
     const el = document.getElementById("verdict");
-    if (price <= 0) { el.className = "verdict"; el.innerHTML = ""; return; }
-    // 特定の販路名を「一番お得」と読める形で示さない(景表法D5)。
-    // 「最も手取りが多くなる条件で計算しても」という計算方法の説明に留める。
+    if (price <= 0 || !mine) { el.className = "verdict"; el.innerHTML = ""; return; }
+    // 販路をまたぐ最大値(旧bestNet)は使わない。ユーザーが選んだ1つの販路だけで計算する。
+    // 最大値を「最も手取りが多くなる販路なら」と見せるのは、実質の推奨に読めるため(景表法D5・原則10)。
     const cta = `<a class="cta soft" href="${FORM}" target="_blank" rel="noopener">この計算を自動でやるアプリの先行案内を受け取る(無料)</a>`;
+    // 振込費用が未確認の販路を選んだ場合は、その分が引かれていないことを必ず添える。
+    const caveat = mine.payout === null
+      ? `<span class="sub">※${mine.name || mine.c.name}は振込にかかる費用が確認できていないため、その分は差し引けていません。実際の手取りはこれより少なくなります。</span>` : "";
+    const via = `${mine.c.name}で売った場合`;
     if (mins <= 0) {
       el.className = "verdict ok";
-      el.innerHTML = `手数料と材料費を引くと、手元に残るのは上の表で最も多い場合で <span class="hl">${yen(bestNet)}</span>。
-        <span class="sub">制作時間を入れると、時給がいくらになるかも出せます。</span>${cta}`;
+      el.innerHTML = `${via}、手数料と材料費・振込費用を引いて手元に残るのは <span class="hl">${yen(mine.net)}</span>。
+        <span class="sub">制作時間を入れると、時給がいくらになるかも出せます。</span>${caveat}${cta}`;
       return;
     }
-    const hourly = bestNet / (mins / 60);
+    const hourly = mine.net / (mins / 60);
     if (wage > 0 && hourly < wage) {
       el.className = "verdict low";
-      el.innerHTML = `手取りが最も多くなる販路で計算しても、いまの価格だと
+      el.innerHTML = `${via}、いまの価格だと
         <span class="hl">時給 ${yen(hourly)}</span>。目標の ${yen(wage)} には ${yen(wage - hourly)} 届いていません。
-        <span class="sub">材料費も手数料も、作品ごとに毎回この計算が必要です。それを自動でやって、
-        いくらで売れば手間が報われるかまで出すアプリを開発中です。</span>${cta}`;
+        <span class="sub">材料費も手数料も振込費用も、作品ごとに毎回この計算が必要です。それを自動でやって、
+        いくらで売れば手間が報われるかまで出すアプリを開発中です。</span>${caveat}${cta}`;
     } else {
       el.className = "verdict ok";
-      el.innerHTML = `手数料と材料費を引いても、手取りが最も多くなる販路なら <span class="hl">時給 ${yen(hourly)}</span> が残ります。
+      el.innerHTML = `${via}、手数料と材料費・振込費用を引いても <span class="hl">時給 ${yen(hourly)}</span> が残ります。
         ${wage > 0 ? `目標の ${yen(wage)} を満たせています。` : ""}
-        <span class="sub">作品が増えても、パーツの仕入れ値が変わっても、この計算を全作品に自動で反映するアプリを開発中です。</span>${cta}`;
+        <span class="sub">作品が増えても、パーツの仕入れ値が変わっても、この計算を全作品に自動で反映するアプリを開発中です。</span>${caveat}${cta}`;
     }
   }
-  document.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
+  document.querySelectorAll("input, select").forEach(i => i.addEventListener("input", calc));
+  document.getElementById("ch").addEventListener("change", calc);
   calc();
 </script>
 <!-- Cloudflare Web Analytics(アクセス数計測・クッキーレス) -->
