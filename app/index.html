@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<!-- 拡大を禁止しない(maximum-scale / user-scalable=no を書かない)。
+     WCAG 2.2 達成基準1.4.4「文字は支援技術なしで200%まで拡大できること」。
+     主対象は本業を別に持つ作家で、55歳以上の新規流入層も含む(minne調査 n=912・44.0%がスキルゼロ開始)。
+     指で広げて読む動作を塞ぐのは実利の損失が大きい。
+     出典 https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html (2026-07-26確認) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ハンドメイド値付けアプリ(プロトタイプ) | 原価・手取り・適正価格</title>
+<style>
+  /* 配色はすべてWCAG AA(通常文字4.5:1)を満たす値に調整済み。
+     根拠: Apple HIG「最小コントラスト比4.5:1／文字は11pt未満にしない」。
+     変更する時は デザインシステム.md の実測表を必ず更新すること */
+  :root {
+    --main:#8a5a44; --accent:#b06044; --bg:#faf6f2; --card:#fff;
+    --text:#3d3229; --muted:#756858; --ok:#3f6b4c; --ng:#9e4936;
+    --line:#eee3d8; --soft:#f5ede6;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  /* 文字サイズの基準を固定pxで置かず、端末・ブラウザの文字サイズ設定に追従させる
+     (iOSのDynamic Type相当)。以下のすべての指定がremのため、ここが伸びれば画面全体が伸びる。
+     16pxを直接書くと、端末で「文字を大きく」にしても1文字も大きくならない */
+  html { font-size:100%; }
+  body {
+    /* 丸ゴシックを第一候補にする【#60・仮採用】。根拠は情報調査部#60の生の声1件
+       「可愛らしさに対して文字のフォントがあまり可愛くない…もう少し丸っぽいフォントに」。
+       単独の声のため仮採用と明示する。iOS/macOSにはヒラギノ丸ゴが標準搭載されており、
+       Webフォントを読み込まないため原則11(端末の外へ通信しない)を破らない。
+       端末に無ければ従来の角ゴシックへ自動的に落ちる */
+    font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Hiragino Maru Gothic Pro",
+                "Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+    /* タブバーの高さぶんの余白。remで持つことで、文字を大きくしてタブバーが
+       背高くなったときも本文の最後がタブバーの裏に隠れない
+       (#60の生の声「背景のイラストの足元が下のバーに隠れてモヤモヤ」と同じ事故を防ぐ) */
+    padding-bottom:6.5rem; font-size:1rem;
+  }
+  .phone { max-width:430px; margin:0 auto; background:var(--bg); min-height:100vh; position:relative; }
+
+  header {
+    background:var(--main); color:#fff; padding:14px 18px;
+    position:sticky; top:0; z-index:20; box-shadow:0 2px 8px rgba(61,50,41,.15);
+  }
+  header h1 { font-size:1rem; font-weight:bold; }
+  header .sub { font-size:.8rem; opacity:.9; margin-top:2px; }
+
+  main { padding:14px; }
+  .screen { display:none; }
+  .screen.active { display:block; animation:fade .22s ease; }
+  @keyframes fade { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
+
+  .card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:12px; box-shadow:0 1px 5px rgba(61,50,41,.07); }
+  .card h2 { font-size:.95rem; color:var(--main); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .card h2 .badge { font-size:.72rem; background:var(--accent); color:#fff; padding:2px 8px; border-radius:99px; font-weight:normal; }
+
+  label { display:block; font-size:.82rem; color:var(--muted); margin-top:10px; margin-bottom:3px; }
+  input[type=text], input[type=number], select {
+    /* 文字設定に追従させつつ16pxを下回らせない。16px未満だとiOSが入力欄タップ時に
+       画面を勝手に拡大するため、下限だけmax()で固定する(上へは自由に伸びる) */
+    width:100%; padding:11px 12px; font-size:max(1rem, 16px); border:1px solid #ddd0c5;
+    border-radius:10px; background:#fff; color:var(--text); font-family:inherit;
+  }
+  input:focus, select:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+
+  button { font-family:inherit; cursor:pointer; border:none; }
+  .btn { display:block; width:100%; text-align:center; background:var(--accent); color:#fff;
+         padding:13px; border-radius:99px; font-size:.95rem; font-weight:bold; margin-top:14px; }
+  .btn.sub { background:var(--soft); color:var(--main); }
+  .btn.mini { width:auto; padding:10px 16px; font-size:.84rem; margin:0; }
+
+  /* 文字を大きくした端末や幅320pxの端末でも、横スクロールを強いない。
+     WCAG 2.2 達成基準1.4.10「幅320CSSピクセルで二方向スクロールを強いないこと」。
+     横に並べたままにすると入力欄が潰れるため、入りきらなくなったら縦に折り返す
+     出典 https://www.w3.org/WAI/WCAG22/Understanding/reflow.html (2026-07-26確認) */
+  .row { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+  .row > * { flex:1 1 132px; }
+  .row .narrow { flex:0 1 82px; }
+
+  .list-item { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); }
+  .list-item:last-child { border-bottom:none; }
+  .list-item .name { font-size:.92rem; }
+  .list-item .meta { font-size:.78rem; color:var(--muted); margin-top:1px; }
+  .list-item .val { font-size:.92rem; text-align:right; white-space:nowrap; }
+  /* タップ領域は最低44px四方(Apple HIG)。見た目の×は小さいまま当たり判定だけ広げる */
+  .del { background:none; color:var(--muted); font-size:1.15rem; padding:0 4px;
+         min-width:44px; min-height:44px; }
+
+  .empty { text-align:center; color:var(--muted); font-size:.86rem; padding:22px 8px; }
+
+  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:.85rem; }
+  /* 文字を大きくしても、長い項目名が表を画面外へ押し出さないように折り返させる */
+  th, td { padding:8px 5px; text-align:right; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+  th:first-child, td:first-child { text-align:left; }
+  thead th { color:var(--muted); font-weight:normal; font-size:.78rem; }
+  .pos { color:var(--ok); font-weight:bold; }
+  .neg { color:var(--ng); font-weight:bold; }
+
+  /* iOS 26以降のタブバー作法に合わせ、画面下辺に貼り付かず「浮いたカプセル」にする。
+     半透明+ぼかしは可読性を落とすため、白の不透明度は0.88までに留める(HIGの可読性優先) */
+  nav {
+    position:fixed; bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+    left:50%; transform:translateX(-50%);
+    width:calc(100% - 26px); max-width:404px; display:flex;
+    background:rgba(255,255,255,.96);
+    -webkit-backdrop-filter:saturate(180%) blur(16px);
+    backdrop-filter:saturate(180%) blur(16px);
+    border:1px solid rgba(61,50,41,.07); border-radius:26px;
+    box-shadow:0 6px 22px rgba(61,50,41,.14); overflow:hidden; z-index:30;
+  }
+  /* 本文がタブバーの裏で途中まで見える(文字が半分透けて見える)のを防ぐ目隠し。
+     iOSも同様にコンテンツを下端で溶かしている */
+  .nav-scrim {
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px; height:96px; z-index:29; pointer-events:none;
+    background:linear-gradient(to bottom, rgba(250,246,242,0) 0%, var(--bg) 55%);
+  }
+  /* タブバーの文字だけは画面幅も上限にする。4つのラベルが常に横一列に並ぶ必要があり、
+     文字設定を最大にすると4つが入りきらず崩れるため(WCAG 1.4.10 は「常時表示の
+     ツールバー」を二方向スクロール禁止の例外としている)。本文側は一切制限していない */
+  nav button {
+    flex:1; background:none; padding:8px 2px; min-height:52px; color:var(--muted);
+    font-size:min(.72rem, 4.2vw); display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:3px;
+  }
+  nav button.on { color:var(--main); font-weight:bold; }
+  /* アイコンは絵文字をやめ線画に統一。絵文字は端末ごとに絵柄が変わり
+     「作り込まれたアプリ」に見えない(課金前の第一印象で最も効く箇所) */
+  nav .ic { width:23px; height:23px; display:block; }
+  nav .ic svg { width:100%; height:100%; display:block; }
+
+  /* 伴走メッセージ(唯一無二の中核) */
+  .coach { border-radius:14px; padding:15px 16px; margin-bottom:12px; font-size:.92rem; line-height:1.75; }
+  .coach.warn { background:#fdf1ee; border-left:5px solid var(--ng); }
+  .coach.good { background:#eef5ef; border-left:5px solid var(--ok); }
+  .coach.info { background:var(--soft); border-left:5px solid var(--accent); }
+  .coach b { font-size:1.05rem; }
+
+  .hero-num { text-align:center; padding:6px 0 2px; }
+  /* 大きな数字だけは画面幅も上限にする。文字設定を最大にした端末で
+     「1,800円」が画面からはみ出して読めなくなるのを防ぐ(通常時の見た目は2.3remのまま) */
+  .hero-num .n { font-size:min(2.3rem, 12vw); font-weight:bold; line-height:1.1; }
+  .hero-num .u { font-size:.78rem; color:var(--muted); }
+
+  .step { display:flex; gap:10px; align-items:center; padding:11px 12px; border-radius:12px; background:var(--soft); margin-top:9px; }
+  .step .lv { flex:0 0 48px; height:48px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:.76rem; color:var(--main); font-weight:bold; text-align:center; line-height:1.15; }
+  .step .txt { flex:1; font-size:.84rem; }
+  .step .price { font-size:1.05rem; font-weight:bold; color:var(--main); }
+  .step.rec { background:#eef5ef; outline:2px solid var(--ok); }
+
+  /* 「いつ手元に来るか」(原則15)。金額ではなく時間を見せる唯一の場所なので、
+     金額カードと同じ見た目にしない(同じだと数字の一種として読み飛ばされる)。
+     大きな文字は min(Nrem, Nvw) で画面幅も上限にする(原則12・文字200%でも折れない) */
+  .pay-lead { display:flex; align-items:baseline; gap:.4rem; flex-wrap:wrap; padding:.15rem 0 .5rem; }
+  .pay-lead .n { font-size:min(1.9rem, 10vw); font-weight:bold; line-height:1.15; color:var(--main); }
+  .pay-lead .u { font-size:.82rem; color:var(--muted); }
+  .pay-row { display:flex; gap:.7rem; padding:.6rem 0; border-top:1px solid var(--line); font-size:.86rem; line-height:1.6; }
+  .pay-row .l { flex:0 0 5.6rem; color:var(--muted); }
+  .pay-row .v { flex:1; min-width:0; }
+  /* 繰越・失効の注意。色だけで意味を示さない(原則13)ため、必ず文章でも書く */
+  .pay-flag { background:#fdf1ee; border-left:4px solid var(--ng); border-radius:.5rem;
+              padding:.7rem .8rem; margin-top:.7rem; font-size:.86rem; line-height:1.7; }
+
+  /* 最小文字サイズは11px相当を下回らせない(Apple HIG。55歳以上の新規流入層を含むため実利に直結) */
+  .note { font-size:.8rem; color:var(--muted); margin-top:10px; line-height:1.6; }
+  .proto-tag { background:#fffbe6; border:1px dashed #d9c48a; color:#8a6d1f; font-size:.78rem; padding:8px 11px; border-radius:9px; margin-bottom:12px; line-height:1.55; }
+  .lock { display:inline-block; font-size:.72rem; background:var(--main); color:#fff; padding:2px 9px; border-radius:99px; margin-left:5px; vertical-align:middle; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:7px; }
+  .chip { font-size:.84rem; padding:10px 14px; min-height:44px; border-radius:99px; background:var(--soft); color:var(--main); border:1px solid transparent; }
+  .chip.on { background:var(--main); color:#fff; }
+  .tag-sample { font-size:.72rem; font-weight:normal; background:var(--soft); color:var(--muted); padding:2px 8px; border-radius:99px; }
+
+  /* ===== はじめての1分(オンボーディング) =====
+     Apple HIG「起動後すぐ本体へ入れる／導入は飛ばせるようにする」と、
+     一般的な調査結果「価値は最初の数秒で伝える・質問は3〜4問まで・
+     受動的なチュートリアルより実際に触らせる」を踏まえ、画面は2枚に絞っている。
+     詳細と出典は 08_デザイン部\デザイン調査ログ.md */
+  #onboard[hidden] { display:none; }
+  #onboard {
+    position:fixed; inset:0; z-index:100; overflow-y:auto;
+    background:linear-gradient(168deg, #fffdfb 0%, var(--soft) 100%);
+    display:flex; justify-content:center;
+  }
+  .ob-sheet {
+    width:100%; max-width:430px; padding:26px 24px calc(30px + env(safe-area-inset-bottom, 0px));
+    display:flex; flex-direction:column; min-height:100%;
+  }
+  .ob-skip {
+    align-self:flex-end; background:none; color:var(--muted); font-size:.84rem;
+    min-height:44px; min-width:64px; text-decoration:underline; text-underline-offset:3px;
+  }
+  .ob-step { flex:1; display:flex; flex-direction:column; animation:obIn .34s ease both; }
+  .ob-step[hidden] { display:none; }
+  @keyframes obIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
+
+  .ob-eyebrow { font-size:.8rem; color:var(--main); font-weight:bold; letter-spacing:.08em; margin-bottom:8px; }
+  .ob-h { font-size:1.3rem; line-height:1.55; color:var(--main); font-weight:bold; }
+  .ob-h .q { color:var(--text); }
+  .ob-big {
+    text-align:center; margin:22px 0 4px; color:var(--main); font-weight:bold;
+    font-size:min(3rem, 15vw); line-height:1.05; font-variant-numeric:tabular-nums;
+  }
+  .ob-big .ob-yen { font-size:1.1rem; margin-left:3px; font-weight:bold; }
+  .ob-cap { text-align:center; font-size:.8rem; color:var(--muted); margin-bottom:18px; }
+  /* 差額の内訳。ここが「見えない引かれ方」を見せる中核なので数字は右揃えで読み比べさせる */
+  .ob-break { background:#fff; border-radius:14px; padding:6px 15px; box-shadow:0 1px 5px rgba(61,50,41,.07); }
+  .ob-row { display:flex; justify-content:space-between; align-items:baseline;
+            padding:9px 0; border-bottom:1px solid var(--line); font-size:.86rem; }
+  .ob-row:last-child { border-bottom:none; }
+  .ob-row .l { color:var(--muted); }
+  .ob-row .v { font-variant-numeric:tabular-nums; }
+  .ob-row.total { font-weight:bold; }
+  .ob-row.total .l, .ob-row.total .v { color:var(--main); }
+  .ob-lead { font-size:.88rem; line-height:1.8; margin-top:16px; color:var(--text); }
+  .ob-q { font-size:.92rem; font-weight:bold; color:var(--main); margin-top:20px; }
+  /* 選択肢は2列にそろえる。折り返しに任せると最後の1つだけが次の行に残り
+     「作りかけ」に見える(実測: メルカリShopsが単独で2行目に落ちていた) */
+  .ob-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .ob-grid .chip { display:flex; align-items:center; justify-content:center; }
+  .ob-note { font-size:.8rem; color:var(--muted); margin-top:7px; line-height:1.6; }
+  /* 余った縦の空きを「見出しの上」と「ボタンの上」で半分ずつ分ける。
+     ボタンだけを下端に貼ると、画面の真ん中に大きな空白が1か所できて未完成に見える
+     (実測: 背の高い端末で約350pxの空白が1か所に固まっていた) */
+  .ob-foot { margin-top:auto; }
+  .ob-step > .ob-eyebrow { margin-top:auto; }
+  .ob-dots { display:flex; gap:7px; justify-content:center; margin-top:16px; }
+  .ob-dots i { width:7px; height:7px; border-radius:50%; background:var(--line); }
+  .ob-dots i.on { background:var(--main); width:20px; border-radius:99px; }
+
+  /* 背の低い端末(iPhone SE等)では1枚目のボタンが画面外へ落ちるため詰める。
+     文字サイズは11px相当の下限を割らない範囲でのみ縮める */
+  @media (max-height: 700px) {
+    .ob-sheet { padding-top:14px; }
+    .ob-h { font-size:1.16rem; }
+    .ob-big { font-size:2.4rem; margin:14px 0 2px; }
+    .ob-cap { margin-bottom:13px; }
+    .ob-row { padding:7px 0; }
+    .ob-lead { margin-top:12px; font-size:.86rem; line-height:1.7; }
+    .ob-q { margin-top:15px; }
+  }
+
+  /* 動きを減らす設定の端末では演出を止める(アクセシビリティ) */
+  @media (prefers-reduced-motion: reduce) {
+    .ob-step, .screen.active { animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+<header>
+  <h1 id="hdTitle" aria-live="polite">今日のひと工夫</h1>
+  <div class="sub" id="hdSub">あなたの作品、時給いくらになっていますか?</div>
+</header>
+
+<main>
+<div class="proto-tag">これは開発中アプリの動作プロトタイプです。入力内容はこの端末のブラウザにのみ保存され、どこにも送信されません。</div>
+
+<!-- ===== 作品一覧 ===== -->
+<section class="screen active" id="s-home" role="tabpanel" aria-label="作品">
+  <div id="coachHome" aria-live="polite"></div>
+  <div class="card">
+    <h2>登録した作品<span class="tag-sample" id="sampleTag" hidden>サンプル</span></h2>
+    <div id="workList"></div>
+    <button class="btn sub" onclick="go('s-work')">＋ 作品を登録する</button>
+  </div>
+  <div class="card">
+    <h2>パーツの単価を変えると…<span class="badge">自動反映</span></h2>
+    <p style="font-size:.88rem;color:var(--muted)">パーツの仕入れ値を1か所変えるだけで、そのパーツを使っている<b>すべての作品の原価と適正価格</b>が計算し直されます。Excelのように全部直す必要はありません。</p>
+    <button class="btn sub" onclick="go('s-parts')">パーツの単価を見る</button>
+  </div>
+</section>
+
+<!-- ===== パーツ ===== -->
+<section class="screen" id="s-parts" role="tabpanel" aria-label="パーツ">
+  <div class="card">
+    <h2>パーツ・材料の登録</h2>
+    <div id="partList"></div>
+  </div>
+  <div class="card">
+    <h2>新しいパーツを追加</h2>
+    <label for="pName">パーツ名</label>
+    <input type="text" id="pName" placeholder="例: 天然石ビーズ 6mm">
+    <div class="row">
+      <div><label for="pTotal">仕入れ総額(円)</label><input type="number" id="pTotal" placeholder="1400" min="0"></div>
+      <div><label for="pQty">入数(個)</label><input type="number" id="pQty" placeholder="50" min="1"></div>
+    </div>
+    <div class="note" id="pUnit">1個あたりの単価を自動計算します</div>
+    <button class="btn" onclick="addPart()">パーツを追加</button>
+  </div>
+</section>
+
+<!-- ===== 作品登録 ===== -->
+<section class="screen" id="s-work">
+  <div class="card">
+    <h2>作品を登録</h2>
+    <label for="wName">作品名</label>
+    <input type="text" id="wName" placeholder="例: 天然石のピアス">
+    <label id="wChipsLbl">使うパーツ(タップで選択・数量は後で調整)</label>
+    <div class="chips" id="wChips" role="group" aria-labelledby="wChipsLbl"></div>
+    <div id="wRecipe" style="margin-top:12px"></div>
+    <div class="row">
+      <div><label for="wMin">制作時間(分)</label><input type="number" id="wMin" value="45" min="0"></div>
+      <div><label for="wShip">梱包・発送(円)</label><input type="number" id="wShip" value="250" min="0"></div>
+    </div>
+    <label for="wPrice">今つけている価格(円) ※まだ決めていなければ空欄でOK</label>
+    <input type="number" id="wPrice" placeholder="2800" min="0">
+    <button class="btn" onclick="saveWork()">この作品を保存する</button>
+  </div>
+</section>
+
+<!-- ===== 値付け(本丸) ===== -->
+<section class="screen" id="s-price" role="tabpanel" aria-label="値付け">
+  <div id="priceBody"></div>
+</section>
+
+<!-- ===== 設定 ===== -->
+<section class="screen" id="s-set" role="tabpanel" aria-label="設定">
+  <div class="card">
+    <h2>あなたの目標</h2>
+    <label for="cfgWage">目標の時給(円) — 自分の手間をいくらで評価しますか</label>
+    <input type="number" id="cfgWage" min="0" onchange="saveCfg()">
+    <div class="note">迷ったらお住まいの地域の最低賃金あたりから。「趣味だから0円でいい」と思っても、まずは実態を数字で見るために入れてみてください。</div>
+    <label for="cfgMargin">目標の利益率(%) — 材料費と手間の他に、どれだけ手元に残したいか</label>
+    <input type="number" id="cfgMargin" min="0" max="90" onchange="saveCfg()">
+    <div class="note">新しい材料の仕入れ、失敗作のぶん、道具の買い替え。これらは利益から出ていきます。10〜30%が目安です。</div>
+    <label for="cfgCh">主に使っている販路</label>
+    <select id="cfgCh" onchange="saveCfg()"></select>
+    <label for="cfgSales">ひと月に売れる点数 — 振込にかかる費用を1点あたりに割り振るために使います</label>
+    <input type="number" id="cfgSales" min="1" onchange="saveCfg()">
+    <div class="note">振込は月1回として計算します。売れる点数が少ないほど、1点が負担する振込費用は大きくなります。BASEのように振込額2万円未満で事務手数料がかかる販路では、ここの数字で有利・不利が変わります。</div>
+  </div>
+  <div class="card">
+    <h2>データ</h2>
+    <p style="font-size:.88rem;color:var(--muted)">すべてこの端末の中だけに保存されています。アカウント登録も、どこかのサーバーへの送信もありません。</p>
+    <button class="btn sub" onclick="resetAll()">サンプルデータに戻す</button>
+  </div>
+  <div class="card">
+    <h2>手数料率について</h2>
+    <table><thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用</th></tr></thead><tbody id="feeTable"></tbody></table>
+    <div class="note">販売手数料は2026年7月23日時点、振込にかかる費用は2026年7月25日時点の各社公式告知等に基づく概算です。手数料は改定される場合があります。最新は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。<br>
+    ※印は公式ヘルプでの確認が取れておらず、複数の二次情報が一致した値です。メルカリShopsの振込費用は未確認のため、比較には使っていません。</div>
+  </div>
+</section>
+</main>
+
+<!-- ===== はじめての1分(初回起動だけ表示) =====
+     この部の使命の中心。「インストール直後、まだ課金していない人が期待して初めて開く瞬間」。
+     受動的な説明を並べず、1枚目でサンプル作品の実計算を見せ、2枚目で2問だけ聞いて本体へ入る -->
+<div id="onboard" role="dialog" aria-modal="true" aria-labelledby="obHeading" hidden>
+  <div class="ob-sheet">
+    <button class="ob-skip" onclick="obFinish(true)">スキップ</button>
+
+    <!-- 1枚目: 価値を先に見せる(登録も課金も求めない) -->
+    <div class="ob-step" data-ob="1">
+      <div class="ob-eyebrow">はじめまして</div>
+      <h2 class="ob-h" id="obHeading"><span id="obPrice">2,800円</span>で売れた作品。<br><span class="q">手元にはいくら残ると思いますか?</span></h2>
+      <div class="ob-big" aria-hidden="true"><span id="obNet">0</span><span class="ob-yen">円</span></div>
+      <div class="ob-cap" id="obCap">&nbsp;</div>
+      <div class="ob-break" id="obBreak"></div>
+      <!-- 日本語の文中で改行するとスペースが入って見えるため、1文を折り返さずに書く -->
+      <p class="ob-lead">手数料も材料費も、売れたときにまとめて引かれるので気づきにくいものです。このアプリは、その<b>見えない差額</b>を作品ごとに出します。</p>
+      <p class="ob-note">※上の数字は、操作を試すために最初から入っているサンプル作品のものです。あなたの作品を登録すると、同じ計算があなたの数字で出ます。</p>
+      <div class="ob-foot">
+        <button class="btn" onclick="obGo(2)">自分の数字にしてみる</button>
+        <!-- 「登録前に価値を見せる」瞬間だからこそ、ここで不安を先に消す -->
+        <div class="ob-note" style="text-align:center">アカウント登録もログインも要りません。入力した内容はこの端末の中だけに保存されます。</div>
+        <div class="ob-dots" aria-hidden="true"><i class="on"></i><i></i></div>
+      </div>
+    </div>
+
+    <!-- 2枚目: 質問は2問だけ。すべてタップで選べる(入力させない) -->
+    <div class="ob-step" data-ob="2" hidden>
+      <div class="ob-eyebrow">あと2つだけ</div>
+      <h2 class="ob-h">あなたの基準を決めましょう。</h2>
+      <div class="ob-q">1. 自分の手間を、時給いくらで評価しますか?</div>
+      <div class="ob-grid" id="obWage" role="group" aria-label="目標の時給を選ぶ"></div>
+      <div class="ob-note">迷ったらお住まいの地域の最低賃金あたりで。あとから設定でいつでも変えられます。</div>
+      <div class="ob-q">2. 主に使っている販路は?</div>
+      <div class="ob-grid" id="obCh" role="group" aria-label="主に使っている販路を選ぶ"></div>
+      <div class="ob-note">選んだ販路の手数料で計算します。他の販路と比べた結果も見られます。</div>
+      <div class="ob-foot">
+        <button class="btn" onclick="obFinish(false)">あなたの数字を見る</button>
+        <div class="ob-note" style="text-align:center">保存されるのはこの端末の中だけです。</div>
+        <div class="ob-dots" aria-hidden="true"><i></i><i class="on"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav-scrim"></div>
+<!-- 画面読み上げ(VoiceOver等)への対応。タブであること・今どこにいるかを機械に伝える。
+     アイコンのSVGは aria-hidden にして、隣の日本語ラベルだけを読ませる
+     (読ませないと「グラフィック」等と無意味に読み上げられる) -->
+<nav role="tablist" aria-label="画面の切り替え">
+  <button class="on" role="tab" aria-selected="true" aria-controls="s-home" data-s="s-home" onclick="go('s-home')"><span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.4 12 3.2l9 7.2"/><path d="M5.6 9.6V20.4h12.8V9.6"/><path d="M9.9 20.4v-5.3h4.2v5.3"/></svg></span>作品</button>
+  <button role="tab" aria-selected="false" aria-controls="s-parts" data-s="s-parts" onclick="go('s-parts')"><span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.4 12.4 20.5a1.5 1.5 0 0 1-2.1 0L3.5 13.7V4.9a1.4 1.4 0 0 1 1.4-1.4h8.8l6.8 6.8a1.5 1.5 0 0 1 0 2.1Z"/><circle cx="7.9" cy="7.9" r="1.5"/></svg></span>パーツ</button>
+  <button role="tab" aria-selected="false" aria-controls="s-price" data-s="s-price" onclick="go('s-price')"><span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.3 18.2h5.4"/><path d="M10.4 21h3.2"/><path d="M12 3.2a6.2 6.2 0 0 0-3.7 11.2c.5.4.8.9.9 1.5l.1.6h5.4l.1-.6c.1-.6.4-1.1.9-1.5A6.2 6.2 0 0 0 12 3.2Z"/></svg></span>値付け</button>
+  <button role="tab" aria-selected="false" aria-controls="s-set" data-s="s-set" onclick="go('s-set')"><span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 7.6h9.1M18.1 7.6h2.3M3.6 16.4h4.3M13.3 16.4h7.1"/><circle cx="15.6" cy="7.6" r="2.4"/><circle cx="10.6" cy="16.4" r="2.4"/></svg></span>設定</button>
+</nav>
+</div>
+
+<script>
+/* ===== 手数料(LPと同一の値・出典2026-07-23) ===== */
+const CHANNELS = [
+  { key:"minne",   name:"minne",        fee: t => t*0.10659 },
+  { key:"creema",  name:"Creema",       fee: t => t*0.1067  },
+  { key:"base",    name:"BASE",         fee: t => t*0.066 + 40 },
+  { key:"mercari", name:"メルカリShops", fee: t => t*0.10 }
+];
+const FEE_LABEL = { minne:"10.659%", creema:"10.67%", base:"6.6% + 40円", mercari:"10%" };
+
+/* ===== 振込にかかる費用(原則10) =====
+   販売手数料だけで販路を比べると順位が逆転する。BASEは販売手数料が最安(6.6%+40円)だが、
+   振込1回ごとに250円かかり、振込額2万円未満だと事務手数料500円が上乗せされる。
+   月に数点売る作家(本アプリの本命ターゲット)はまさにこの2万円未満に該当するため、
+   振込費用を入れるとBASEは最安から最下位へ変わる。含めずに比べさせてはならない。
+   値の正本: 07_開発移行/料率マスタ/fee_master_v0.json (schema_version 2)
+   CHANNELS配列とは別に持つ——CHANNELSはLPのchannels配列と1円もずれてはならず(原則6)、
+   そこへ振込費用の数値を混ぜると照合が壊れるため。 */
+const PAYOUT = {
+  minne:   { fee: () => 220, label:"220円/回", conf:"primary" },
+  creema:  { fee: amt => amt >= 30000 ? 275 : 200,
+             label:"200円/回(3万円未満・全金融機関一律)", conf:"primary" },
+  base:    { fee: amt => 250 + (amt < 20000 ? 500 : 0),
+             label:"250円/回(振込額2万円未満はさらに500円)", conf:"primary" },
+  mercari: { fee: null, label:"未確認", conf:"unverified" }
+};
+
+/* ===== いつ手元に来るか(原則15) =====
+   値の正本: 07_開発移行/料率マスタ/入金サイクル一次情報_2026-07-26.md(すべて各社公式ヘルプの直接取得)。
+   PAYOUT(いくら引かれるか)とは別に持つ——単位も性質も違い、混ぜると原則6のLP照合が壊れる。
+
+   【単一の数値へ潰さない】4販路は数値ではなく"形"で違う。minneは自分でタイミングを選べない
+   (自動・翌月末)が、BASE/メルカリはいつでも申請できるので「日数」は販路の性質ではなく
+   利用者の行動になる。同じ列に並べた瞬間、比較できないものを比較する表になる(分析部の判定)。
+   だからこれは比較表にしない。選んでいる販路1つだけの補足として出す。
+
+   【メルカリShopsは未確認のまま伏せる】一次情報が取れたのはメルカリ"本体"のヘルプであり、
+   Shopsの入金条件が同一である確認は取れていない。振込費用と同じく、推測で埋めれば
+   「手続きの要らない販路」に見えてしまう(原則10と同じ考え方)。 */
+const PAYOUT_TIMING = {
+  minne: {
+    control:"auto", controlText:"要りません（自動で振り込まれます）",
+    leadText:"約30日", leadNote:"月末に売れた場合。最長で約60日",
+    cycleText:"毎月末で締めて、翌月末23:59までに振込",
+    minText:"売上が1,000円未満の月は、翌月へ繰り越されます",
+    minYen:1000, expiryText:"繰り越されるだけで、失効しません",
+    fastText:"" },
+  creema: {
+    control:"on_request", controlText:"必要です（振込申請）",
+    leadText:"約30〜60日", leadNote:"スピード振込を使えば翌営業日",
+    cycleText:"月末までに確定した売上を、翌月末に振込",
+    minText:"受取完了通知、または発送通知から14日経過のうち早い方で売上が確定します",
+    minYen:0, expiryText:"申請しなければ最長6ヶ月まで持ち越せます",
+    fastText:"スピード振込＝振込額の3.56%（通常振込の実績が1度も無いと使えません）" },
+  base: {
+    control:"on_request", controlText:"必要です（振込申請）",
+    leadText:"申請してから", leadNote:"いつでも申請できます（入金日は申請後の規定日）",
+    cycleText:"随時（自分のタイミングで申請）",
+    minText:"売上残高が751円以下だと、振込申請ができません",
+    minYen:752, expiryText:"計上日から180日で失効します",
+    fastText:"" },
+  mercari: null   // メルカリShopsとして未確認。伏せる
+};
+/** 選んでいる販路で、ひと月の振込見込み額が下限に届くか。
+    数字は必ず計算から出す(画面に固定値を書かない=設定や価格を変えてもズレない)。
+    届かない場合だけ true を返す。 */
+function payoutBelowMin(chKey, price){
+  const t = PAYOUT_TIMING[chKey];
+  if(!t || !t.minYen) return false;
+  const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
+  const n = Math.max(1, +db.cfg.sales||1);
+  const monthly = Math.max(0, price - (price>0 ? ch.fee(price) : 0)) * n;
+  return price > 0 && monthly < t.minYen;
+}
+/** 1点あたりが負担する振込費用。振込は月1回・月に db.cfg.sales 点売る前提。
+    費用が未確認の販路は null を返す(推測値を入れて比較させない)。 */
+function payoutPerItem(chKey, price){
+  const p = PAYOUT[chKey];
+  if(!p || !p.fee) return null;
+  const n = Math.max(1, +db.cfg.sales||1);
+  const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
+  const monthly = Math.max(0, (price - (price>0 ? ch.fee(price) : 0))) * n; // 月の振込見込み額
+  return p.fee(monthly) / n;
+}
+
+/* ===== 保存 ===== */
+const KEY = "hm_pricing_proto_v1";
+const SAMPLE = {
+  parts:[
+    {id:1,name:"天然石ビーズ 6mm",total:1400,qty:50},
+    {id:2,name:"チタンピアスフック",total:840,qty:20},
+    {id:3,name:"丸カン 4mm",total:320,qty:100},
+    {id:4,name:"デザインチェーン 45cm",total:650,qty:10}
+  ],
+  works:[
+    {id:1,name:"天然石のピアス",recipe:[{pid:1,n:6},{pid:2,n:2},{pid:3,n:8}],min:45,ship:250,price:2800},
+    {id:2,name:"一粒ネックレス",recipe:[{pid:1,n:1},{pid:4,n:1},{pid:3,n:2}],min:30,ship:250,price:3200}
+  ],
+  cfg:{ wage:1000, margin:20, ch:"minne", sales:5 },
+  seq:5
+};
+let db = load();
+function load(){
+  try {
+    const r = localStorage.getItem(KEY);
+    if(r){
+      const d = JSON.parse(r);
+      // 古い保存データには新しい設定項目が無い。既定値で埋めてから使う(undefinedのまま計算に流さない)
+      d.cfg = Object.assign({}, SAMPLE.cfg, d.cfg||{});
+      return d;
+    }
+  } catch(e){}
+  return JSON.parse(JSON.stringify(SAMPLE));
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
+function resetAll(){ db = JSON.parse(JSON.stringify(SAMPLE)); save(); renderAll(); go('s-home'); }
+
+/* ===== 計算 ===== */
+const yen = n => Math.round(n).toLocaleString()+"円";
+const unitPrice = p => p.qty>0 ? p.total/p.qty : 0;
+function partById(id){ return db.parts.find(p=>p.id===id); }
+
+function materialCost(w){
+  return w.recipe.reduce((s,r)=>{
+    const p = partById(r.pid); return s + (p ? unitPrice(p)*r.n : 0);
+  },0);
+}
+/** 原価 = 材料費 + 梱包発送 */
+function directCost(w){ return materialCost(w) + (+w.ship||0); }
+/** 人件費 = 制作時間 × 目標時給 */
+function laborCost(w){ return (+w.min||0)/60 * (+db.cfg.wage||0); }
+
+/** ある販売価格での、その販路の手取りと利益 */
+function analyze(w, price, chKey){
+  const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
+  const fee = price>0 ? ch.fee(price) : 0;
+  const net = price - fee;                 // 販路手数料を引いた入金額
+  const profit = net - directCost(w);      // 材料・送料を引いた残り(=手間の対価)
+  const afterLabor = profit - laborCost(w);// 目標時給を払った後に残る利益
+  const hourly = (+w.min>0) ? profit/(w.min/60) : 0;  // 実際の時給
+  return { fee, net, profit, afterLabor, hourly };
+}
+
+/** 逆算値付け: 目標時給と目標利益率を満たす販売価格を販路ごとに逆算 */
+function recommend(w, chKey){
+  const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
+  const base0 = directCost(w) + laborCost(w);       // 最低限回収すべき額
+  // price - fee(price) = target を price について解く(feeは price に比例+固定費)
+  // minne等: fee = price*r          → price(1-r) = target
+  // BASE:    fee = price*r + 40     → price(1-r) = target + 40
+  // 振込費用(extra)は実費として「回収する」だけで、利益率を上乗せしない。
+  // 上乗せすると手数料の高い販路ほど手取りが増え、比較表でその販路が有利に見えてしまう
+  // (原則10違反。2026-07-25、開発部が自分の初版で作り込んで実測で気づいた)。
+  const solve = extra => {
+    const target = base0 * (1 + (+db.cfg.margin||0)/100) + extra; // 利益率は自分の原価にだけ乗せる
+    const probe1 = ch.fee(10000), probe2 = ch.fee(20000);
+    const r = (probe2 - probe1)/10000;      // 比例部分の率
+    const fixed = probe1 - 10000*r;         // 固定部分
+    return { price:(target + fixed)/(1 - r), target };
+  };
+  // 振込費用は価格に依存し、価格は振込費用に依存する(2万円未満で段が変わるため)。
+  // 一度解いた価格で費用を確定させ、それを乗せてもう一度解く2段構え。
+  const s0 = solve(0);
+  const payout = payoutPerItem(chKey, s0.price) || 0;
+  const s = solve(payout);
+  return { price:s.price, base:base0 + payout, target:s.target, payout };
+}
+const round10 = n => Math.ceil(n/10)*10;
+const round100 = n => Math.ceil(n/100)*100;
+
+/* ===== 画面遷移 ===== */
+const TITLES = {
+  "s-home":["今日のひと工夫","あなたの作品、時給いくらになっていますか?"],
+  "s-parts":["パーツ・材料","仕入れ値を変えると全作品に自動で反映されます"],
+  "s-work":["作品を登録","使うパーツを選ぶだけで原価が出ます"],
+  "s-price":["値付けの提案","感覚ではなく、数字で決める"],
+  "s-set":["設定","あなたの目標を決めましょう"]
+};
+function go(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active", s.id===id));
+  document.querySelectorAll("nav button").forEach(b=>{
+    const on = b.dataset.s===id;
+    b.classList.toggle("on", on);
+    // 色と太字だけで「選択中」を示すと画面読み上げには伝わらない。機械にも同じ情報を渡す
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  const t = TITLES[id]||TITLES["s-home"];
+  hdTitle.textContent = t[0]; hdSub.textContent = t[1];
+  if(id==="s-price") renderPrice();
+  if(id==="s-work") renderWorkForm();
+  window.scrollTo(0,0);
+}
+
+/* ===== 描画 ===== */
+/** 初回起動時のサンプルがそのまま残っているか。
+    自分が登録した作品だと勘違いさせないため見出しに「サンプル」と出す */
+function isSampleWorks(){
+  return db.works.length === SAMPLE.works.length &&
+         db.works.every((w,i) => w.name === SAMPLE.works[i].name);
+}
+function renderHome(){
+  const el = document.getElementById("workList");
+  document.getElementById("sampleTag").hidden = !isSampleWorks();
+  if(!db.works.length){ el.innerHTML = '<div class="empty">まだ作品がありません。<br>下のボタンから登録してみましょう。</div>'; }
+  else {
+    el.innerHTML = db.works.map(w=>{
+      const a = analyze(w, +w.price||0, db.cfg.ch);
+      const hr = (+w.price>0 && +w.min>0) ? a.hourly : null;
+      const cls = hr===null ? "" : (hr >= db.cfg.wage ? "pos" : "neg");
+      const hrTxt = hr===null ? "価格未設定" : "時給 "+yen(hr);
+      return `<div class="list-item">
+        <div><div class="name">${esc(w.name)}</div>
+          <div class="meta">原価 ${yen(directCost(w))} ／ ${w.min}分</div></div>
+        <div class="val"><span class="${cls}">${hrTxt}</span>
+          <div class="meta">${w.price?yen(+w.price):"—"}</div></div>
+      </div>`;
+    }).join("");
+  }
+  // 伴走メッセージ
+  const box = document.getElementById("coachHome");
+  const priced = db.works.filter(w=>+w.price>0 && +w.min>0);
+  if(!priced.length){ box.innerHTML=""; return; }
+  const worst = priced.reduce((a,b)=> analyze(a,+a.price,db.cfg.ch).hourly < analyze(b,+b.price,db.cfg.ch).hourly ? a:b);
+  const wh = analyze(worst, +worst.price, db.cfg.ch).hourly;
+  if(wh < db.cfg.wage){
+    box.innerHTML = `<div class="coach warn">
+      「${esc(worst.name)}」は、いまの価格だと<b>時給 ${yen(wh)}</b>です。<br>
+      目標の ${yen(db.cfg.wage)} には ${yen(db.cfg.wage-wh)} 足りていません。
+      <button class="btn mini" style="margin-top:9px;background:var(--ng);color:#fff" onclick="focusWork(${worst.id})">いくらにすればいいか見る</button>
+    </div>`;
+  } else {
+    box.innerHTML = `<div class="coach good">
+      登録中の作品はすべて目標時給 ${yen(db.cfg.wage)} を超えています。<br>
+      いまの値付けは、あなたの手間にきちんと見合っています。
+    </div>`;
+  }
+}
+
+function renderParts(){
+  const el = document.getElementById("partList");
+  if(!db.parts.length){ el.innerHTML='<div class="empty">パーツがありません</div>'; return; }
+  el.innerHTML = db.parts.map(p=>{
+    const used = db.works.filter(w=>w.recipe.some(r=>r.pid===p.id)).length;
+    return `<div class="list-item">
+      <div><div class="name">${esc(p.name)}</div>
+        <div class="meta">${p.total}円 ÷ ${p.qty}個${used?` ・ ${used}作品で使用中`:""}</div></div>
+      <div class="val">${unitPrice(p).toFixed(1)}円<span class="meta">/個</span>
+        <button class="del" aria-label="${esc(p.name)}を削除" onclick="delPart(${p.id})">×</button></div>
+    </div>`;
+  }).join("");
+}
+function addPart(){
+  const name=pName.value.trim(), total=+pTotal.value, qty=+pQty.value;
+  if(!name || !(total>=0) || !(qty>0)){ alert("パーツ名・仕入れ総額・入数を入力してください"); return; }
+  db.parts.push({id:db.seq++, name, total, qty}); save();
+  pName.value=pTotal.value=pQty.value=""; pUnit.textContent="1個あたりの単価を自動計算します";
+  renderAll();
+}
+function delPart(id){
+  const used = db.works.filter(w=>w.recipe.some(r=>r.pid===id));
+  if(used.length && !confirm(used.length+"件の作品で使われています。削除するとその作品の原価が下がります。よろしいですか?")) return;
+  db.parts = db.parts.filter(p=>p.id!==id);
+  db.works.forEach(w=> w.recipe = w.recipe.filter(r=>r.pid!==id));
+  save(); renderAll();
+}
+
+let editRecipe = [];
+function renderWorkForm(){
+  editRecipe = editRecipe.length ? editRecipe : [];
+  wChips.innerHTML = db.parts.map(p=>{
+    const on = editRecipe.some(r=>r.pid===p.id);
+    return `<button class="chip ${on?'on':''}" aria-pressed="${on}" onclick="toggleChip(${p.id})">${esc(p.name)}</button>`;
+  }).join("") || '<div class="empty">先にパーツを登録してください</div>';
+  renderRecipe();
+}
+function toggleChip(pid){
+  const i = editRecipe.findIndex(r=>r.pid===pid);
+  if(i>=0) editRecipe.splice(i,1); else editRecipe.push({pid,n:1});
+  renderWorkForm();
+}
+function renderRecipe(){
+  if(!editRecipe.length){ wRecipe.innerHTML=""; return; }
+  wRecipe.innerHTML = `<div style="background:var(--soft);border-radius:11px;padding:10px 12px">
+    ${editRecipe.map(r=>{ const p=partById(r.pid); if(!p) return "";
+      return `<div class="list-item" style="border-color:#e3d6ca">
+        <div><div class="name" style="font-size:.83rem">${esc(p.name)}</div>
+        <div class="meta">${unitPrice(p).toFixed(1)}円/個</div></div>
+        <div class="val"><input type="number" value="${r.n}" min="0" style="width:64px;padding:6px;text-align:right"
+          oninput="setN(${r.pid}, this.value)"><span class="meta">個</span></div></div>`;}).join("")}
+    <div style="text-align:right;font-size:.85rem;margin-top:7px">材料費 <b>${yen(editRecipe.reduce((s,r)=>{const p=partById(r.pid);return s+(p?unitPrice(p)*r.n:0);},0))}</b></div>
+  </div>`;
+}
+function setN(pid,v){ const r=editRecipe.find(x=>x.pid===pid); if(r){ r.n=+v||0; renderRecipe(); } }
+function saveWork(){
+  const name = wName.value.trim();
+  if(!name){ alert("作品名を入力してください"); return; }
+  if(!editRecipe.length){ alert("使うパーツを1つ以上選んでください"); return; }
+  db.works.push({ id:db.seq++, name, recipe:JSON.parse(JSON.stringify(editRecipe)),
+    min:+wMin.value||0, ship:+wShip.value||0, price:+wPrice.value||0 });
+  save(); editRecipe=[]; wName.value=""; wPrice.value="";
+  renderAll(); go('s-home');
+}
+
+let focusId = null;
+function focusWork(id){ focusId=id; go('s-price'); }
+
+function renderPrice(){
+  const body = document.getElementById("priceBody");
+  if(!db.works.length){ body.innerHTML='<div class="card"><div class="empty">先に作品を登録してください</div></div>'; return; }
+  const w = db.works.find(x=>x.id===focusId) || db.works[0];
+  focusId = w.id;
+  const cur = +w.price||0;
+  const a = analyze(w, cur, db.cfg.ch);
+  const rec = recommend(w, db.cfg.ch);
+  const recP = round100(rec.price);
+  const chName = (CHANNELS.find(c=>c.key===db.cfg.ch)||CHANNELS[0]).name;
+
+  // 推奨価格は「これを下回ってはいけない下限」。現在価格が上回っている時に値下げを促さない
+  const above = cur > 0 && cur >= recP;
+  let coach = "";
+  if(cur>0 && +w.min>0){
+    if(a.hourly < db.cfg.wage){
+      const gap = recP - cur;
+      coach = `<div class="coach warn">
+        いまの ${yen(cur)} だと、${chName}の手数料と材料費を引いたあとに残るのは <b>${yen(a.profit)}</b>。<br>
+        ${w.min}分かけているので、<b>時給にすると ${yen(a.hourly)}</b> です。<br><br>
+        目標の時給 ${yen(db.cfg.wage)} と利益率 ${db.cfg.margin}% を満たすには
+        <b>${yen(recP)}</b>（いまより ${yen(gap)} 上）が目安です。
+      </div>`;
+    } else {
+      coach = `<div class="coach good">
+        いまの ${yen(cur)} なら、手数料と材料費を引いても <b>時給 ${yen(a.hourly)}</b> が残ります。
+        目標の ${yen(db.cfg.wage)} を超えています。<b>この価格に自信を持って大丈夫です。</b><br><br>
+        下限は ${yen(recP)}。<b>下げる必要はありません</b>——いまの価格は、あなたの手間に見合っています。
+      </div>`;
+    }
+  } else {
+    coach = `<div class="coach info">
+      この作品にはまだ価格がついていません。下の下限ラインを目安に決めてみてください。
+    </div>`;
+  }
+
+  // 段階的な値上げ提案(いきなり跳ね上げない=伴走)
+  let steps = "";
+  if(cur>0 && recP>cur){
+    const mid = round100(cur + (recP-cur)*0.5);
+    const s1 = round100(cur*1.1);
+    // 近すぎる段は間引く(1,400と1,500が並ぶような無意味な刻みを避ける)
+    const cand = [...new Set([s1, mid, recP])].filter(p=>p>cur).sort((x,y)=>x-y)
+      .filter((p,i,arr)=> p===recP || (arr[i+1]??Infinity) - p >= Math.max(200, cur*0.12));
+    steps = `<div class="card"><h2>いきなりでなくていい、段階の目安</h2>
+      <p style="font-size:.86rem;color:var(--muted)">値上げは怖いものです。まず1段目だけでも、手元に残る額はこれだけ変わります。</p>
+      ${cand.map((p,i)=>{
+        const aa = analyze(w,p,db.cfg.ch);
+        const isRec = p===recP;
+        return `<div class="step ${isRec?'rec':''}">
+          <div class="lv">${isRec?"目標":(i+1)+"段目"}</div>
+          <div class="txt"><span class="price">${yen(p)}</span>
+            <div class="meta" style="font-size:.78rem;color:var(--muted)">時給 ${yen(aa.hourly)} ／ いまより ${yen(aa.profit-a.profit)} 多く残る</div></div>
+        </div>`;}).join("")}
+    </div>`;
+  }
+
+  /* 「いくら残るか」の隣に「いつ来るか」を置く(原則15)。
+     当事者の声で入金タイミングへの不満が11件挙がっている一方、どの画面にも無かった軸。
+     比較表にはしない——販路ごとに"形"が違い、単一の数値へ潰すと必ず誤る(分析部の判定)。 */
+  const pt = PAYOUT_TIMING[db.cfg.ch];
+  let payCard;
+  if(!pt){
+    payCard = `<div class="card">
+      <h2>この代金は、いつ手元に来る?</h2>
+      <p class="note" style="margin-top:0">${chName}は入金の条件について公式ヘルプで確認が取れていないため、ここでは表示していません（調査中）。確認できていないことを、確認できたことのように書かないためです。</p>
+    </div>`;
+  } else {
+    const below = payoutBelowMin(db.cfg.ch, cur || recP);
+    const monthlyN = Math.max(1, +db.cfg.sales||1);
+    payCard = `<div class="card">
+      <h2>この代金は、いつ手元に来る?</h2>
+      <div class="pay-lead">
+        <span class="n">${esc(pt.leadText)}</span>
+        <span class="u">${esc(pt.leadNote)}</span>
+      </div>
+      <div class="pay-row"><span class="l">振込申請</span><span class="v">${esc(pt.controlText)}</span></div>
+      <div class="pay-row"><span class="l">締めと支払</span><span class="v">${esc(pt.cycleText)}</span></div>
+      <div class="pay-row"><span class="l">少額のとき</span><span class="v">${esc(pt.minText)}</span></div>
+      <div class="pay-row"><span class="l">預かり期限</span><span class="v">${esc(pt.expiryText)}</span></div>
+      ${pt.fastText ? `<div class="pay-row"><span class="l">早く受け取る</span><span class="v">${esc(pt.fastText)}</span></div>` : ""}
+      ${below ? `<div class="pay-flag">この作品を ${yen(cur||recP)} で月に${monthlyN}点売った場合、${chName}のひと月の振込見込みは <b>${yen(Math.max(0,(cur||recP) - (CHANNELS.find(c=>c.key===db.cfg.ch)||CHANNELS[0]).fee(cur||recP)) * monthlyN)}</b> です。上の「少額のとき」の条件に当てはまるため、<b>その月は手元に来ない可能性があります</b>。売れた月と、お金が入る月がずれます。</div>` : ""}
+      <div class="note">材料の仕入れは先、入金は後です。<b>いくら残るかと同じくらい、いつ来るかが資金繰りを左右します。</b><br>
+      出典: ${esc(chName)}公式ヘルプ（2026年7月26日取得）。条件は改定される場合があります。最新は公式サイトをご確認ください。入金日は申請日・金融機関・休日により前後するため、上の日数は目安であり受取日を保証するものではありません。販路ごとに手続きの形そのものが違うため、この表示は順位づけではありません。</div>
+    </div>`;
+  }
+
+  body.innerHTML = `
+    <div class="card">
+      <h2>作品を選ぶ</h2>
+      <select aria-label="値付けを見る作品を選ぶ" onchange="focusId=+this.value;renderPrice()">
+        ${db.works.map(x=>`<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}</option>`).join("")}
+      </select>
+      <label for="curPrice">いまつけている価格(円)</label>
+      <input id="curPrice" type="number" value="${cur||""}" placeholder="未設定" min="0" oninput="setPrice(${w.id},this.value)">
+    </div>
+    ${coach}
+    <div class="card">
+      <h2>${above ? "この価格を下回らないで" : "あなたの適正価格"}<span class="lock">有料機能</span></h2>
+      <div class="hero-num">
+        <div class="n" ${above?'style="color:var(--muted);font-size:1.9rem"':""}>${yen(recP)}</div>
+        <div class="u">${above ? `${chName}での下限ライン（いまは ${yen(cur)}／余裕あり）` : `${chName}で販売する場合`}</div>
+      </div>
+      <table><tbody>
+        <tr><td>材料費</td><td>${yen(materialCost(w))}</td></tr>
+        <tr><td>梱包・発送</td><td>${yen(+w.ship||0)}</td></tr>
+        <tr><td>あなたの手間(${w.min}分 × 時給${yen(db.cfg.wage)})</td><td>${yen(laborCost(w))}</td></tr>
+        ${rec.payout>0 ? `<tr><td>振込にかかる費用(1点あたり)</td><td>${yen(rec.payout)}</td></tr>` : ""}
+        <tr><td>目標利益(${db.cfg.margin}%)</td><td>${yen(rec.target-rec.base)}</td></tr>
+        <tr><td>${chName}の手数料</td><td>${yen(analyze(w,recP,db.cfg.ch).fee)}</td></tr>
+        <tr><td><b>${above?"下限ライン":"推奨価格"}</b></td><td><b>${yen(recP)}</b></td></tr>
+      </tbody></table>
+      <div class="note">この「逆算」が、他の記録アプリにはない部分です。原価を記録するだけでなく、いくらで売ればあなたの手間が報われるかまで出します。<br>
+      ※これは<b>あなたの手間が報われる下限</b>です。デザイン性や希少性、ブランドの評価は数字に表れません。これより高く売れているなら、それはあなたの作品の価値です。下げる理由にはしないでください。</div>
+    </div>
+    ${steps}
+    <div class="card">
+      <h2>販路を変えたらどうなる?</h2>
+      <table>
+        <thead><tr><th>販路</th><th>必要な価格</th><th>うち振込費用<br><span style="font-size:.72rem">1点あたり</span></th></tr></thead>
+        <tbody>${CHANNELS.map(c=>{
+          const rec2 = recommend(w, c.key);
+          const rp = round100(rec2.price);
+          const po = payoutPerItem(c.key, rp);
+          if(po === null){
+            // 振込費用が未確認の販路。確認済みの販路と同じ土俵に並べない(原則10)。
+            // 必要な価格だけ出すと「振込費用ゼロの最安販路」に見えてしまうため、行ごと伏せる
+            return `<tr><td>${c.name}</td>
+              <td colspan="2" style="color:var(--muted);font-size:.8rem">振込にかかる費用が未確認のため比較対象外（調査中）</td></tr>`;
+          }
+          return `<tr><td>${c.name}</td><td>${yen(rp)}</td><td>${yen(po)}</td></tr>`;
+        }).join("")}</tbody>
+      </table>
+      <div class="note"><b>どの販路でも手元に同じだけ残るように価格を逆算しています</b>ので、違いは「必要な価格」に出ます。<b>販売手数料だけでなく振込にかかる費用も含めています。</b>販売手数料だけで比べると結果が変わります——たとえばBASEは販売手数料が一番低い一方、振込1回ごとに250円、振込額が2万円未満だとさらに500円かかります。<br>
+      前提: 振込は月1回・ひと月に${Math.max(1,+db.cfg.sales||1)}点販売（設定で変更できます）。同じだけ手元に残すために必要な価格は、販路によって変わります。手数料は2026年7月23日時点の各社公式告知に基づく概算で、実際の受取額を保証するものではありません。どの販路が有利かは販売点数・振込回数・振込先の銀行で変わるため、この表は順位づけではありません。</div>
+    </div>
+    ${payCard}`;
+}
+function setPrice(id,v){
+  const w = db.works.find(x=>x.id===id); if(!w) return;
+  w.price = +v||0; save(); renderPrice(); renderHome();
+}
+
+function renderSet(){
+  cfgWage.value = db.cfg.wage; cfgMargin.value = db.cfg.margin;
+  cfgSales.value = Math.max(1, +db.cfg.sales||1);
+  cfgCh.innerHTML = CHANNELS.map(c=>`<option value="${c.key}" ${c.key===db.cfg.ch?"selected":""}>${c.name}</option>`).join("");
+  feeTable.innerHTML = CHANNELS.map(c=>{
+    const p = PAYOUT[c.key] || {};
+    const mark = p.conf==="secondary" ? "※" : "";
+    return `<tr><td>${c.name}</td><td>${FEE_LABEL[c.key]}</td><td>${p.label||"未確認"}${mark}</td></tr>`;
+  }).join("");
+}
+function saveCfg(){
+  db.cfg.wage = +cfgWage.value||0; db.cfg.margin = +cfgMargin.value||0; db.cfg.ch = cfgCh.value;
+  db.cfg.sales = Math.max(1, +cfgSales.value||1);
+  save(); renderHome(); renderPrice();
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
+function renderAll(){ renderHome(); renderParts(); renderSet(); }
+
+document.getElementById("pTotal").addEventListener("input", updUnit);
+document.getElementById("pQty").addEventListener("input", updUnit);
+function updUnit(){
+  const t=+pTotal.value, q=+pQty.value;
+  pUnit.textContent = (t>0&&q>0) ? `1個あたり ${(t/q).toFixed(1)}円で計算されます` : "1個あたりの単価を自動計算します";
+}
+
+/* ===== はじめての1分(オンボーディング) =====
+   設計方針(出典は 08_デザイン部\デザイン調査ログ.md):
+   ・価値を先に見せ、登録も課金も求めない。1枚目は実際の計算結果だけを見せる
+   ・質問は2問、すべてタップ。いつでもスキップできる
+   ・数字は必ず計算から出す(画面に固定値を書かない=サンプルを変えてもズレない) */
+const OB_KEY = "hm_pricing_onboarded_v1";
+const OB_WAGES = [1000, 1200, 1500, 2000];
+let obWage = 0, obCh = "";
+
+function obNeeded(){
+  try { return !localStorage.getItem(OB_KEY); } catch(e){ return false; }
+}
+/** 数字が増えていく演出。達成感の演出は課金前の第一印象に効くが、
+    動きを減らす設定の端末では即座に確定値を出す(アクセシビリティ) */
+function obCountUp(el, to, ms){
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fmt = n => Math.round(n).toLocaleString();
+  if(reduce || !to){ el.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  const tick = now => {
+    const p = Math.min(1, (now - t0) / ms);
+    el.textContent = fmt(to * (1 - Math.pow(1 - p, 3)));   // ease-out
+    if(p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+function obStart(){
+  const w = db.works[0];
+  if(!w){ obFinish(true); return; }             // 作品が無ければ見せる数字が無いので出さない
+  const price = +w.price || 0;
+  const a = analyze(w, price, db.cfg.ch);
+  const chName = (CHANNELS.find(c=>c.key===db.cfg.ch)||CHANNELS[0]).name;
+  obWage = +db.cfg.wage || OB_WAGES[0];
+  obCh = db.cfg.ch || CHANNELS[0].key;
+
+  document.getElementById("obPrice").textContent = yen(price);
+  document.getElementById("obBreak").innerHTML = `
+    <div class="ob-row"><span class="l">売れた価格</span><span class="v">${yen(price)}</span></div>
+    <div class="ob-row"><span class="l">${chName}の手数料</span><span class="v">− ${yen(a.fee)}</span></div>
+    <div class="ob-row"><span class="l">材料費</span><span class="v">− ${yen(materialCost(w))}</span></div>
+    <div class="ob-row"><span class="l">梱包・発送</span><span class="v">− ${yen(+w.ship||0)}</span></div>
+    <div class="ob-row total"><span class="l">手元に残る</span><span class="v">${yen(a.profit)}</span></div>`;
+  document.getElementById("obCap").textContent =
+    (+w.min > 0) ? `「${w.name}」に${w.min}分かけた場合、時給 ${yen(a.hourly)}` : `「${w.name}」の場合`;
+
+  document.getElementById("onboard").hidden = false;
+  document.body.style.overflow = "hidden";
+  obCountUp(document.getElementById("obNet"), a.profit, 900);
+  obRenderChips();
+}
+function obRenderChips(){
+  document.getElementById("obWage").innerHTML = OB_WAGES.map(v =>
+    `<button class="chip ${v===obWage?"on":""}" aria-pressed="${v===obWage}" onclick="obPick('wage',${v})">${v.toLocaleString()}円</button>`).join("");
+  // 販路は名前だけを並べる。「おすすめ」「お得」の表示はしない(事業原則7)
+  document.getElementById("obCh").innerHTML = CHANNELS.map(c =>
+    `<button class="chip ${c.key===obCh?"on":""}" aria-pressed="${c.key===obCh}" onclick="obPick('ch','${c.key}')">${c.name}</button>`).join("");
+}
+function obPick(kind, v){
+  if(kind==="wage") obWage = +v; else obCh = v;
+  obRenderChips();
+}
+function obGo(n){
+  document.querySelectorAll(".ob-step").forEach(s => s.hidden = (+s.dataset.ob !== n));
+  document.getElementById("onboard").scrollTop = 0;
+}
+/** skipped=true なら設定を変えずに閉じる(既定値のまま本体へ入れる) */
+function obFinish(skipped){
+  if(!skipped){
+    db.cfg.wage = +obWage || db.cfg.wage;
+    db.cfg.ch = obCh || db.cfg.ch;
+    save();
+  }
+  try { localStorage.setItem(OB_KEY, "1"); } catch(e){}
+  document.getElementById("onboard").hidden = true;
+  document.body.style.overflow = "";
+  renderAll();
+  go("s-home");
+}
+
+renderAll();
+if(obNeeded()) obStart();
+</script>
+</body>
+</html>
