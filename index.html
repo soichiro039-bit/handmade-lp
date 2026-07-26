@@ -168,7 +168,7 @@
      プロトタイプの PAYOUT と同じ値を持つ。CHANNELS(=channels)とは必ず別に持つ。 */
   const PAYOUT = {
     minne:   { fee: () => 220,                                  note: "※" },
-    creema:  { fee: amt => amt >= 30000 ? 275 : 176,            note: "※" },
+    creema:  { fee: amt => amt >= 30000 ? 275 : 200,            note: "※" },
     base:    { fee: amt => 250 + (amt < 20000 ? 500 : 0),       note: ""  },
     mercari: { fee: null,                                       note: ""  }  // 未確認: 推測値で埋めない
   };
