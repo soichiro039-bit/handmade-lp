@@ -169,6 +169,22 @@
     { key: "mercari", name: "メルカリShops", fee: t => t * 0.10 }
   ];
 
+  /* ===== 手数料の端数処理(原則21) =====
+     販路ごとに丸め方が違う。1円ずつの差だが、正しさが我々の差別化なので合わせる。
+     ここが無かった間、LPだけが丸めずに計算しており、Creemaで**LPの方が手取りを1円多く**
+     見せていた(2026-07-28 統括が両方の実コードを576通り突き合わせて検出)。
+     金額は小さいが向きが悪い——作家の手取りを多く見せる側の誤差は作ってはならない。
+     値の正本: 07_開発移行/料率マスタ/fee_master_v0.json (data_version 2026-07-27-r4)
+     アプリ側 app/index.html の FEE_ROUND と同一。
+     channels配列とは必ず別に持つ——channelsはプロトタイプのCHANNELSと1円もずれてはならず
+     (原則6)、そこへ丸め関数を混ぜると照合が壊れるため。 */
+  const FEE_ROUND = { minne: Math.floor, creema: Math.ceil, base: Math.round, mercari: Math.floor };
+  /** 販路手数料(丸め込み)。基数は「購入者が払う合計」。 */
+  function channelFee(c, base) {
+    const r = FEE_ROUND[c.key] || Math.round;
+    return base > 0 ? r(c.fee(base)) : 0;
+  }
+
   /* ===== 振込にかかる費用(原則10) =====
      販売手数料だけで販路を比べると順位が逆転する。BASEは販売手数料の率が低いが、
      振込1回ごとに250円、振込額2万円未満だとさらに事務手数料500円が乗る。
@@ -188,7 +204,7 @@
     const p = PAYOUT[c.key];
     if (!p || !p.fee) return null;
     n = Math.max(1, n || 1);
-    const monthly = Math.max(0, price - (price > 0 ? c.fee(price) : 0)) * n; // 月の振込見込み額
+    const monthly = Math.max(0, price - channelFee(c, price)) * n; // 月の振込見込み額
     return p.fee(monthly) / n;
   }
   const yen = n => Math.round(n).toLocaleString() + "円";
@@ -205,7 +221,7 @@
     tbody.innerHTML = "";
     let mine = null;
     for (const c of channels) {
-      const fee = c.fee(p);
+      const fee = channelFee(c, p);
       const payout = payoutPerItem(c, p, n);
       // 振込費用が未確認の販路は、確認済みの販路と同じ土俵に並べない(原則10)。
       // 手取りだけ出すと「振込費用ゼロの販路」に見えてしまうため、行ごと伏せる。
