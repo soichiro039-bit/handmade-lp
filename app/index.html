@@ -341,6 +341,12 @@
       <div><label for="wMin">制作時間(分)</label><input type="number" id="wMin" min="0"></div>
       <div><label for="wShip">梱包・発送(円)</label><input type="number" id="wShip" min="0"></div>
     </div>
+    <label for="wShipMode">送料の扱い</label>
+    <select id="wShipMode" onchange="this.dataset.touched='1'">
+      <option value="in">送料込み（送料を価格に入れて出品している）</option>
+      <option value="sep">送料別（購入者が送料を別に払う）</option>
+    </select>
+    <div class="note">どの販路でも、販売手数料は「購入者が払った合計（送料をふくむ）」にかかります。送料別で出品していると、送料の分にも手数料がかかります。分からなければ送料込みのままで大丈夫です。</div>
     <div class="note" id="wAgain"></div>
     <label for="wPrice">今つけている価格(円) ※まだ決めていなければ空欄でOK</label>
     <input type="number" id="wPrice" placeholder="2800" min="0">
@@ -495,6 +501,26 @@ const CHANNELS = [
 ];
 const FEE_LABEL = { minne:"10.659%", creema:"10.67%", base:"6.6% + 40円", mercari:"10%" };
 
+/* ===== 手数料の基数と端数処理(原則21) =====
+   4販路とも「注文の合計金額(送料ふくむ)」に率を掛ける。したがって送料別(購入者が送料を
+   別に払う)で出品している作家は、作品価格ではなく「作品価格＋送料」に手数料がかかる。
+   送料込みなら送料は既に価格の中にあるので基数は価格そのもの——1つの式で両方を表せる。
+   端数の扱いも販路ごとに違う。1円ずつの差だが、正しさが我々の差別化なので合わせる。
+   値の正本: 07_開発移行/料率マスタ/fee_master_v0.json (data_version 2026-07-27-r4)
+   CHANNELS配列とは別に持つ——CHANNELSはLPのchannels配列と1円もずれてはならず(原則6)、
+   そこへ数値や関数を混ぜると照合が壊れるため。
+   Creemaだけは公式が丸め方向を明記していない。切り上げ(＝手数料を多めに見る)を採る。
+   分からない側へ倒すときは、作家の手取りを多く見せない方向を選ぶ。 */
+const FEE_ROUND = { minne:Math.floor, creema:Math.ceil, base:Math.round, mercari:Math.floor };
+/** 購入者が作品価格とは別に払う送料。送料込みなら0(価格に含まれており二重に足さない) */
+function shipOnTop(w){ return (w && w.shipMode === "sep") ? (+w.ship||0) : 0; }
+/** 販路手数料。baseは「購入者が払う合計」＝手数料の基数 */
+function channelFee(chKey, base){
+  const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
+  const r = FEE_ROUND[chKey] || Math.round;
+  return base > 0 ? r(ch.fee(base)) : 0;
+}
+
 /* ===== 振込にかかる費用(原則10) =====
    販売手数料だけで販路を比べると順位が逆転する。BASEは販売手数料が最安(6.6%+40円)だが、
    振込1回ごとに250円かかり、振込額2万円未満だと事務手数料500円が上乗せされる。
@@ -551,22 +577,22 @@ const PAYOUT_TIMING = {
 /** 選んでいる販路で、ひと月の振込見込み額が下限に届くか。
     数字は必ず計算から出す(画面に固定値を書かない=設定や価格を変えてもズレない)。
     届かない場合だけ true を返す。 */
-function payoutBelowMin(chKey, price){
+function payoutBelowMin(chKey, price, shipTop){
   const t = PAYOUT_TIMING[chKey];
   if(!t || !t.minYen) return false;
-  const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
   const n = Math.max(1, +db.cfg.sales||1);
-  const monthly = Math.max(0, price - (price>0 ? ch.fee(price) : 0)) * n;
+  const gross = Math.max(0, price) + (+shipTop||0);
+  const monthly = Math.max(0, gross - channelFee(chKey, gross)) * n;
   return price > 0 && monthly < t.minYen;
 }
 /** 1点あたりが負担する振込費用。振込は月1回・月に db.cfg.sales 点売る前提。
     費用が未確認の販路は null を返す(推測値を入れて比較させない)。 */
-function payoutPerItem(chKey, price){
+function payoutPerItem(chKey, price, shipTop){
   const p = PAYOUT[chKey];
   if(!p || !p.fee) return null;
   const n = Math.max(1, +db.cfg.sales||1);
-  const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
-  const monthly = Math.max(0, (price - (price>0 ? ch.fee(price) : 0))) * n; // 月の振込見込み額
+  const gross = Math.max(0, price) + (+shipTop||0);
+  const monthly = Math.max(0, gross - channelFee(chKey, gross)) * n; // 月の振込見込み額
   return p.fee(monthly) / n;
 }
 
@@ -580,8 +606,8 @@ const SAMPLE = {
     {id:4,name:"デザインチェーン 45cm",total:650,qty:10}
   ],
   works:[
-    {id:1,name:"天然石のピアス",recipe:[{pid:1,n:6},{pid:2,n:2},{pid:3,n:8}],min:45,ship:250,price:2800},
-    {id:2,name:"一粒ネックレス",recipe:[{pid:1,n:1},{pid:4,n:1},{pid:3,n:2}],min:30,ship:250,price:3200}
+    {id:1,name:"天然石のピアス",recipe:[{pid:1,n:6},{pid:2,n:2},{pid:3,n:8}],min:45,ship:250,price:2800,shipMode:"in"},
+    {id:2,name:"一粒ネックレス",recipe:[{pid:1,n:1},{pid:4,n:1},{pid:3,n:2}],min:30,ship:250,price:3200,shipMode:"in"}
   ],
   cfg:{ wage:1000, margin:20, ch:"minne", sales:5 },
   seq:5
@@ -619,13 +645,14 @@ function laborCost(w){ return (+w.min||0)/60 * (+db.cfg.wage||0); }
 
 /** ある販売価格での、その販路の手取りと利益 */
 function analyze(w, price, chKey){
-  const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
-  const fee = price>0 ? ch.fee(price) : 0;
-  const net = price - fee;                 // 販路手数料を引いた入金額
+  const shipTop = shipOnTop(w);            // 送料別なら購入者が別に払う送料(原則21)
+  const gross = (price>0 ? price : 0) + shipTop; // 購入者が払う合計＝手数料の基数
+  const fee = channelFee(chKey, gross);
+  const net = gross - fee;                 // 販路手数料を引いた入金額(送料別なら送料も入金される)
   const profit = net - directCost(w);      // 材料・送料を引いた残り(=手間の対価)
   const afterLabor = profit - laborCost(w);// 目標時給を払った後に残る利益
   const hourly = (+w.min>0) ? profit/(w.min/60) : 0;  // 実際の時給
-  return { fee, net, profit, afterLabor, hourly };
+  return { fee, net, profit, afterLabor, hourly, gross, shipTop };
 }
 
 /** 逆算値付け: 目標時給と目標利益率を満たす販売価格を販路ごとに逆算 */
@@ -638,19 +665,24 @@ function recommend(w, chKey){
   // 振込費用(extra)は実費として「回収する」だけで、利益率を上乗せしない。
   // 上乗せすると手数料の高い販路ほど手取りが増え、比較表でその販路が有利に見えてしまう
   // (原則10違反。2026-07-25、開発部が自分の初版で作り込んで実測で気づいた)。
+  // 解くのは「購入者が払う合計(gross)」。送料別なら 作品価格 = gross - 送料 になる(原則21)。
+  // 端数処理は入れずに解く——1円未満のために方程式を反復させる意味がなく、表示価格は
+  // 最後に100円単位へ丸めるため吸収される。画面に出す手数料は端数処理済みの値を使う。
+  const shipTop = shipOnTop(w);
   const solve = extra => {
     const target = base0 * (1 + (+db.cfg.margin||0)/100) + extra; // 利益率は自分の原価にだけ乗せる
     const probe1 = ch.fee(10000), probe2 = ch.fee(20000);
     const r = (probe2 - probe1)/10000;      // 比例部分の率
     const fixed = probe1 - 10000*r;         // 固定部分
-    return { price:(target + fixed)/(1 - r), target };
+    return { gross:(target + fixed)/(1 - r), target };
   };
   // 振込費用は価格に依存し、価格は振込費用に依存する(2万円未満で段が変わるため)。
   // 一度解いた価格で費用を確定させ、それを乗せてもう一度解く2段構え。
   const s0 = solve(0);
-  const payout = payoutPerItem(chKey, s0.price) || 0;
+  const payout = payoutPerItem(chKey, Math.max(0, s0.gross - shipTop), shipTop) || 0;
   const s = solve(payout);
-  return { price:s.price, base:base0 + payout, target:s.target, payout };
+  return { price:Math.max(0, s.gross - shipTop), base:base0 + payout,
+           target:s.target, payout, shipTop };
 }
 const round10 = n => Math.ceil(n/10)*10;
 const round100 = n => Math.ceil(n/100)*100;
@@ -816,7 +848,9 @@ function offerLastWork(){
   if(!last){ note.textContent = ""; return; }
   if(wMin.value === "") wMin.value = last.min;
   if(wShip.value === "") wShip.value = last.ship;
-  note.textContent = `前回の「${last.name}」と同じ ${last.min}分 ／ ${yen(+last.ship||0)} を入れています。違えば直してください。`;
+  // 送料の扱いも前回のまま差し出す。ただし作家が自分で選び直した後は上書きしない
+  if(!wShipMode.dataset.touched) wShipMode.value = last.shipMode === "sep" ? "sep" : "in";
+  note.textContent = `前回の「${last.name}」と同じ ${last.min}分 ／ ${yen(+last.ship||0)}${last.shipMode === "sep" ? "（送料別）" : "（送料込み）"} を入れています。違えば直してください。`;
 }
 /** 作品の複製。色違い・サイズ違いを1件ずつ手入力し直す手間をなくす。
     即登録ではなくフォームへ差し出す(名前を変えないまま増えるのを防ぐ) */
@@ -824,6 +858,7 @@ function dupWork(id){
   const w = db.works.find(x=>x.id===id); if(!w) return;
   editRecipe = JSON.parse(JSON.stringify(w.recipe));
   wMin.value = w.min; wShip.value = w.ship; wPrice.value = w.price || "";
+  wShipMode.value = w.shipMode === "sep" ? "sep" : "in"; wShipMode.dataset.touched = "1";
   go('s-work');
   wName.value = w.name + " のコピー";
   document.getElementById("wAgain").textContent =
@@ -853,8 +888,10 @@ function saveWork(){
   if(!name){ alert("作品名を入力してください"); return; }
   if(!editRecipe.length){ alert("使うパーツを1つ以上選んでください"); return; }
   db.works.push({ id:db.seq++, name, recipe:JSON.parse(JSON.stringify(editRecipe)),
-    min:+wMin.value||0, ship:+wShip.value||0, price:+wPrice.value||0 });
+    min:+wMin.value||0, ship:+wShip.value||0, price:+wPrice.value||0,
+    shipMode: wShipMode.value === "sep" ? "sep" : "in" });
   save(); editRecipe=[]; wName.value=""; wPrice.value="";
+  wShipMode.dataset.touched = "";
   renderAll(); go('s-home');
 }
 
@@ -929,7 +966,7 @@ function renderPrice(){
       <p class="note" style="margin-top:0">${chName}は入金の条件について公式ヘルプで確認が取れていないため、ここでは表示していません（調査中）。確認できていないことを、確認できたことのように書かないためです。</p>
     </div>`;
   } else {
-    const below = payoutBelowMin(db.cfg.ch, cur || recP);
+    const below = payoutBelowMin(db.cfg.ch, cur || recP, shipOnTop(w));
     const monthlyN = Math.max(1, +db.cfg.sales||1);
     payCard = `<div class="card">
       <h2>この代金は、いつ手元に来る?</h2>
@@ -967,6 +1004,7 @@ function renderPrice(){
       <table><tbody>
         <tr><td>材料費</td><td>${yen(materialCost(w))}</td></tr>
         <tr><td>梱包・発送</td><td>${yen(+w.ship||0)}</td></tr>
+        ${shipOnTop(w) ? `<tr><td>送料別のため、手数料は「価格＋送料」にかかります</td><td>基数 ${yen(recP + shipOnTop(w))}</td></tr>` : ""}
         <tr><td>あなたの手間(${w.min}分 × 時給${yen(db.cfg.wage)})</td><td>${yen(laborCost(w))}</td></tr>
         ${rec.payout>0 ? `<tr><td>振込にかかる費用(1点あたり)</td><td>${yen(rec.payout)}</td></tr>` : ""}
         <tr><td>目標利益(${db.cfg.margin}%)</td><td>${yen(rec.target-rec.base)}</td></tr>
@@ -984,7 +1022,7 @@ function renderPrice(){
         <tbody>${CHANNELS.map(c=>{
           const rec2 = recommend(w, c.key);
           const rp = round100(rec2.price);
-          const po = payoutPerItem(c.key, rp);
+          const po = payoutPerItem(c.key, rp, shipOnTop(w));
           if(po === null){
             // 振込費用が未確認の販路。確認済みの販路と同じ土俵に並べない(原則10)。
             // 必要な価格だけ出すと「振込費用ゼロの最安販路」に見えてしまうため、行ごと伏せる
