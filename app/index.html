@@ -368,9 +368,15 @@
     <label for="cfgWage">目標の時給(円) — 自分の手間をいくらで評価しますか</label>
     <input type="number" id="cfgWage" min="0" onchange="saveCfg()">
     <div class="note">迷ったらお住まいの地域の最低賃金あたりから。「趣味だから0円でいい」と思っても、まずは実態を数字で見るために入れてみてください。</div>
-    <label for="cfgMargin">目標の利益率(%) — 材料費と手間の他に、どれだけ手元に残したいか</label>
+    <label for="cfgMargin">目標の上乗せ率(%) — 材料費と手間の他に、どれだけ手元に残したいか</label>
     <input type="number" id="cfgMargin" min="0" max="90" onchange="saveCfg()">
-    <div class="note">新しい材料の仕入れ、失敗作のぶん、道具の買い替え。これらは利益から出ていきます。10〜30%が目安です。</div>
+    <div class="note">新しい材料の仕入れ、失敗作のぶん、道具の買い替え。これらはここから出ていきます。10〜30%が目安です。<br>
+      ※この％は<b>「材料費＋手間」に上乗せする割合</b>です（売値に対する割合ではありません）。
+      例: 材料費と手間で1,000円かかる作品に20%なら、200円を上乗せします。
+      <!-- 【2026-07-28 是正】旧表示は「目標の利益率」だったが、計算は原価への上乗せ率(markup)であり、
+           売上に対する比率を指す一般的な「利益率」とは別物だった。表示語と計算が食い違っており、
+           GPTの実物審査で検出された。**計算は変えず、名前を実態に合わせた**
+           （計算を変えると推奨価格そのものが動き、既に使っている人の数字が変わってしまうため）。 --></div>
     <label for="cfgCh">主に使っている販路</label>
     <select id="cfgCh" onchange="saveCfg()"></select>
     <label for="cfgSales">ひと月に売れる点数 — 振込にかかる費用を1点あたりに割り振るために使います</label>
@@ -649,10 +655,19 @@ function analyze(w, price, chKey){
   const gross = (price>0 ? price : 0) + shipTop; // 購入者が払う合計＝手数料の基数
   const fee = channelFee(chKey, gross);
   const net = gross - fee;                 // 販路手数料を引いた入金額(送料別なら送料も入金される)
-  const profit = net - directCost(w);      // 材料・送料を引いた残り(=手間の対価)
+  // 【2026-07-28 是正・原則10違反】振込費用もここで引く。
+  // 是正前は profit が振込費用を引いておらず、一方で推奨価格(recommend)は引いていたため、
+  // **同じ画面の中で「手元に残る」の前提が食い違っていた**（GPTの実物審査で検出）。
+  // 原則10は「手取りの既定表示は振込費用込みにする」と定めており、これはその違反だった。
+  // 未確認の販路(メルカリShops)は null が返る。**推測で埋めない**ため0として扱い、
+  // payoutKnown=false を返して画面側が「含めていない」と但し書きできるようにする。
+  const payoutRaw = payoutPerItem(chKey, (price>0 ? price : 0), shipTop);
+  const payoutKnown = payoutRaw !== null;
+  const payout = payoutKnown ? payoutRaw : 0;
+  const profit = net - directCost(w) - payout;  // 材料・送料・振込費用を引いた残り(=手間の対価)
   const afterLabor = profit - laborCost(w);// 目標時給を払った後に残る利益
   const hourly = (+w.min>0) ? profit/(w.min/60) : 0;  // 実際の時給
-  return { fee, net, profit, afterLabor, hourly, gross, shipTop };
+  return { fee, net, profit, afterLabor, hourly, gross, shipTop, payout, payoutKnown };
 }
 
 /** 逆算値付け: 目標時給と目標利益率を満たす販売価格を販路ごとに逆算 */
@@ -916,9 +931,9 @@ function renderPrice(){
     if(a.hourly < db.cfg.wage){
       const gap = recP - cur;
       coach = `<div class="coach warn">
-        いまの ${yen(cur)} だと、${chName}の手数料と材料費を引いたあとに残るのは <b>${yen(a.profit)}</b>。<br>
+        いまの ${yen(cur)} だと、${chName}の手数料・材料費${a.payoutKnown ? "・振込にかかる費用" : ""}を引いたあとに残るのは <b>${yen(a.profit)}</b>。<br>
         ${w.min}分かけているので、<b>時給にすると ${yen(a.hourly)}</b> です。<br><br>
-        目標の時給 ${yen(db.cfg.wage)} と利益率 ${db.cfg.margin}% を満たすには
+        目標の時給 ${yen(db.cfg.wage)} と上乗せ率 ${db.cfg.margin}% を満たすには
         <b>${yen(recP)}</b>（いまより ${yen(gap)} 上）が目安です。
       </div>`;
     } else {
@@ -1109,6 +1124,9 @@ function obStart(){
     <div class="ob-row"><span class="l">${chName}の手数料</span><span class="v">− ${yen(a.fee)}</span></div>
     <div class="ob-row"><span class="l">材料費</span><span class="v">− ${yen(materialCost(w))}</span></div>
     <div class="ob-row"><span class="l">梱包・発送</span><span class="v">− ${yen(+w.ship||0)}</span></div>
+    ${a.payoutKnown
+      ? `<div class="ob-row"><span class="l">振込にかかる費用(1点あたり)</span><span class="v">− ${yen(a.payout)}</span></div>`
+      : `<div class="ob-row"><span class="l">振込にかかる費用</span><span class="v">未確認のため含めていません</span></div>`}
     <div class="ob-row total"><span class="l">手元に残る</span><span class="v">${yen(a.profit)}</span></div>`;
   document.getElementById("obCap").textContent =
     (+w.min > 0) ? `「${w.name}」に${w.min}分かけた場合、時給 ${yen(a.hourly)}` : `「${w.name}」の場合`;
