@@ -78,7 +78,15 @@
   .row > * { flex:1 1 132px; }
   .row .narrow { flex:0 1 82px; }
 
-  .list-item { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); }
+  /* 文字を大きくした人ほど1行に収まらない。折り返せるようにして横スクロールを出さない */
+  .list-item { display:flex; justify-content:space-between; align-items:center; padding:11px 0;
+               border-bottom:1px solid var(--line); flex-wrap:wrap; gap:4px 8px; }
+  /* 左側は縮んでよい(名前・説明は折り返せる)。右側の数字を先に置き場所を確保する */
+  .list-item > div:first-child { min-width:0; flex:1 1 auto; }
+  .list-item .name { overflow-wrap:anywhere; }
+  /* 一覧は行の高さが左右で揃わない(右に複製ボタンが増えるため)。上端で揃えて
+     作品名と時給を同じ高さに置く。中央揃えのままだと一番見せたい時給が名前より上へずれる */
+  #workList .list-item, #partList .list-item { align-items:flex-start; }
   .list-item:last-child { border-bottom:none; }
   .list-item .name { font-size:.92rem; }
   .list-item .meta { font-size:.78rem; color:var(--muted); margin-top:1px; }
@@ -86,6 +94,20 @@
   /* タップ領域は最低44px四方(Apple HIG)。見た目の×は小さいまま当たり判定だけ広げる */
   .del { background:none; color:var(--muted); font-size:1.15rem; padding:0 4px;
          min-width:44px; min-height:44px; }
+  /* 複製ボタン。同じ44px四方を確保する(×と並ぶため見た目だけ小さくする) */
+  .dup { background:none; color:var(--main); font-size:.76rem; padding:0 4px;
+         min-width:44px; min-height:44px; text-decoration:underline; }
+
+  /* 探す窓。件数が増えてから出す(最初から出すと空の窓が不安を与える) */
+  .find { position:relative; margin-bottom:6px; }
+  /* input[type=search]は既定の横幅を自前で持つ。文字を大きくすると画面からはみ出すので必ず100%に抑える */
+  .find input { margin:0; padding-left:32px; font-size:.88rem; min-height:44px;
+                width:100%; box-sizing:border-box; }
+  .find::before { content:"\1F50D"; position:absolute; left:10px; top:50%;
+                  transform:translateY(-50%); font-size:.85rem; opacity:.55; pointer-events:none; }
+
+  /* 前回値の差し出し。打ち直しをなくすための一手 */
+  .again { display:flex; flex-wrap:wrap; gap:7px; margin:-2px 0 10px; }
 
   .empty { text-align:center; color:var(--muted); font-size:.86rem; padding:22px 8px; }
 
@@ -165,6 +187,13 @@
   /* 最小文字サイズは11px相当を下回らせない(Apple HIG。55歳以上の新規流入層を含むため実利に直結) */
   .note { font-size:.8rem; color:var(--muted); margin-top:10px; line-height:1.6; }
   .proto-tag { background:#fffbe6; border:1px dashed #d9c48a; color:#8a6d1f; font-size:.78rem; padding:8px 11px; border-radius:9px; margin-bottom:12px; line-height:1.55; }
+  /* 各画面末尾からご意見箱へ（2026-07-27 開発部）。控えめに置く——
+     主役は値付けであって意見募集ではないが、詰まったその場に出口が要る */
+  .ask-here { text-align:center; margin:4px 0 10px; font-size:.8rem; }
+  .ask-here a { color:var(--muted); }
+  /* メールアドレスは途中で改行できない1語なので、文字200%だと横スクロールを作る
+     （原則12d。実際に検査が15pxのはみ出しを検出した）。ここだけ折り返しを許す */
+  #legalCard { overflow-wrap:anywhere; }
   .lock { display:inline-block; font-size:.72rem; background:var(--main); color:#fff; padding:2px 9px; border-radius:99px; margin-left:5px; vertical-align:middle; }
   .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:7px; }
   .chip { font-size:.84rem; padding:10px 14px; min-height:44px; border-radius:99px; background:var(--soft); color:var(--main); border:1px solid transparent; }
@@ -261,6 +290,9 @@
   <div id="coachHome" aria-live="polite"></div>
   <div class="card">
     <h2>登録した作品<span class="tag-sample" id="sampleTag" hidden>サンプル</span></h2>
+    <div class="find" id="workFind" hidden>
+      <input type="search" id="workSearch" placeholder="作品名で探す" aria-label="作品名で探す" oninput="renderHome()">
+    </div>
     <div id="workList"></div>
     <button class="btn sub" onclick="go('s-work')">＋ 作品を登録する</button>
   </div>
@@ -269,12 +301,16 @@
     <p style="font-size:.88rem;color:var(--muted)">パーツの仕入れ値を1か所変えるだけで、そのパーツを使っている<b>すべての作品の原価と適正価格</b>が計算し直されます。Excelのように全部直す必要はありません。</p>
     <button class="btn sub" onclick="go('s-parts')">パーツの単価を見る</button>
   </div>
+  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
 </section>
 
 <!-- ===== パーツ ===== -->
 <section class="screen" id="s-parts" role="tabpanel" aria-label="パーツ">
   <div class="card">
     <h2>パーツ・材料の登録</h2>
+    <div class="find" id="partFind" hidden>
+      <input type="search" id="partSearch" placeholder="パーツ名で探す" aria-label="パーツ名で探す" oninput="renderParts()">
+    </div>
     <div id="partList"></div>
   </div>
   <div class="card">
@@ -286,8 +322,10 @@
       <div><label for="pQty">入数(個)</label><input type="number" id="pQty" placeholder="50" min="1"></div>
     </div>
     <div class="note" id="pUnit">1個あたりの単価を自動計算します</div>
+    <div class="again" id="pAgain"></div>
     <button class="btn" onclick="addPart()">パーツを追加</button>
   </div>
+  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
 </section>
 
 <!-- ===== 作品登録 ===== -->
@@ -300,18 +338,21 @@
     <div class="chips" id="wChips" role="group" aria-labelledby="wChipsLbl"></div>
     <div id="wRecipe" style="margin-top:12px"></div>
     <div class="row">
-      <div><label for="wMin">制作時間(分)</label><input type="number" id="wMin" value="45" min="0"></div>
-      <div><label for="wShip">梱包・発送(円)</label><input type="number" id="wShip" value="250" min="0"></div>
+      <div><label for="wMin">制作時間(分)</label><input type="number" id="wMin" min="0"></div>
+      <div><label for="wShip">梱包・発送(円)</label><input type="number" id="wShip" min="0"></div>
     </div>
+    <div class="note" id="wAgain"></div>
     <label for="wPrice">今つけている価格(円) ※まだ決めていなければ空欄でOK</label>
     <input type="number" id="wPrice" placeholder="2800" min="0">
     <button class="btn" onclick="saveWork()">この作品を保存する</button>
   </div>
+  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
 </section>
 
 <!-- ===== 値付け(本丸) ===== -->
 <section class="screen" id="s-price" role="tabpanel" aria-label="値付け">
   <div id="priceBody"></div>
+  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
 </section>
 
 <!-- ===== 設定 ===== -->
@@ -335,10 +376,16 @@
        「ご意見箱→数週間で実装」というユーザーとの往復（生の声台帳 #172 #173）。
        その起点がこれ。触れる場所は今日できたが、言う場所がまだ無かった。
        ※このアプリ自体は何も送信しない（原則11）。押すとフォームが別タブで開くだけ。 -->
-  <div class="card">
+  <div class="card" id="feedbackCard">
     <h2>ご意見箱</h2>
-    <p style="font-size:.88rem;color:var(--muted)">使ってみて<strong>困ったこと・欲しい機能・分かりにくかったところ</strong>を教えてください。開発中なので、いただいた声から順に直していきます。ひとことでも助かります。</p>
-    <a class="btn" id="feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">意見・要望を送る（別のページが開きます）</a>
+    <p style="font-size:.88rem;color:var(--muted)">使ってみて<strong>困ったこと・欲しい機能・分かりにくかったところ</strong>を教えてください。開発中なので、いただいた声から順に直していきます。</p>
+    <!-- 【H-9是正 2026-07-27 開発部】押す前に実態を示す。旧文は「ひとことでも助かります」と
+         案内していたが、リンク先は先行案内の登録フォームを兼ねており、実際には
+         メールアドレスと選択式3問が必須で、ひとことだけ送ることは物理的にできなかった
+         （2026-07-27に開発部がフォーム原本を取得して確認。自由記述は最後の任意欄）。
+         期待と実物が食い違う入口は、App Store審査の誠実性要件でも指摘されうる。 -->
+    <div class="note" style="background:#fff6f6;border:1px solid #f0d0d0;color:#8a3d3d">先にお伝えします。送信先は<b>先行案内の登録フォームを兼ねている</b>ため、<b>メールアドレスと、選択式の質問3問への回答が必須</b>です。ご意見の自由記述は最後の欄（任意）にあります。<b>ひとことだけ送る、という使い方は今はできません</b>——分けられるよう準備中です。</div>
+    <a class="btn" id="feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">意見・要望を送る（先行案内の登録フォームが別のページで開きます）</a>
     <div class="note">送信フォームは外部のページです。このアプリに入力した金額や作品の情報が、そちらへ送られることはありません。</div>
   </div>
   <div class="card">
@@ -350,7 +397,29 @@
     <h2>手数料率について</h2>
     <table><thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用</th></tr></thead><tbody id="feeTable"></tbody></table>
     <div class="note">販売手数料は2026年7月23日時点、振込にかかる費用は2026年7月25日時点の各社公式告知等に基づく概算です。手数料は改定される場合があります。最新は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。<br>
-    ※印は公式ヘルプでの確認が取れておらず、複数の二次情報が一致した値です。メルカリShopsの振込費用は未確認のため、比較には使っていません。</div>
+    <!-- 【2026-07-27 開発部】「※印は公式ヘルプでの確認が取れておらず、複数の二次情報が
+         一致した値です」という一文を削除した。PAYOUTの4販路は現在すべて
+         conf:"primary"/"unverified" で secondary が1つも無く、※は1つも描画されない。
+         つまり実在しない印について「出典が弱い」と説明し続けており、自社に不利な側の
+         事実誤認だった。LP側は分析部が22:56に同じ理由で撤去済み（情報調査部22:28指摘）。
+         公開物が2枚に増えたのに、片方だけ直っていた。 -->
+    メルカリShopsの振込費用は未確認のため、比較には使っていません。</div>
+  </div>
+  <!-- 【H-10是正 2026-07-27 開発部】法務部08:51検出。/app/ は単独URLで直接到達でき、
+       SNSから直リンクされる想定なのに、運営者・プライバシー・LPへ戻る導線が1つも無かった
+       （全文grepで「プライバシー」「運営者」「利用規約」いずれも0件）。
+       LP側footerには揃っているが、この画面だけを見た人には何も届かない。
+       アプリ本体は何も送信しない（原則8・11）ので、その事実と、
+       外部フォームへ渡る場合の扱いを分けて書く。 -->
+  <div class="card" id="legalCard">
+    <h2>このアプリについて</h2>
+    <p style="font-size:.88rem;color:var(--muted)"><b>入力したデータの扱い</b>／このアプリに入力した作品名・金額・制作時間は、<b>お使いの端末のブラウザの中だけ</b>に保存されます。アカウント登録は不要で、どこかのサーバーへ送信することはありません。端末や閲覧履歴を消すとデータも消えます。</p>
+    <p style="font-size:.88rem;color:var(--muted)"><b>ご意見箱・先行案内の登録でお預かりする情報</b>／上のご意見箱から外部フォームで送っていただいたメールアドレスは、本アプリのリリース案内および開発アンケートのご依頼にのみ使用し、第三者への提供・目的外利用は行いません。登録停止・削除のご希望は下記の連絡先までご連絡ください。</p>
+    <p style="font-size:.88rem;color:var(--muted)"><b>計算結果について</b>／表示される金額は公開されている手数料率に基づく概算であり、実際の受取額を保証するものではありません。</p>
+    <p style="font-size:.88rem;color:var(--muted)">運営者: 中村宗一朗 ／ 連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></p>
+    <!-- 相対パス(../)ではなく公開URLを直接書く。プロトタイプ本体と公開中の /app/ とで
+         同じ場所に着地させるため（相対だと前者は 07_開発移行/ のフォルダ一覧へ落ちる） -->
+    <a class="btn sub" id="backToLp" href="https://soichiro039-bit.github.io/handmade-lp/" style="display:block;text-align:center;text-decoration:none">このアプリの紹介ページへ戻る</a>
   </div>
 </section>
 </main>
@@ -389,7 +458,9 @@
       <div class="ob-note">迷ったらお住まいの地域の最低賃金あたりで。あとから設定でいつでも変えられます。</div>
       <div class="ob-q">2. 主に使っている販路は?</div>
       <div class="ob-grid" id="obCh" role="group" aria-label="主に使っている販路を選ぶ"></div>
-      <div class="ob-note">選んだ販路の手数料で計算します。他の販路と比べた結果も見られます。</div>
+      <!-- 企画部R37/R38: 「並べて比べられます」を売りにしない(無料のWebツールが6〜13販路の
+           横並びを既に提供している)。残っている差は並べ方の正しさ＝いつ時点の料率かを示すこと -->
+      <div class="ob-note">選んだ販路の手数料で計算します。手数料率は公式の告知を確認した日付つきで表示します。</div>
       <div class="ob-foot">
         <button class="btn" onclick="obFinish(false)">あなたの数字を見る</button>
         <div class="ob-note" style="text-align:center">保存されるのはこの端末の中だけです。</div>
@@ -604,6 +675,21 @@ function go(id){
   window.scrollTo(0,0);
 }
 
+/** ご意見箱へ連れて行く（2026-07-27 開発部・情報調査部06:22の指摘②への対応）
+    詰まるのは作品登録や値付けの画面なのに、言う場所は設定画面の奥にしかなかった。
+    各画面から1タップで飛べるようにする。フォームへ直リンクしないのは、
+    押す前に「メール必須・選択式3問必須」という実態を読んでもらう必要があるため（H-9）。 */
+function goFeedback(){
+  go("s-set");
+  const c = document.getElementById("feedbackCard");
+  if(!c) return;
+  c.scrollIntoView({behavior:"smooth", block:"center"});
+  // どこへ連れて来られたのか分かるよう一瞬だけ強調する
+  c.style.transition = "box-shadow .3s";
+  c.style.boxShadow = "0 0 0 3px #f0c9c9";
+  setTimeout(()=>{ c.style.boxShadow = ""; }, 1600);
+}
+
 /* ===== 描画 ===== */
 /** 初回起動時のサンプルがそのまま残っているか。
     自分が登録した作品だと勘違いさせないため見出しに「サンプル」と出す */
@@ -611,12 +697,21 @@ function isSampleWorks(){
   return db.works.length === SAMPLE.works.length &&
          db.works.every((w,i) => w.name === SAMPLE.works[i].name);
 }
+/* 探す窓を出す件数。これ未満は目で追えるので窓を出さない(空の窓は不安を与える) */
+const FIND_MIN = 4;
+function findQuery(id){ const el=document.getElementById(id); return el ? el.value.trim().toLowerCase() : ""; }
+function matchName(name, q){ return !q || String(name).toLowerCase().includes(q); }
+
 function renderHome(){
   const el = document.getElementById("workList");
   document.getElementById("sampleTag").hidden = !isSampleWorks();
+  const q = findQuery("workSearch");
+  document.getElementById("workFind").hidden = (db.works.length < FIND_MIN && !q);
+  const shown = db.works.filter(w=>matchName(w.name, q));
   if(!db.works.length){ el.innerHTML = '<div class="empty">まだ作品がありません。<br>下のボタンから登録してみましょう。</div>'; }
+  else if(!shown.length){ el.innerHTML = '<div class="empty">「'+esc(q)+'」に当てはまる作品はありません。</div>'; }
   else {
-    el.innerHTML = db.works.map(w=>{
+    el.innerHTML = shown.map(w=>{
       const a = analyze(w, +w.price||0, db.cfg.ch);
       const hr = (+w.price>0 && +w.min>0) ? a.hourly : null;
       const cls = hr===null ? "" : (hr >= db.cfg.wage ? "pos" : "neg");
@@ -625,7 +720,8 @@ function renderHome(){
         <div><div class="name">${esc(w.name)}</div>
           <div class="meta">原価 ${yen(directCost(w))} ／ ${w.min}分</div></div>
         <div class="val"><span class="${cls}">${hrTxt}</span>
-          <div class="meta">${w.price?yen(+w.price):"—"}</div></div>
+          <div class="meta">${w.price?yen(+w.price):"—"}</div>
+          <button class="dup" aria-label="${esc(w.name)}をもとに新しく作る" onclick="dupWork(${w.id})">複製</button></div>
       </div>`;
     }).join("");
   }
@@ -651,16 +747,37 @@ function renderHome(){
 
 function renderParts(){
   const el = document.getElementById("partList");
+  const q = findQuery("partSearch");
+  document.getElementById("partFind").hidden = (db.parts.length < FIND_MIN && !q);
+  renderPartAgain();
   if(!db.parts.length){ el.innerHTML='<div class="empty">パーツがありません</div>'; return; }
-  el.innerHTML = db.parts.map(p=>{
+  const shown = db.parts.filter(p=>matchName(p.name, q));
+  if(!shown.length){ el.innerHTML = '<div class="empty">「'+esc(q)+'」に当てはまるパーツはありません。</div>'; return; }
+  el.innerHTML = shown.map(p=>{
     const used = db.works.filter(w=>w.recipe.some(r=>r.pid===p.id)).length;
     return `<div class="list-item">
       <div><div class="name">${esc(p.name)}</div>
         <div class="meta">${p.total}円 ÷ ${p.qty}個${used?` ・ ${used}作品で使用中`:""}</div></div>
       <div class="val">${unitPrice(p).toFixed(1)}円<span class="meta">/個</span>
+        <button class="dup" aria-label="${esc(p.name)}をもとに新しく登録する" onclick="dupPart(${p.id})">複製</button>
         <button class="del" aria-label="${esc(p.name)}を削除" onclick="delPart(${p.id})">×</button></div>
     </div>`;
   }).join("");
+}
+/** 直前に登録したパーツの条件をそのまま差し出す。
+    同じ仕入れ先・同じ入数で色違いを何個も登録する場面で、打ち直しをまるごと省く */
+function renderPartAgain(){
+  const box = document.getElementById("pAgain");
+  const last = db.parts[db.parts.length-1];
+  if(!last){ box.innerHTML=""; return; }
+  box.innerHTML = `<button type="button" class="chip" onclick="fillPart(${last.total},${last.qty})">前回と同じ ${last.total}円 ÷ ${last.qty}個</button>`;
+}
+function fillPart(total, qty){ pTotal.value=total; pQty.value=qty; updUnit(); pName.focus(); }
+/** パーツの複製。名前だけ変えれば済む状態でフォームへ差し出す(即登録はしない=取り違えを防ぐ) */
+function dupPart(id){
+  const p = partById(id); if(!p) return;
+  pName.value = p.name + " のコピー"; pTotal.value = p.total; pQty.value = p.qty;
+  updUnit(); pName.focus(); pName.select();
 }
 function addPart(){
   const name=pName.value.trim(), total=+pTotal.value, qty=+pQty.value;
@@ -684,7 +801,31 @@ function renderWorkForm(){
     const on = editRecipe.some(r=>r.pid===p.id);
     return `<button class="chip ${on?'on':''}" aria-pressed="${on}" onclick="toggleChip(${p.id})">${esc(p.name)}</button>`;
   }).join("") || '<div class="empty">先にパーツを登録してください</div>';
+  offerLastWork();
   renderRecipe();
+}
+/** 制作時間と梱包・発送は作品ごとにほとんど変わらない。
+    前回保存した作品の値を最初から入れておき、違うときだけ直してもらう。
+    画面に固定値を書かず、必ず保存済みデータから出す(サンプルを変えても文言が古くならない) */
+function offerLastWork(){
+  const last = db.works[db.works.length-1];
+  const note = document.getElementById("wAgain");
+  if(!last){ note.textContent = ""; return; }
+  if(wMin.value === "") wMin.value = last.min;
+  if(wShip.value === "") wShip.value = last.ship;
+  note.textContent = `前回の「${last.name}」と同じ ${last.min}分 ／ ${yen(+last.ship||0)} を入れています。違えば直してください。`;
+}
+/** 作品の複製。色違い・サイズ違いを1件ずつ手入力し直す手間をなくす。
+    即登録ではなくフォームへ差し出す(名前を変えないまま増えるのを防ぐ) */
+function dupWork(id){
+  const w = db.works.find(x=>x.id===id); if(!w) return;
+  editRecipe = JSON.parse(JSON.stringify(w.recipe));
+  wMin.value = w.min; wShip.value = w.ship; wPrice.value = w.price || "";
+  go('s-work');
+  wName.value = w.name + " のコピー";
+  document.getElementById("wAgain").textContent =
+    `「${w.name}」の中身をそのまま写しました。名前と、変わるところだけ直してください。`;
+  wName.focus(); wName.select();
 }
 function toggleChip(pid){
   const i = editRecipe.findIndex(r=>r.pid===pid);
