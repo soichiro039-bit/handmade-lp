@@ -885,6 +885,17 @@ function toggleChip(pid){
   if(i>=0) editRecipe.splice(i,1); else editRecipe.push({pid,n:1});
   renderWorkForm();
 }
+/** 使うパーツの一覧を描く。
+ *
+ * **【2026-07-28 重大な不具合の修正】個数を打つたびにここを呼び直してはいけない。**
+ * 修正前は setN() が毎キーストロークで renderRecipe() を呼んでいたため、
+ * **いま入力している欄そのものが破棄されて作り直され、フォーカスが外れてキーボードが閉じた。**
+ * 社長が実機で最初に触った時の症状が「一桁入力すると入力画面が落ちる」＝これ。
+ * **最初の利用者が、最初の入力で止まっていた。**
+ *
+ * 対策: 個数の変更では**作り直さず、材料費の表示だけを書き換える**（下の updateMaterialTotal）。
+ * 作り直しが必要なのはパーツの追加・削除のときだけ。
+ */
 function renderRecipe(){
   if(!editRecipe.length){ wRecipe.innerHTML=""; return; }
   wRecipe.innerHTML = `<div style="background:var(--soft);border-radius:11px;padding:10px 12px">
@@ -893,11 +904,23 @@ function renderRecipe(){
         <div><div class="name" style="font-size:.83rem">${esc(p.name)}</div>
         <div class="meta">${unitPrice(p).toFixed(1)}円/個</div></div>
         <div class="val"><input type="number" value="${r.n}" min="0" style="width:64px;padding:6px;text-align:right"
+          aria-label="${esc(p.name)} の個数"
           oninput="setN(${r.pid}, this.value)"><span class="meta">個</span></div></div>`;}).join("")}
-    <div style="text-align:right;font-size:.85rem;margin-top:7px">材料費 <b>${yen(editRecipe.reduce((s,r)=>{const p=partById(r.pid);return s+(p?unitPrice(p)*r.n:0);},0))}</b></div>
+    <div style="text-align:right;font-size:.85rem;margin-top:7px">材料費 <b id="wMatTotal">${yen(materialTotalOfEdit())}</b></div>
   </div>`;
 }
-function setN(pid,v){ const r=editRecipe.find(x=>x.pid===pid); if(r){ r.n=+v||0; renderRecipe(); } }
+/** 編集中の作品の材料費合計。renderRecipe と setN の両方から使う（同じ値を2箇所で計算しない） */
+function materialTotalOfEdit(){
+  return editRecipe.reduce((s,r)=>{ const p=partById(r.pid); return s + (p ? unitPrice(p)*r.n : 0); }, 0);
+}
+/** 個数が変わったときは、**入力欄に触れず**合計の表示だけ差し替える */
+function setN(pid,v){
+  const r = editRecipe.find(x=>x.pid===pid);
+  if(!r) return;
+  r.n = +v || 0;
+  const el = document.getElementById("wMatTotal");
+  if(el) el.textContent = yen(materialTotalOfEdit());
+}
 function saveWork(){
   const name = wName.value.trim();
   if(!name){ alert("作品名を入力してください"); return; }
