@@ -26,7 +26,7 @@
   label { display: block; font-size: .85rem; color: var(--muted); margin-top: 12px; }
   /* 入力欄の高さは44px以上を確保する(指で押せる最小サイズ。iOS HIG / WCAG 2.2 SC2.5.8)。
      2026-07-26 デザイン部の実測で40pxだったため min-height で下限を固定した。 */
-  input[type=number], select { width: 100%; min-height: 44px; padding: 11px 10px; font-size: 1rem;
+  input[type=number], select { width: 100%; min-height: 44px; padding: 11px 10px; font-size: max(1rem, 16px);
     border: 1px solid #ddd0c5; border-radius: 8px; margin-top: 4px; background: #fff; color: var(--text); }
   table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: .92rem; }
   th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid #eee3d8; }
