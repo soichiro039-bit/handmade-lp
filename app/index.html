@@ -218,6 +218,12 @@
   /* 最小文字サイズは11px相当を下回らせない(Apple HIG。55歳以上の新規流入層を含むため実利に直結) */
   .note { font-size:.8rem; color:var(--muted); margin-top:10px; line-height:1.6; }
   .proto-tag { background:#fffbe6; border:1px dashed #d9c48a; color:#8a6d1f; font-size:.78rem; padding:8px 11px; border-radius:9px; margin-bottom:12px; line-height:1.55; }
+  /* 料率の鮮度切れを知らせる帯（原則28・型D／2026-07-29 開発部が公開版へ移植）。
+     プロトタイプ側の .rate-stale と同じ見た目にする——同じ状態を2つの見え方で出さない */
+  .rate-stale { background:#fff7ed; border-left:5px solid #d98324; color:var(--text);
+                padding:12px 13px; border-radius:9px; margin-bottom:12px; line-height:1.6; font-size:.88rem; }
+  .rate-stale .rs-body { color:var(--muted); font-size:.83rem; margin-top:5px; }
+  .rate-stale .rs-when { display:block; margin-top:4px; font-size:.78rem; }
   /* 各画面末尾からご意見箱へ（2026-07-27 開発部）。控えめに置く——
      主役は値付けであって意見募集ではないが、詰まったその場に出口が要る */
   .ask-here { text-align:center; margin:4px 0 10px; font-size:.8rem; }
@@ -323,6 +329,14 @@
      守るべき約束は「入力内容を送らない」であって「一切通信しない」ではない——
      前者は今も100%守っている。約束の範囲を正確に書く。 -->
 <div class="proto-tag">これは開発中アプリの動作プロトタイプです。入力内容はこの端末のブラウザにのみ保存され、外部へ送信されません（閲覧数の計測のみ行っています。詳しくは設定画面の「このアプリについて」）。</div>
+
+<!-- 料率が「確認できていないまま古くなった」ことを知らせる帯（原則28・型D）。
+     このアプリは「販売手数料は◯年◯月◯日時点の各社公式告知等に基づく概算です」と
+     名乗っている。料率の更新が止まっても画面は何も変わらないので、その名乗りだけが
+     静かに嘘になる。ここが「確認できていない期間が延びた」という状態を面へ出す。
+     画面を問わず出したいので section の外に置く。中身は renderRateStale() が入れる。
+     閾値内では空のまま。 -->
+<div id="rateStale" aria-live="polite"></div>
 
 <!-- ===== 作品一覧 ===== -->
 <section class="screen active" id="s-home" role="tabpanel" aria-label="作品">
@@ -596,6 +610,66 @@ function rateAsofPhrase(){
   const w = s => s.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_,y,m,d)=>`${y}年${+m}月${+d}日`);
   return a[0]===a[a.length-1] ? `${w(a[0])}時点`
     : `${w(a[0])}〜${w(a[a.length-1])}時点（販路ごとに確認日が異なります）`;
+}
+
+/* ===== 料率が古くなったことを知らせる(原則28・型D／2026-07-29 開発部が公開版へ移植) =====
+   プロトタイプにだけ在って公開版に無かった。だが実害はこちらの方が大きい——
+   利用者が実際に値付けを決めるのは公開版であり、rateAsofPhrase() が名乗る
+   「◯月◯日時点」は、料率の更新が止まった瞬間に嘘へ変わる。にもかかわらず
+   画面は何も変わらないので、**正常に静かなのか壊れて静かなのかが区別できない**。 */
+
+/** 鮮度切れとみなす日数。【暫定値・根拠つき】
+    ①料率の監視は1日4回(7/11/15/19時)なので、正常運転で空く最大の間隔は約12時間。
+      7日=28回連続で監視が来なかったことを意味し、正常運転では起こりえない
+    ②利用者の側から見ても、1週間前に確認した値を「今日時点」と言い切るのは無理がある
+    料率改定の実測間隔は分析部・情報調査部へ依頼済み。回答が来たらこの1行だけを直す——
+    日数を他の場所へ写さないこと(原則7bの教訓)。プロトタイプ側の RATE_STALE_DAYS とは
+    別の定数だが、値がずれると同じ状態が2つの見え方で出るため invariants_check で突き合わせる。 */
+const RATE_STALE_DAYS = 7;
+
+/** 確認日から今日までの日数。日付の文字列同士をUTCの日単位で引く
+    (時刻・タイムゾーン・夏時間で1日ずれるのを避ける)。読めない値は null を返し、
+    「0日」に丸めない——読めないことを新しさとして扱ってはならない */
+function daysSinceAsof(asof, now){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(asof || ""));
+  if(!m) return null;
+  const a = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  const n = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.floor((n - a) / 86400000);
+}
+/** 閾値を超えた販路だけを返す。now を引数に取るのは、検査が任意の日付で
+    実物の画面を描かせて測れるようにするため(原則23)。
+    【読めない確認日は落とさず出す】days が null の販路を除外すると、日付が壊れた販路だけが
+    帯から消えて**最も新鮮に見える**。「確認できていない」という状態そのものは同じなので、
+    経過日数の代わりに「読み取れない」と書いて必ず面へ出す。 */
+function rateStaleList(now){
+  const t = now || new Date();
+  return CHANNELS.map(c => ({ name:c.name, asof:RATE_ASOF[c.key],
+                              days:daysSinceAsof(RATE_ASOF[c.key], t) }))
+                 .filter(x => x.days === null || x.days >= RATE_STALE_DAYS);
+}
+function renderRateStale(now){
+  const box = document.getElementById("rateStale");
+  if(!box) return;
+  const st = rateStaleList(now);
+  if(!st.length){ box.innerHTML = ""; return; }
+  const names = st.map(x => esc(x.name)).join("・");
+  const w = s => String(s).replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_,y,m,d)=>`${y}年${+m}月${+d}日`);
+  // 【文言の注意】方向は書かない(原則17・原則1)。こちらが持っているのは「最後に確認できた日」
+  //   だけで、改定が起きたかどうかすら分からない。「変わっているかもしれません」までは
+  //   言えるが、「上がった/下がった」は言えない。
+  // 【主語を総称にしない】古いのが1販路だけでも「各社が」と書くと、まだ新しい残りの販路まで
+  //   巻き込んで古く見せる(2026-07-28にプロトタイプ側で実際に踏んだ)。必ず ${names} を使う。
+  // 【閉じるボタンを置かない理由】閉じても値は古いままで、状態は何も解決しない。
+  //   消えるべきは帯ではなく古さの方であり、更新されれば自動で消える。
+  box.innerHTML = `<div class="rate-stale" role="status">
+    <b>${names}の手数料は、最後に確認できた日から日数が経っています。</b>
+    <div class="rs-body">この間に${names}が手数料を改定していても、このアプリはまだ取り込めていません。
+      表示している金額は目安としてご覧いただき、値付けを決める前に${names}の公式サイトで現在の手数料をご確認ください。
+      <span class="rs-when">${st.map(x => x.days === null
+          ? `${esc(x.name)}: 確認日を読み取れません`
+          : `${esc(x.name)}: ${esc(w(x.asof))}に確認（${x.days}日前）`).join("／")}</span></div>
+  </div>`;
 }
 
 /* ===== 手数料の基数と端数処理(原則21) =====
@@ -1244,7 +1318,7 @@ function saveCfg(){
 }
 
 function esc(s){ return String(s).replace(/[&<>"]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
-function renderAll(){ renderHome(); renderParts(); renderSet(); }
+function renderAll(){ renderRateStale(); renderHome(); renderParts(); renderSet(); }
 
 document.getElementById("pTotal").addEventListener("input", updUnit);
 document.getElementById("pQty").addEventListener("input", updUnit);
