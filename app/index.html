@@ -137,6 +137,31 @@
     border:1px solid rgba(61,50,41,.07); border-radius:26px;
     box-shadow:0 6px 22px rgba(61,50,41,.14); overflow:hidden; z-index:30;
   }
+  /* 「詰まった」報告ボタン（2026-07-28 開発部・統括07:59依頼）
+     どの画面からも1タップで押せる位置に常駐させる。ご意見箱（設定画面の奥・メール必須・
+     選択式3問必須）とは別物で、こちらは**何も聞かない**。押した瞬間にメールソフトが開き、
+     件名に「どの画面で押したか」だけが入る。本文は空でよい。
+     タブバー(高さ52px+下12px)の上へ重ねる。小さく・控えめに——主役は計算画面のため。 */
+  .report-fab {
+    position:fixed; right:calc(50% - 202px); z-index:31;
+    bottom:calc(78px + env(safe-area-inset-bottom, 0px));
+    background:rgba(255,255,255,.96); color:var(--muted);
+    -webkit-backdrop-filter:saturate(180%) blur(16px);
+    backdrop-filter:saturate(180%) blur(16px);
+    border:1px solid rgba(61,50,41,.14); border-radius:18px;
+    box-shadow:0 4px 14px rgba(61,50,41,.13);
+    /* 【2026-07-28 実測して是正】最初 min-height:34px で書き、自分で測って気づいた。
+       Apple HIG / WCAG 2.5.8 の最小タップ領域は44px。原則12gが「入力欄は44px以上」を
+       検査しているが、その検査は input/select しか見ておらず、**押せるもの全般**は
+       対象外だった。小さく控えめに置きたい気持ちが、そのまま押しにくさになっていた。
+       見た目は小さいまま、当たり判定だけ44pxを確保する。 */
+    min-height:44px; padding:6px 14px; font-size:min(.76rem, 4.4vw); line-height:1.2;
+    display:flex; align-items:center; gap:5px; text-decoration:none;
+  }
+  /* 画面幅が狭い端末では max-width:404px の外側にはみ出すため、右端へ寄せ直す */
+  @media (max-width:430px){ .report-fab { right:13px; } }
+  .report-fab .ic { width:15px; height:15px; display:block; flex:none; }
+  .report-fab .ic svg { width:100%; height:100%; display:block; }
   /* 本文がタブバーの裏で途中まで見える(文字が半分透けて見える)のを防ぐ目隠し。
      iOSも同様にコンテンツを下端で溶かしている */
   .nav-scrim {
@@ -196,7 +221,11 @@
   /* 各画面末尾からご意見箱へ（2026-07-27 開発部）。控えめに置く——
      主役は値付けであって意見募集ではないが、詰まったその場に出口が要る */
   .ask-here { text-align:center; margin:4px 0 10px; font-size:.8rem; }
-  .ask-here a { color:var(--muted); }
+  /* 【2026-07-28 開発部】高さ17pxで、Apple HIG / WCAG 2.5.8 の44pxを大きく下回っていた。
+     新設した原則12h(押せるもの全般を測る)が検出。inline のままでは高さを与えられないため
+     inline-block にして当たり判定だけ広げる。見た目の文字サイズは変えない。 */
+  .ask-here a { color:var(--muted); display:inline-block; min-height:44px;
+                line-height:44px; padding:0 10px; }
   /* メールアドレスは途中で改行できない1語なので、文字200%だと横スクロールを作る
      （原則12d。実際に検査が15pxのはみ出しを検出した）。ここだけ折り返しを許す */
   #legalCard { overflow-wrap:anywhere; }
@@ -289,7 +318,11 @@
 </header>
 
 <main>
-<div class="proto-tag">これは開発中アプリの動作プロトタイプです。入力内容はこの端末のブラウザにのみ保存され、どこにも送信されません。</div>
+<!-- 【2026-07-28 開発部】「どこにも送信されません」から範囲を限定した言い方へ。
+     09:07に閲覧数の計測ビーコンが入ったため、限定なしの言い切りは事実と食い違う（H-13同型）。
+     守るべき約束は「入力内容を送らない」であって「一切通信しない」ではない——
+     前者は今も100%守っている。約束の範囲を正確に書く。 -->
+<div class="proto-tag">これは開発中アプリの動作プロトタイプです。入力内容はこの端末のブラウザにのみ保存され、外部へ送信されません（閲覧数の計測のみ行っています。詳しくは設定画面の「このアプリについて」）。</div>
 
 <!-- ===== 作品一覧 ===== -->
 <section class="screen active" id="s-home" role="tabpanel" aria-label="作品">
@@ -410,7 +443,8 @@
   </div>
   <div class="card">
     <h2>データ</h2>
-    <p style="font-size:.88rem;color:var(--muted)">すべてこの端末の中だけに保存されています。アカウント登録も、どこかのサーバーへの送信もありません。</p>
+    <!-- 2026-07-28 開発部: ここも限定なしの言い切りだった（H-13同型・上の proto-tag と同じ理由） -->
+    <p style="font-size:.88rem;color:var(--muted)">すべてこの端末の中だけに保存されています。アカウント登録は不要で、<b>入力した内容をどこかのサーバーへ送信することはありません</b>。</p>
     <button class="btn sub" onclick="resetAll()">サンプルデータに戻す</button>
   </div>
   <div class="card">
@@ -424,7 +458,14 @@
          （情報調査部22:28指摘）。公開物が2枚に増えたのに、片方だけ直っていた。
          ※旧文をここへ原文のまま引用しない。公開ファイルを grep で監視している部門が
          「まだ直っていない」と誤検知する（実際に本日の反映確認で自分が引っかかった）。 -->
-    メルカリShopsの振込費用は未確認のため、比較には使っていません。</div>
+    メルカリShopsの振込費用は未確認のため、比較には使っていません。<br>
+    <!-- 【H-17是正 2026-07-28 開発部】法務部が「危険側」と判定した唯一の未開示事項。
+         正本r5が決済方法による分岐を一次情報で確定済みなのに、公開物2本とも
+         Amazon Pay / PayPal / PayPay の文字列が0件だった。6.6%+40円で固定表示すると、
+         購入者がこの3手段を選んだ取引では**表示より手取りが少なくなる**（価格の1%）。
+         入力欄は増やさない——出品者は購入者の決済方法を事前に選べない（正本 display_policy）。
+         出典: help.thebase.in 記事5701758066585（2026年7月27日 情報調査部が一次取得）。 -->
+    <b>BASEの手数料は購入者が選ぶ決済方法で変わります。</b>Amazon Pay・PayPal・PayPay の場合は7.6%+40円（それ以外は6.6%+40円）。出品者は事前に選べないため、ここでは低い側の6.6%+40円で計算しています。</div>
   </div>
   <!-- 【H-10是正 2026-07-27 開発部】法務部08:51検出。/app/ は単独URLで直接到達でき、
        SNSから直リンクされる想定なのに、運営者・プライバシー・LPへ戻る導線が1つも無かった
@@ -434,7 +475,16 @@
        外部フォームへ渡る場合の扱いを分けて書く。 -->
   <div class="card" id="legalCard">
     <h2>このアプリについて</h2>
-    <p style="font-size:.88rem;color:var(--muted)"><b>入力したデータの扱い</b>／このアプリに入力した作品名・金額・制作時間は、<b>お使いの端末のブラウザの中だけ</b>に保存されます。アカウント登録は不要で、どこかのサーバーへ送信することはありません。端末や閲覧履歴を消すとデータも消えます。</p>
+    <p style="font-size:.88rem;color:var(--muted)"><b>入力したデータの扱い</b>／このアプリに入力した作品名・金額・制作時間は、<b>お使いの端末のブラウザの中だけ</b>に保存されます。アカウント登録は不要で、<b>入力した内容がどこかのサーバーへ送信されることはありません</b>。端末や閲覧履歴を消すとデータも消えます。</p>
+    <!-- 【H-13の同型を自検出 2026-07-28 開発部】法務部が検出したのはLPだが、
+         09:07に統括がこのページへも計測ビーコンを入れたため、同じ欠陥がこちらにも生まれた。
+         しかもこちらは度合いが重い——LPは「メールアドレスは」と主語が限定されていたのに対し、
+         この画面は「どこにも送信されません」「どこかのサーバーへ送信することはありません」と
+         **範囲を限定せずに言い切っていた**。閲覧数の計測は行っているので、そのままでは事実と違う。
+         ビーコンは外さない（「触ったが登録しなかった」を観測する唯一の手段で、統括が本日入れたばかり）。
+         代わりに①入力内容に限定した言い方へ直す ②計測している事実を書く、の2つで整合させる。
+         法務チェックH-13は「/app/ に送信系は0件」を前提に書かれているが、その前提は09:07に変わった。 -->
+    <p style="font-size:.88rem;color:var(--muted)"><b>アクセス解析について</b>／このページの閲覧数を把握するためCloudflare Web Analytics(クッキーを使用しないアクセス解析)を利用しており、閲覧時の通信情報が同社へ送信されます。個人を特定する情報も、<b>上記の入力内容も送信しません</b>。</p>
     <p style="font-size:.88rem;color:var(--muted)"><b>ご意見箱・先行案内の登録でお預かりする情報</b>／上のご意見箱から外部フォームで送っていただいたメールアドレスは、本アプリのリリース案内および開発アンケートのご依頼にのみ使用し、第三者への提供・目的外利用は行いません。登録停止・削除のご希望は下記の連絡先までご連絡ください。</p>
     <p style="font-size:.88rem;color:var(--muted)"><b>計算結果について</b>／表示される金額は公開されている手数料率に基づく概算であり、実際の受取額を保証するものではありません。</p>
     <p style="font-size:.88rem;color:var(--muted)">運営者: 中村宗一朗 ／ 連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></p>
@@ -501,6 +551,19 @@
   <button role="tab" aria-selected="false" aria-controls="s-price" data-s="s-price" onclick="go('s-price')"><span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.3 18.2h5.4"/><path d="M10.4 21h3.2"/><path d="M12 3.2a6.2 6.2 0 0 0-3.7 11.2c.5.4.8.9.9 1.5l.1.6h5.4l.1-.6c.1-.6.4-1.1.9-1.5A6.2 6.2 0 0 0 12 3.2Z"/></svg></span>値付け</button>
   <button role="tab" aria-selected="false" aria-controls="s-set" data-s="s-set" onclick="go('s-set')"><span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 7.6h9.1M18.1 7.6h2.3M3.6 16.4h4.3M13.3 16.4h7.1"/><circle cx="15.6" cy="7.6" r="2.4"/><circle cx="10.6" cy="16.4" r="2.4"/></svg></span>設定</button>
 </nav>
+
+<!-- 【1タップの「詰まった」報告 2026-07-28 開発部・統括07:59依頼】
+     社長の狙い＝バグ探しを利用者にしてもらう。そのために摩擦をゼロにする。
+     ご意見箱（設定画面・外部フォーム・メール必須＋選択式3問必須）は
+     「腰を据えて書く人」しか通れない。詰まった瞬間の人はそこまで歩かない。
+     このボタンは**何も聞かない**——押すとメールソフトが開き、件名に画面名が入るだけ。
+     本文が空のまま送られても、どの画面で手が止まったかは分かる。
+     ※このアプリ自体は何も送信しない（原則11）。送信するかどうかは利用者が決める。
+     ※入力した金額・作品名を本文へ入れない（原則8/原則11。勝手に持ち出さない）。 -->
+<a class="report-fab" id="reportFab" href="#" onclick="reportStuck(event)"
+   aria-label="この画面で詰まったことを、メールで知らせる">
+  <span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.4a7.6 7.6 0 0 0-7.6 7.6c0 1.5.4 2.8 1.2 4L4.4 19.6l3.6-1.2a7.6 7.6 0 1 0 4-14Z"/><path d="M12 8.6v3.6"/><path d="M12 15.2h.01"/></svg></span>詰まった
+</a>
 </div>
 
 <script>
@@ -729,6 +792,29 @@ function go(id){
   if(id==="s-price") renderPrice();
   if(id==="s-work") renderWorkForm();
   window.scrollTo(0,0);
+}
+
+/* ===== 1タップの「詰まった」報告（2026-07-28 開発部・統括07:59依頼） =====
+   仕様（統括が確定）: ①どの画面からも押せる小さなボタン ②メールアドレス不要・質問ゼロ
+   ③押すと mailto が立ち上がり、件名に「どの画面で押したか」だけが入る。
+   守ること:
+   - **本文へアプリの中身（金額・作品名・パーツ）を入れない。** 原則8/原則11。
+     利用者が自分で書いた分だけが飛ぶ。勝手な持ち出しは1バイトもしない
+   - 送信するかどうかは利用者が決める（メールソフトの下書きが開くだけ）
+   - ご意見箱（外部フォーム・メール必須）とは別物。あちらは残す——長く書きたい人がいる */
+const REPORT_TO = "soichiro039@gmail.com";
+function currentScreenName(){
+  const el = document.querySelector(".screen.active");
+  const t = TITLES[el && el.id] || TITLES["s-home"];
+  return t[0];
+}
+function reportStuck(ev){
+  if(ev) ev.preventDefault();
+  const where = currentScreenName();
+  const subject = `[詰まった] ${where}の画面`;
+  // 本文は「書かなくてよい」と伝えるためだけの1行。質問はしない（質問ゼロが仕様）。
+  const body = "ここに一言だけお書きください（書かずに送っていただいても、どの画面かは分かります）。\n\n";
+  location.href = `mailto:${REPORT_TO}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 /** ご意見箱へ連れて行く（2026-07-27 開発部・情報調査部06:22の指摘②への対応）

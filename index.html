@@ -70,7 +70,7 @@
 
   <div class="card" id="calc">
     <h2>お試し版:振込費用まで引いた「本当の手取り」をその場で計算</h2>
-    <label>販売価格(送料込みの購入者支払額・円)
+    <label>販売価格(円)
       <input type="number" id="price" value="3000" min="0">
     </label>
     <label>材料費(円)
@@ -79,6 +79,20 @@
     <label>梱包・発送の実費(円)
       <input type="number" id="ship" value="250" min="0">
     </label>
+    <!-- 【送料の扱い 2026-07-28 開発部・原則21】
+         それまでLPは「送料は必ず価格に含まれている」前提の一本道で、送料別で出品している
+         作家を表現できなかった(アプリ側にはこの切り替えが最初からあり、LPだけ無かった)。
+         4販路とも手数料の基数は「購入者が払った合計(送料ふくむ)」なので、送料別の作家は
+         送料の分にも手数料がかかる。それを出せないと、我々が掲げる「同じ条件で4販路を
+         比べられる」という差別化を、我々自身が満たしていないことになる(企画部R49の指摘)。
+         既定は「送料込み」——変更前の挙動と一致させ、既存の閲覧者の見え方を変えないため。 -->
+    <label>送料の扱い
+      <select id="shipMode">
+        <option value="in">送料込み（送料を価格に入れて出品している）</option>
+        <option value="sep">送料別（購入者が送料を別に払う）</option>
+      </select>
+    </label>
+    <p class="note" style="margin-top:6px">※どの販路でも、販売手数料は<strong>購入者が払った合計（送料をふくむ）</strong>にかかります。送料別で出品していると、送料の分にも手数料がかかります。分からなければ「送料込み」のままで大丈夫です。</p>
     <label>制作時間(分)
       <input type="number" id="minutes" value="60" min="0">
     </label>
@@ -111,6 +125,14 @@
 
     <p class="note">手元に残る額は<strong>販売手数料だけでは決まりません</strong>。売上を自分の口座へ振り込む時にも費用がかかるため、この表はそれも引いた後の金額を出しています。たとえばBASEは販売手数料の率が低い一方、振込1回ごとに250円、振込額が2万円未満の月はさらに事務手数料500円がかかります。<br>
     前提: 振込は月1回・ひと月に上記の点数を販売。<strong>どの販路が有利かは販売点数・振込回数・振込先の銀行で変わるため、この表は順位づけではありません。</strong>メルカリShopsは振込にかかる費用が確認できていないため、他と同じ土俵には並べていません。<br>
+    <!-- 【H-17是正 2026-07-28 開発部】法務部が「危険側」と判定した唯一の未開示事項。
+         正本r5は決済方法による分岐を一次情報で確定しているのに、公開物2本とも
+         Amazon Pay / PayPal / PayPay の文字列が0件だった。表示を6.6%+40円で固定すると、
+         購入者がこの3手段を選んだ実際の取引では**表示より手取りが少なくなる**（価格の1%）。
+         手取りを多く見せる誤差は作らない、という我々自身の原則に正面から反する。
+         入力欄は増やさない——出品者は購入者の決済方法を事前に選べないため（正本 display_policy）。
+         出典: help.thebase.in 記事5701758066585（2026年7月27日 情報調査部が一次取得）。 -->
+    <strong>BASEの手数料は購入者が選ぶ決済方法で変わります。</strong>Amazon Pay・PayPal・PayPay の場合は7.6%+40円(それ以外は6.6%+40円)。出品者は事前に選べないため、この表では低い側の6.6%+40円で計算しています。<br>
     出典: 販売手数料は各公式告知ページ(2026年7月23日時点)、振込にかかる費用は各公式ヘルプ等(2026年7月25日時点)の概算。いずれも各社の公式ヘルプ・公式告知で確認した値です。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。</p>
   </div>
 
@@ -154,6 +176,12 @@
 
 <footer>
   <p>【プライバシーポリシー(事前登録について)】お預かりするメールアドレスは、本アプリのリリース案内および開発アンケートのご依頼にのみ使用し、第三者への提供・目的外利用は行いません。登録停止・削除のご希望は下記連絡先までご連絡ください。</p>
+  <!-- 【H-13是正 2026-07-28 開発部】法務部が検出（違法とは断定しないが開示が不足）。
+       「プライバシーポリシー」と題した文書を掲げながら、実際に行っている取得のうち
+       アクセス解析だけが記載されていなかった。主語はメールアドレスなので厳密には虚偽で
+       ないが、「第三者への提供もしません」はサイト全体の方針として読まれ得る。
+       文案は法務チェックH-13の是正案をそのまま採用した。 -->
+  <p>【アクセス解析について】本サイトではアクセス数の把握のためCloudflare Web Analytics(クッキーを使用しないアクセス解析)を利用しており、閲覧時の通信情報が同社へ送信されます。個人を特定する情報は取得しません。</p>
   <p>運営者: 中村宗一朗 / 連絡先: soichiro039@gmail.com</p>
   <p>© 2026</p>
 </footer>
@@ -199,12 +227,15 @@
     mercari: { fee: null,                                       note: ""  }  // 未確認: 推測値で埋めない
   };
   /** 1点あたりが負担する振込費用。振込は月1回・ひと月に n 点売る前提。
-      費用が未確認の販路は null を返す(ゼロとして並べると不当に有利に見えるため)。 */
-  function payoutPerItem(c, price, n) {
+      費用が未確認の販路は null を返す(ゼロとして並べると不当に有利に見えるため)。
+      基数は「購入者が払う合計(gross)」——送料別なら送料も入金されるため(原則21)。
+      アプリ側 app/index.html の payoutPerItem と同一の式。 */
+  function payoutPerItem(c, price, shipTop, n) {
     const p = PAYOUT[c.key];
     if (!p || !p.fee) return null;
     n = Math.max(1, n || 1);
-    const monthly = Math.max(0, price - channelFee(c, price)) * n; // 月の振込見込み額
+    const gross = Math.max(0, price) + (+shipTop || 0);
+    const monthly = Math.max(0, gross - channelFee(c, gross)) * n; // 月の振込見込み額
     return p.fee(monthly) / n;
   }
   const yen = n => Math.round(n).toLocaleString() + "円";
@@ -217,22 +248,29 @@
     const wage = +document.getElementById("wage").value || 0;
     const n = Math.max(1, +document.getElementById("sales").value || 1);
     const key = document.getElementById("ch").value;
+    // 送料別なら、購入者は作品価格とは別に送料を払う＝手数料の基数に乗る(原則21)。
+    // 送料込みなら送料は既に価格の中にあるので0(二重に足さない)。app側 shipOnTop と同じ。
+    const shipTop = document.getElementById("shipMode").value === "sep" ? s : 0;
+    const gross = p + shipTop;                 // 購入者が払う合計＝手数料の基数
     const tbody = document.querySelector("#result tbody");
     tbody.innerHTML = "";
     let mine = null;
     for (const c of channels) {
-      const fee = channelFee(c, p);
-      const payout = payoutPerItem(c, p, n);
+      const fee = channelFee(c, gross);
+      const payout = payoutPerItem(c, p, shipTop, n);
       // 振込費用が未確認の販路は、確認済みの販路と同じ土俵に並べない(原則10)。
       // 手取りだけ出すと「振込費用ゼロの販路」に見えてしまうため、行ごと伏せる。
       if (payout === null) {
         tbody.insertAdjacentHTML("beforeend",
           `<tr><td>${c.name}</td><td class="minus">-${yen(fee)}</td>` +
           `<td colspan="2" class="unverified">振込にかかる費用が未確認のため比較対象外(調査中)</td></tr>`);
-        if (c.key === key) mine = { c, fee, payout: null, net: p - fee - m - s };
+        if (c.key === key) mine = { c, fee, payout: null, net: gross - fee - m - s };
         continue;
       }
-      const net = p - fee - m - s - payout;
+      // 手元に残る＝購入者が払った合計 −(販路手数料・材料費・梱包発送の実費・振込費用)。
+      // 送料は送料込み/別のどちらでも実費として必ず引く(出品者が運送会社へ払うため)。
+      // app側 analyze() の profit と同じ式: (gross - fee) - (材料 + 送料) - 振込費用。
+      const net = gross - fee - m - s - payout;
       tbody.insertAdjacentHTML("beforeend",
         `<tr><td>${c.name}</td><td class="minus">-${yen(fee)}</td>` +
         `<td class="minus">-${yen(payout)}${PAYOUT[c.key].note}</td>` +
@@ -276,6 +314,8 @@
   }
   document.querySelectorAll("input, select").forEach(i => i.addEventListener("input", calc));
   document.getElementById("ch").addEventListener("change", calc);
+  // select は端末によって input イベントを出さないことがあるため change でも拾う
+  document.getElementById("shipMode").addEventListener("change", calc);
   calc();
 </script>
 <!-- Cloudflare Web Analytics(アクセス数計測・クッキーレス) -->
