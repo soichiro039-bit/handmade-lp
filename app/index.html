@@ -640,8 +640,13 @@ const PAYOUT = {
 const PAYOUT_TIMING = {
   minne: {
     control:"auto", controlText:"要りません（自動で振り込まれます）",
-    leadText:"約30日", leadNote:"月末に売れた場合。最長で約60日",
-    cycleText:"毎月末で締めて、翌月末23:59までに振込",
+    // 【日数の起点は「売れた日」ではない】minne公式:「発送完了メールを送信することで
+    //   売上確定となり、送信した日が売上確定日となります」。旧文は起点を「売れた場合」と
+    //   書いており、受注日から数えていると読める＝実際より早く入ると誤解させていた。
+    //   公式の例(7月受注→8月発送完了→9月末振込)は受注から約90日で、下の約30日とは別の数字。
+    leadText:"約30日", leadNote:"月末に発送完了メールを送信した場合。最長で約60日",
+    originText:"発送完了メールを送信した日（受注日ではありません）。7月に受注して8月に発送完了メールを送ると、振込は9月末になります",
+    cycleText:"発送完了メールを送信した日が売上確定日。その月ぶんを締めて、翌月末23:59までに振込",
     minText:"売上が1,000円未満の月は、翌月へ繰り越されます",
     minYen:1000, expiryText:"繰り越されるだけで、失効しません",
     fastText:"" },
@@ -1122,6 +1127,7 @@ function renderPrice(){
         <span class="n">${esc(pt.leadText)}</span>
         <span class="u">${esc(pt.leadNote)}</span>
       </div>
+      ${pt.originText ? `<div class="pay-row"><span class="l">日数の起点</span><span class="v">${esc(pt.originText)}</span></div>` : ""}
       <div class="pay-row"><span class="l">振込申請</span><span class="v">${esc(pt.controlText)}</span></div>
       <div class="pay-row"><span class="l">締めと支払</span><span class="v">${esc(pt.cycleText)}</span></div>
       <div class="pay-row"><span class="l">少額のとき</span><span class="v">${esc(pt.minText)}</span></div>
