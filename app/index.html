@@ -328,7 +328,7 @@
      09:07に閲覧数の計測ビーコンが入ったため、限定なしの言い切りは事実と食い違う（H-13同型）。
      守るべき約束は「入力内容を送らない」であって「一切通信しない」ではない——
      前者は今も100%守っている。約束の範囲を正確に書く。 -->
-<div class="proto-tag">これは開発中アプリの動作プロトタイプです。入力内容はこの端末のブラウザにのみ保存され、外部へ送信されません（閲覧数の計測のみ行っています。詳しくは設定画面の「このアプリについて」）。</div>
+<div class="proto-tag">これは開発中アプリの動作プロトタイプです。入力内容はこの端末のブラウザにのみ保存され、外部へ送信されません（閲覧数と、計算を最後まで見ていただけた回数だけを数えています。詳しくは設定画面の「このアプリについて」）。</div>
 
 <!-- 料率が「確認できていないまま古くなった」ことを知らせる帯（原則28・型D）。
      このアプリは「販売手数料は◯年◯月◯日時点の各社公式告知等に基づく概算です」と
@@ -501,7 +501,9 @@
          ビーコンは外さない（「触ったが登録しなかった」を観測する唯一の手段で、統括が本日入れたばかり）。
          代わりに①入力内容に限定した言い方へ直す ②計測している事実を書く、の2つで整合させる。
          法務チェックH-13は「/app/ に送信系は0件」を前提に書かれているが、その前提は09:07に変わった。 -->
-    <p style="font-size:.88rem;color:var(--muted)"><b>アクセス解析について</b>／このページの閲覧数を把握するためCloudflare Web Analytics(クッキーを使用しないアクセス解析)を利用しており、閲覧時の通信情報が同社へ送信されます。個人を特定する情報も、<b>上記の入力内容も送信しません</b>。</p>
+    <!-- 【2026-07-29 開発部】完了の計測を1本足したので、同じ変更の中でここも直す（原則24・原則29）。
+         足した側が開示を直すまでを1セットにしないと、入れた瞬間にこの段落が事実と食い違う。 -->
+    <p style="font-size:.88rem;color:var(--muted)"><b>アクセス解析について</b>／このページの閲覧数を把握するためCloudflare Web Analytics(クッキーを使用しないアクセス解析)を利用しており、閲覧時の通信情報が同社へ送信されます。あわせて、<b>計算結果を最後までご覧いただけたかどうか</b>を、回数としてだけ数えています(どなたが、どの作品で、いくらだったかは分かりません)。個人を特定する情報も、<b>上記の入力内容も送信しません</b>。</p>
     <p style="font-size:.88rem;color:var(--muted)"><b>ご意見箱・先行案内の登録でお預かりする情報</b>／上のご意見箱から外部フォームで送っていただいたメールアドレスは、本アプリのリリース案内および開発アンケートのご依頼にのみ使用し、第三者への提供・目的外利用は行いません。登録停止・削除のご希望は下記の連絡先までご連絡ください。</p>
     <p style="font-size:.88rem;color:var(--muted)"><b>計算結果について</b>／表示される金額は公開されている手数料率に基づく概算であり、実際の受取額を保証するものではありません。</p>
     <!-- 【法務部 07-28 00:09の依頼を統括が実施 2026-07-28 18時台】H-10の形式面。
@@ -1169,6 +1171,59 @@ function saveWork(){
 let focusId = null;
 function focusWork(id){ focusId=id; go('s-price'); }
 
+/* ===== 関門②の計測「計算を最後まで終えた人」（2026-07-29 開発部・統括07:10依頼） =====
+   きっかけ（実測）: 07-28のリールは340再生あったのにLP訪問は0。段のどこで落ちているかを
+   言うための数字が、関門6指標のうち1つも取れていなかった。
+
+   何をもって「最後まで終えた」とするか（この定義がすべて）:
+     ①サンプルのままではない（自分の作品を1つ以上登録した）かつ
+     ②いま値付け画面に出ている作品が、サンプルとして最初から入っていた名前ではない
+     → その作品の原価・手取り・必要な価格が実際に画面へ出た時点で1件。
+     「作品を保存した」時点では数えない——保存しただけで答えを見ずに離脱する人がいるため、
+     それを完遂と呼ぶと、いちばん知りたい「答えまで届いたか」が水増しされる。
+     逆に、自分の作品を登録済みでも**サンプルの結果を見ている間は数えない**（少なめに出る側へ倒す）。
+
+   どう数えるか:
+     Cloudflare Web Analytics(無料枠)には任意のイベントを送る機能が無い。記録できるのは
+     「どのパスが読み込まれたか」だけ。そこで完了専用のパス /events/calc-done/ を1枚用意し、
+     完了した瞬間に**見えないiframeで読み込む**。利用者の画面は何も変わらない。
+
+   守ること:
+     - **端末ごとに1回だけ**。人数に近い数を出すため（同じ人が何度も見ても1件のまま）
+     - 記録できたことを確かめてから既済にする（onloadで初めてフラグを立てる）。
+       先にフラグを立てると、通信が失敗した1回目で永久に取りこぼす
+     - **クエリを一切付けない**。金額・作品名を載せる余地を作らない（原則8・11・24）
+     - 計測OFF(?noanalytics=1)の端末では送らない。**後から足した通信は既存のオプトアウトに
+       自動では従わない**ので、ここで明示的に見る（原則29） */
+const CALCDONE_KEY = "meipla_calcdone_v1";
+const CALCDONE_PATH = "../events/calc-done/";
+function calcDoneAlready(){
+  try { return localStorage.getItem(CALCDONE_KEY) === "1"; } catch(e){ return false; }
+}
+function isOwnWork(w){
+  return !isSampleWorks() && !SAMPLE.works.some(s => s.name === (w && w.name));
+}
+function markCalcDone(w){
+  // 計測OFFの端末では何も送らない。**まだ判定できていない場合(undefined)も送らない**——
+  // 「OFFでなければ送る」と書くと、判定が走る前や書き換えで消えた時に送信側だけが生き残る
+  if(window.MEIPLA_NOANALYTICS !== false) return;
+  if(!isOwnWork(w)) return;               // サンプルを見ただけは完遂ではない
+  if(calcDoneAlready()) return;           // 端末ごとに1回だけ
+  try {
+    const f = document.createElement("iframe");
+    f.setAttribute("aria-hidden", "true");
+    f.setAttribute("title", "");
+    f.setAttribute("style", "position:absolute;width:1px;height:1px;border:0;opacity:0;pointer-events:none;left:-9999px");
+    f.addEventListener("load", function(){
+      // 読み込めたことを確認してから既済にする（失敗した回は次の完了でやり直す）
+      try { localStorage.setItem(CALCDONE_KEY, "1"); } catch(e){}
+      setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 4000);
+    });
+    f.src = CALCDONE_PATH;                // クエリを付けない（付けられない形で書く）
+    document.body.appendChild(f);
+  } catch(e){ /* 記録できなくても計算の表示は絶対に止めない */ }
+}
+
 function renderPrice(){
   const body = document.getElementById("priceBody");
   if(!db.works.length){ body.innerHTML='<div class="card"><div class="empty">先に作品を登録してください</div></div>'; return; }
@@ -1179,6 +1234,9 @@ function renderPrice(){
   const rec = recommend(w, db.cfg.ch);
   const recP = round100(rec.price);
   const chName = (CHANNELS.find(c=>c.key===db.cfg.ch)||CHANNELS[0]).name;
+
+  // 関門②「自分の作品の原価計算を最後まで終えた」を1件として数える（2026-07-29 開発部）
+  markCalcDone(w);
 
   // 推奨価格は「これを下回ってはいけない下限」。現在価格が上回っている時に値下げを促さない
   const above = cur > 0 && cur >= recP;
@@ -1460,6 +1518,10 @@ if(obNeeded()) obStart();
       history.replaceState(null, "", location.pathname + location.hash);
     } catch (e) { /* file:// 等でreplaceStateが使えない環境では何もしない */ }
   }
+
+  // 【2026-07-29 開発部】判定を1か所に持たせる。この値を見ずに通信を足すと、
+  // 計測OFFを踏んだ端末から新しい送信だけが漏れる（原則29）。
+  window.MEIPLA_NOANALYTICS = hasFlag();
 
   if (hasFlag()) {
     // 効いていることを自分の目で確認できるよう、画面隅に小さく出す

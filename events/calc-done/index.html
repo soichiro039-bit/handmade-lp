@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>計測用ページ｜ハンドメイド原価計算</title>
+<!--
+  【2026-07-29 開発部】関門の②「計算を最後まで終えた人」を数えるためだけのページ。
+  統括07:10依頼「②計算の最後まで行った人を1つ記録する仕組み」への実装。
+
+  なぜページを1枚増やすのか:
+    Cloudflare Web Analytics(無料枠)には任意のイベントを送る機能が無い。記録できるのは
+    「どのパスが読み込まれたか」だけ。したがって**完了専用のパスを1つ作り、完了した瞬間に
+    そのパスを読み込ませる**のが、新しいサービスを増やさずに数えられる唯一の道。
+    /app/ から見えない iframe で読み込む。利用者の画面は何も変わらない。
+
+  送るもの・送らないもの:
+    - 送るのは「このパスが読み込まれた」という事実だけ。**クエリを一切付けない**
+      （付けると金額や作品名を載せる余地が生まれる。載せない、ではなく載せられない形にする）
+    - 作品名・金額・制作時間は1バイトも出ない（原則8・原則11・原則24）
+
+  計測OFF(?noanalytics=1)を踏んだ端末では、ここでもビーコンを読み込まない。
+  **後から足した通信は、既存のオプトアウトに自動では従わない**ので、同じ判定をここにも置く（原則29）。
+-->
+<style>
+  body{margin:0;padding:24px;font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+       color:#4a4340;background:#fbf8f5;font-size:15px;line-height:1.8}
+  .box{max-width:34rem;margin:0 auto}
+  a{color:#8a5a4a}
+</style>
+</head>
+<body>
+<div class="box">
+  <p>このページは、計算を最後まで使っていただけたかどうかを数えるためだけのものです。表示する内容はありません。</p>
+  <p>入力された作品名・金額・制作時間は、このページには一切送られていません。数えているのは「このページが読み込まれた」という事実だけです。</p>
+  <p>このページは<strong>アクセス解析</strong>（Cloudflare Web Analytics・クッキーを使用しません）を利用しており、閲覧時の通信情報が Cloudflare, Inc.(米国)へ送信されます。個人を特定することは行わず、<strong>第三者への提供</strong>も行いません。解析を希望されない場合は、URLの末尾に <code>?noanalytics=1</code> を付けて一度開いてください。</p>
+  <p>計算ツールで表示される金額は公開されている手数料率に基づく概算であり、実際の受取額を保証するものではありません。</p>
+  <p><a href="https://soichiro039-bit.github.io/handmade-lp/">紹介ページへ戻る</a>　<a href="../../app/">計算ツールへ</a>　<a href="../../privacy.html">プライバシーポリシー</a></p>
+  <p style="font-size:.86rem;color:#8b807a">運営者: 中村宗一朗 / 連絡先: soichiro039@gmail.com</p>
+</div>
+<script>
+(function () {
+  var KEY = "meipla_noanalytics";
+  function hasFlag() {
+    try { if (localStorage.getItem(KEY) === "1") { return true; } } catch (e) {}
+    return document.cookie.indexOf(KEY + "=1") !== -1;
+  }
+  if (hasFlag()) { return; }
+  var s = document.createElement("script");
+  s.defer = true;
+  s.src = "https://static.cloudflareinsights.com/beacon.min.js";
+  s.setAttribute("data-cf-beacon", '{"token": "c562137589a5429b8c1b2c456441f9ca"}');
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
