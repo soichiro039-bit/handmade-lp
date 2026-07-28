@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>minne・Creema・BASE・メルカリShopsの手数料・手取り比較計算 | 同じ条件で4販路をくらべる</title>
+<meta name="description" content="minne・Creema・BASE・メルカリShopsの販売手数料と、振込にかかる費用まで含めて、同じ販売価格・同じ送料・同じ原価で手取りを比較できる無料の計算ツール。3000円で売ったとき各販路の手数料はいくらか、手元にいくら残るかがその場で分かります。出典は各社の公式ヘルプ、最終確認日つき。">
+<meta property="og:title" content="minne・Creema・BASE・メルカリShopsの手数料・手取り比較計算">
+<meta property="og:description" content="販売手数料と振込にかかる費用まで含めて、同じ条件で4販路の手取りを比較できる無料の計算ツール。">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://soichiro039-bit.github.io/handmade-lp/tools/marketplace-fee-comparison/">
+<style>
+  :root {
+    --main: #8a5a44; --accent: #c47a5a; --bg: #faf6f2; --card: #ffffff;
+    --text: #3d3229; --muted: #8c7f73; --ok: #4a7c59;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
+  header { text-align: center; padding: 32px 16px 8px; }
+  h1 { font-size: 1.35rem; color: var(--main); line-height: 1.5; }
+  .sub { color: var(--muted); font-size: .9rem; margin-top: 10px; }
+  .card { background: var(--card); border-radius: 12px; padding: 20px 18px; margin: 16px 0; box-shadow: 0 2px 8px rgba(61,50,41,.08); }
+  h2 { font-size: 1.05rem; color: var(--main); margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 10px; line-height: 1.5; }
+  h3 { font-size: .95rem; color: var(--main); margin: 16px 0 6px; }
+  p { font-size: .92rem; }
+  label { display: block; font-size: .85rem; color: var(--muted); margin-top: 12px; }
+  /* 入力欄は16px以上・タップ領域44px以上（iOS HIG / WCAG 2.5.8）。
+     16pxを割るとiOSがタップ時に画面を勝手に拡大する（原則12f） */
+  input[type=number], select { width: 100%; min-height: 44px; padding: 11px 10px; font-size: max(1rem, 16px);
+    border: 1px solid #ddd0c5; border-radius: 8px; margin-top: 4px; background: #fff; color: var(--text); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > label { flex: 1; min-width: 0; }
+  /* 表は必ずこの箱の中でだけ横に動かす。ページ本体を横スクロールさせない（原則12c） */
+  .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  /* 【2026-07-28 開発部・実機で見て自検出】th も nowrap にしていたため、見出しの文字数が
+     そのまま列幅になり、390pxの実機で**一番大事な「手元に残る額」の列が画面の外**へ出ていた。
+     原則27f(ページ本体が横スクロールしない)はPASSしていた——横に動くのは表の中だけなので
+     検査は正しく通り、その上で答えが見えていなかった。見出しは折り返してよい。
+     金額のセルだけは nowrap を残す(「1,587」と「円」が別行になると読めないため)。 */
+  th { padding: 8px 5px; text-align: right; border-bottom: 1px solid #eee3d8; white-space: normal; }
+  td { padding: 8px 5px; text-align: right; border-bottom: 1px solid #eee3d8; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--muted); font-weight: normal; font-size: .8rem; }
+  .net { font-weight: bold; color: var(--ok); }
+  .minus { color: #b0533f; }
+  .thsub { font-size: .72rem; }
+  .unverified { color: var(--muted); font-size: .78rem; text-align: right; white-space: normal; }
+  .flag { color: #b0533f; font-weight: bold; }
+  .note { font-size: .78rem; color: var(--muted); margin-top: 14px; }
+  .lead { font-size: .92rem; margin-bottom: 4px; }
+  .srcbox { font-size: .8rem; margin-top: 12px; }
+  .srcbox dt { font-weight: bold; color: var(--main); margin-top: 12px; }
+  .srcbox dd { color: var(--muted); margin-left: 0; }
+  ul { margin: 8px 0 0 1.2em; font-size: .9rem; }
+  li { margin: 6px 0; }
+  /* 押せるものはすべて44px以上（原則12h）。リンクも対象 */
+  .cta { display: block; width: 100%; min-height: 44px; text-align: center; background: var(--accent); color: #fff;
+         padding: 13px 14px; border-radius: 999px; font-size: 1rem; text-decoration: none; margin-top: 16px; }
+  .cta.soft { background: #fff; color: var(--accent); border: 2px solid var(--accent); font-size: .95rem; }
+  footer { font-size: .75rem; color: var(--muted); padding: 24px 16px 48px; text-align: center; }
+  footer a { color: var(--muted); display: inline-block; min-height: 44px; line-height: 44px; }
+  .back { display: inline-block; min-height: 44px; line-height: 44px; font-size: .85rem; color: var(--main); }
+  @media (max-width: 400px) {
+    table { font-size: .82rem; }
+    th, td { padding: 7px 4px; }
+  }
+  /* 320px(現行で最も狭い実機)では、上の詰めでも答えの列が9pxはみ出していた。
+     原則27gの検査が実測で拾ったので、この幅だけさらに詰める。
+     カードの左右余白も削る——余白より、答えが見えることを優先する。 */
+  @media (max-width: 340px) {
+    .card { padding: 16px 12px; }
+    table { font-size: .76rem; }
+    th, td { padding: 6px 2px; }
+    .thsub { font-size: .66rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>minne・Creema・BASE・メルカリShopsの<br>手数料・手取り比較計算</h1>
+  <p class="sub">同じ販売価格・同じ送料・同じ原価で、4つの販路の手取りをならべて計算します。<strong>販売手数料だけでなく、振込にかかる費用まで</strong>含めた金額です。</p>
+</header>
+
+<div class="wrap">
+
+  <!-- 【最上部に動く計算を置く】記事から始めない。
+       GPTの指摘: 「記事だけなら優位ではない。比較計算まで動いて初めて候補になる」。
+       仕様: docs/資産1_販路比較ページ_仕様_2026-07-28.md -->
+  <div class="card">
+    <h2>同じ販売価格・送料で手取りを比較する</h2>
+    <!-- 【入力を詰めて、答えを折り返しの上へ入れる 2026-07-28 開発部】
+         最初は入力欄を縦に5つ並べていたが、実機(390px)で撮ったら**画面に入るのは
+         入力欄だけで、肝心の比較表が一度も見えなかった**。検索から来た人は
+         「答えが出るページか」を数秒で判断するので、答えが見えないのは致命的。
+         デザイン部が2026-07-26にLPで指摘した「最初のCTAが48%地点」と同じ問題。
+         → 販売価格だけ大きく置き、残りは2列に畳む。長い注記は表の下へ回した。 -->
+    <label>販売価格(円)
+      <input type="number" id="price" value="3000" min="0">
+    </label>
+    <div class="row2">
+      <label>材料費(円)
+        <input type="number" id="material" value="800" min="0">
+      </label>
+      <label>梱包・発送の実費(円)
+        <input type="number" id="ship" value="250" min="0">
+      </label>
+    </div>
+    <div class="row2">
+      <label>送料の扱い
+        <select id="shipMode">
+          <option value="in">送料込み</option>
+          <option value="sep">送料別</option>
+        </select>
+      </label>
+      <label>ひと月に売れる点数
+        <input type="number" id="sales" value="5" min="1">
+      </label>
+    </div>
+
+    <div class="tw">
+      <table id="result">
+        <thead><tr><th>販路</th><th>販売<br>手数料</th><th>振込費用<br><span class="thsub">1点あたり</span></th><th>手元に<br>残る額</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- 見出しを短くしたぶん、定義はここで言う（短くして意味が消えては本末転倒） -->
+    <p class="note" style="margin-top:8px">「手元に残る額」は、購入者が払った合計から<strong>販売手数料・振込にかかる費用・材料費・梱包発送の実費</strong>を引いた1点あたりの金額です（あなたの手間の対価はまだ含んでいません）。</p>
+    <p class="note" id="belowmin"></p>
+    <p class="note" id="assump"></p>
+    <!-- 入力欄の上から降ろした説明。選択肢の文言を「送料込み／送料別」と短くしたぶん、
+         意味の説明はここで必ず残す（短くした結果、分からなくなるのでは意味がない） -->
+    <p class="note">「送料込み」は送料を価格に入れて出品している場合、「送料別」は購入者が送料を別に払う場合です。<strong>どの販路でも、販売手数料は購入者が払った合計（送料をふくむ）にかかります。</strong>送料別で出品していると、送料の分にも手数料がかかります。分からなければ「送料込み」のままで大丈夫です。「ひと月に売れる点数」は、振込にかかる費用を1点あたりに割り振るために使います（振込は月1回として計算）。</p>
+  </div>
+
+  <div class="card">
+    <h2>販売価格別の手数料と入金額</h2>
+    <p class="lead">上で入力した送料・点数の条件のまま、販売価格だけを変えるとどうなるかの一覧です。<strong>入金額は、購入者が払った合計から販売手数料と振込にかかる費用を引いた額</strong>で、材料費や梱包発送の実費はまだ引いていません。</p>
+    <div class="tw">
+      <table id="ladder">
+        <thead><tr><th>販売価格</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <!-- 【2026-07-28 開発部・実値を読んで自検出】ここは当初「上段が販売手数料」と書いていたが、
+         実際に描画していたのは販売手数料と振込にかかる費用を足した額だった。
+         検査は56項目とも通っていた——金額は正しく、説明だけが誤っていたため。
+         公開ページ上の事実誤認なので、表示している中身どおりに書き直した。 -->
+    <p class="note">上段は<strong>販売手数料と振込にかかる費用を足した額</strong>、下段は<strong>入金額</strong>（購入者が払った合計からその2つを引いた額）です。<strong>どの販路が有利かは販売点数・振込回数・振込先の銀行で変わるため、この表は順位づけではありません。</strong></p>
+  </div>
+
+  <div class="card">
+    <h2>振込費用を含める場合の注意</h2>
+    <p class="lead">販売手数料の率だけで販路をくらべると、順番が入れかわることがあります。売上を自分の口座へ振り込むときにも費用がかかるためです。</p>
+    <ul>
+      <li><strong>振込費用は「1回いくら」なので、売れた点数が少ない月ほど1点あたりの負担が重くなります。</strong>この計算では、ひと月に売れる点数で割って1点あたりに直しています。</li>
+      <li><strong>振込額によって費用が変わる販路があります。</strong>BASEは振込1回ごとに250円ですが、振込申請額が2万円未満の月はさらに事務手数料500円が加わります。Creemaは振込額3万円以上で275円になります。</li>
+      <li><strong>下限に届かない月は、その月に入金されないことがあります。</strong>minneは売上合計1,000円未満、メルカリShopsは販売利益5,000円未満だと次の月へ繰り越されます。BASEは売上残高751円以下では振込申請ができません。</li>
+      <li><strong>BASEの販売手数料は購入者が選ぶ決済方法で変わります。</strong>Amazon Pay・PayPal・PayPay の場合は7.6%＋40円（それ以外は6.6%＋40円）。出品者は購入者の決済方法を事前に選べないため、この計算では低い側の6.6%＋40円を使っています。実際にこの3つの決済が選ばれた取引では、表示より手取りが少なくなります。</li>
+    </ul>
+    <p class="note">前提: 振込は月1回・ひと月に上で入力した点数を販売。スピード振込・お急ぎ振込などの任意オプションは含めていません。<strong>この表は順位づけではありません。</strong></p>
+  </div>
+
+  <div class="card">
+    <h2>各販路の計算式</h2>
+    <p class="lead">4販路とも、販売手数料は<strong>「率 × 基数」</strong>で決まります。ここでつまずきやすいのが<strong>基数＝何に対して率をかけるか</strong>で、作品の価格ではなく<strong>購入者が払った合計（送料をふくむ）</strong>です。端数の丸め方も販路ごとに違います。</p>
+    <div class="tw">
+      <table id="formula">
+        <thead><tr><th>販路</th><th>販売手数料</th><th>手数料がかかる範囲</th><th>端数</th><th>振込にかかる費用</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note" id="basenote"></p>
+  </div>
+
+  <div class="card">
+    <h2>公式出典と最終確認日</h2>
+    <p class="lead">この計算に使っている値は、すべて各社の公式ヘルプ・公式告知から直接取得したものです。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。</p>
+    <dl class="srcbox" id="sources"></dl>
+    <p class="note" id="asof"></p>
+  </div>
+
+  <div class="card">
+    <h2>原価を含めた利益を計算する</h2>
+    <p class="lead">このページは「販路をまたいで比べる」ためのものです。<strong>作品ごとの材料費をパーツ単位で積み上げて、制作時間から時給まで出したい場合</strong>は、開発中のアプリのお試し版が使えます。登録は要りません。</p>
+    <a class="cta" href="../../app/">作品ごとの原価と適正価格を計算してみる（登録不要・お試し版）</a>
+    <p class="note">入力した内容は<strong>お使いの端末の中だけに保存</strong>され、こちらへは送られません（このページのアクセス解析については下記をご覧ください）。</p>
+    <a class="cta soft" href="../../">開発中のアプリについて見る</a>
+  </div>
+
+  <p><a class="back" href="../../">← ハンドメイド作家のための値付けアプリ(開発中)のご紹介ページへ戻る</a></p>
+
+</div>
+
+<footer>
+  <p>【アクセス解析について】本サイトではアクセス数の把握のためCloudflare Web Analytics(クッキーを使用しないアクセス解析)を利用しており、閲覧時の通信情報が同社へ送信されます。個人を特定する情報は取得しません。上記の計算ツールへ入力した数値は送信していません。</p>
+  <p>【個人情報の扱い】このページでは個人情報を取得しません。第三者への提供・目的外利用も行いません。</p>
+  <p><a href="../../privacy.html">プライバシーポリシー(全文)</a></p>
+  <p>計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。</p>
+  <p>運営者: 中村宗一朗 / 連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></p>
+  <p>© 2026</p>
+</footer>
+
+<!-- 計算は共有モジュール1本だけを読み込む。このページは自分の計算実装を持たない
+     （仕様「/app/ と同一の関数を使う。2箇所に別実装を置かない」）。
+     値が app/index.html とずれていないことは invariants_check.py 原則27a が機械で突き合わせる。 -->
+<script src="../../assets/fee-calc.js"></script>
+<script>
+(function () {
+  "use strict";
+  var F = window.FeeCalc;
+  var yen = F.yen;
+  var LADDER = [1000, 2000, 3000, 5000, 10000, 30000];
+
+  function inputs() {
+    var g = function (id) { return +document.getElementById(id).value || 0; };
+    return {
+      price: g("price"), material: g("material"), ship: g("ship"),
+      sales: Math.max(1, g("sales")),
+      mode: document.getElementById("shipMode").value
+    };
+  }
+
+  /* 1点あたりの内訳。app/index.html の analyze() と同じ定義:
+     購入者が払う合計 −(販路手数料 ＋ 材料費 ＋ 梱包発送の実費 ＋ 振込費用)。
+     費用が未確認の販路は payout=null を返し、確認済みの販路と同じ土俵に並べない（原則10c）。 */
+  function row(key, v) {
+    var gross = F.grossOf(v.price, v.ship, v.mode);
+    var shipTop = gross - Math.max(0, v.price);
+    var fee = F.channelFee(key, gross);
+    var payout = F.payoutPerItem(key, v.price, shipTop, v.sales);
+    if (payout === null) { return { fee: fee, payout: null, deposit: null, net: null, below: false }; }
+    return {
+      fee: fee, payout: payout,
+      deposit: gross - fee - payout,                          // 入金額（原価を引く前）
+      net: gross - fee - payout - v.material - v.ship,        // 手元に残る額
+      // ひと月の入金見込みが下限に届かない条件では、その月は実際には手元へ来ない。
+      // 金額だけ出すと「入金される額」に見えるため、必ず印を付けて別に説明する（原則15）
+      below: F.payoutBelowMin(key, v.price, shipTop, v.sales)
+    };
+  }
+
+  function renderMain(v) {
+    var tb = document.querySelector("#result tbody");
+    tb.innerHTML = "";
+    F.channels.forEach(function (c) {
+      var r = row(c.key, v);
+      if (r.payout === null) {
+        tb.insertAdjacentHTML("beforeend",
+          "<tr><td>" + c.name + "</td><td class='minus'>-" + yen(r.fee) + "</td>" +
+          "<td colspan='2' class='unverified'>振込にかかる費用が未確認のため比較対象外(調査中)</td></tr>");
+        return;
+      }
+      tb.insertAdjacentHTML("beforeend",
+        "<tr><td>" + c.name + (r.below ? " <span class='flag'>※</span>" : "") + "</td>" +
+        "<td class='minus'>-" + yen(r.fee) + "</td>" +
+        "<td class='minus'>-" + yen(r.payout) + "</td>" +
+        "<td class='net'>" + yen(r.net) + (r.below ? " <span class='flag'>※</span>" : "") + "</td></tr>");
+    });
+    // 下限に届かない販路が1つでもあれば、その理由を販路名つきで出す。
+    // 印だけ付けて説明しないと、何の印か分からないまま金額だけが信じられる
+    var 下限未満 = F.channels.filter(function (c) { return row(c.key, v).below; });
+    document.getElementById("belowmin").innerHTML = 下限未満.length
+      ? "※ この条件（" + yen(v.price) + "・ひと月" + v.sales + "点）では、" +
+        下限未満.map(function (c) {
+          return "<strong>" + c.name + "は月の入金見込みが " + yen(F.PAYOUT_MIN[c.key]) + " に届きません</strong>";
+        }).join("、") +
+        "。届かない月は次の月へ繰り越されるか、振込の申請ができません。<strong>売れた月と、お金が実際に入る月がずれます。</strong>上の表の金額は、振込が行われた場合のものです。"
+      : "";
+    document.getElementById("assump").innerHTML =
+      "前提: 振込は月1回・ひと月に" + v.sales + "点を販売。" +
+      (v.mode === "sep"
+        ? "送料別のため、購入者が払う合計は " + yen(v.price) + " ＋ 送料 " + yen(v.ship) + " ＝ <strong>" + yen(v.price + v.ship) + "</strong> で、この合計に販売手数料がかかります。"
+        : "送料込みのため、購入者が払う合計は <strong>" + yen(v.price) + "</strong> で、この合計に販売手数料がかかります。") +
+      "<strong>どの販路が有利かは販売点数・振込回数・振込先の銀行で変わるため、この表は順位づけではありません。</strong>";
+  }
+
+  function renderLadder(v) {
+    var head = document.querySelector("#ladder thead tr");
+    head.innerHTML = "<th>販売価格</th>" + F.channels.map(function (c) {
+      return "<th>" + c.name + "</th>";
+    }).join("");
+    var tb = document.querySelector("#ladder tbody");
+    tb.innerHTML = LADDER.map(function (p) {
+      var cells = F.channels.map(function (c) {
+        var r = row(c.key, { price: p, material: v.material, ship: v.ship, sales: v.sales, mode: v.mode });
+        if (r.payout === null) { return "<td class='unverified'>比較対象外</td>"; }
+        return "<td><span class='minus'>-" + yen(r.fee + r.payout) + "</span><br>" +
+               "<span class='net'>" + yen(r.deposit) + "</span></td>";
+      }).join("");
+      return "<tr><td>" + yen(p) + "</td>" + cells + "</tr>";
+    }).join("");
+  }
+
+  /* 計算式・出典は META から描画する。ページ本文に数字や日付を直書きしない（原則6/18b・原則7b） */
+  function renderStatic() {
+    var m = F.META.channels;
+    document.querySelector("#formula tbody").innerHTML = F.channels.map(function (c) {
+      var d = m[c.key];
+      return "<tr><td>" + d.name + "</td><td>" + d.rateText + "</td>" +
+             "<td class='unverified' style='text-align:right'>" + d.taxBaseText + "</td>" +
+             "<td>" + d.roundText + "</td><td>" + d.payoutText + "</td></tr>";
+    }).join("");
+
+    var 未確認 = F.channels.filter(function (c) { return m[c.key].taxBaseConf !== "primary"; })
+                            .map(function (c) { return m[c.key].name; });
+    document.getElementById("basenote").innerHTML =
+      "端数の丸め方は公式に明記がある販路はそれに従い、明記が無い販路は<strong>切り上げ（手数料を多めに見る側）</strong>で計算しています。分からないときに作家へ都合よく倒すと、実際より手取りを多く見せることになるためです。" +
+      (未確認.length
+        ? "<br>また " + 未確認.join("・") + " は、手数料がかかる範囲(基数)に送料が入るかどうかの明記を公式ヘルプ内で確認できていません。<strong>送料を含む前提＝手数料が多くなる側</strong>で計算しています。"
+        : "");
+
+    document.getElementById("sources").innerHTML = F.channels.map(function (c) {
+      var d = m[c.key];
+      return "<dt>" + d.name + "</dt>" +
+             "<dd>販売手数料 " + d.rateText + "（最終確認 " + d.asof + "） 出典: " + d.rateSrc + "</dd>" +
+             "<dd>振込にかかる費用 " + d.payoutText + " 出典: " + d.payoutSrc + "</dd>" +
+             (d.payoutNote ? "<dd>" + d.payoutNote + "</dd>" : "");
+    }).join("");
+
+    var asof = F.channels.map(function (c) { return m[c.key].asof; })
+                          .sort()[0];
+    document.getElementById("asof").textContent =
+      "販売手数料の最終確認日: " + asof + "（4販路とも各社の公式ヘルプ・公式告知で確認）／ 料率データの版: " + F.META.data_version;
+  }
+
+  function calc() {
+    var v = inputs();
+    renderMain(v);
+    renderLadder(v);
+  }
+  renderStatic();
+  document.querySelectorAll("input, select").forEach(function (i) {
+    i.addEventListener("input", calc);
+    i.addEventListener("change", calc); // selectはinputを出さない端末がある
+  });
+  calc();
+})();
+</script>
+
+<!-- Cloudflare Web Analytics(アクセス数計測・クッキーレス)
+     社内アクセスの除外は index.html と同じ仕組み。「?noanalytics=1」で以後この端末は計測しない。 -->
+<script>
+(function () {
+  var KEY = "meipla_noanalytics";
+  var q = new URLSearchParams(location.search).get("noanalytics");
+  function setFlag(on) {
+    try {
+      if (on) { localStorage.setItem(KEY, "1"); } else { localStorage.removeItem(KEY); }
+    } catch (e) {}
+    document.cookie = KEY + "=" + (on ? "1" : "") + ";path=/;max-age=" + (on ? 63072000 : 0) + ";SameSite=Lax";
+  }
+  function hasFlag() {
+    try { if (localStorage.getItem(KEY) === "1") { return true; } } catch (e) {}
+    return document.cookie.indexOf(KEY + "=1") !== -1;
+  }
+  if (q === "1" || q === "0") {
+    setFlag(q === "1");
+    try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
+  }
+  if (hasFlag()) { return; }
+  var s = document.createElement("script");
+  s.defer = true;
+  s.src = "https://static.cloudflareinsights.com/beacon.min.js";
+  s.setAttribute("data-cf-beacon", '{"token": "c562137589a5429b8c1b2c456441f9ca"}');
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
