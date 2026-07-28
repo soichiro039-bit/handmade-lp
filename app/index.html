@@ -886,7 +886,7 @@ function renderHome(){
       const hrTxt = hr===null ? "価格未設定" : "時給 "+yen(hr);
       return `<div class="list-item">
         <div><div class="name">${esc(w.name)}</div>
-          <div class="meta">原価 ${yen(directCost(w))} ／ ${w.min}分</div></div>
+          <div class="meta">原価 ${yen(directCost(w) + laborCost(w))}（材料・送料 ${yen(directCost(w))}＋人件費 ${yen(laborCost(w))}）／ ${w.min}分</div></div>
         <div class="val"><span class="${cls}">${hrTxt}</span>
           <div class="meta">${w.price?yen(+w.price):"—"}</div>
           <button class="dup" aria-label="${esc(w.name)}をもとに新しく作る" onclick="dupWork(${w.id})">複製</button></div>
