@@ -48,6 +48,13 @@
   .net { font-weight: bold; color: var(--ok); }
   .minus { color: #b0533f; }
   .thsub { font-size: .72rem; }
+  /* 【2026-07-28 デザイン部】比較表のセルの中に料率を出すための行。
+     td は nowrap（「1,587」と「円」が割れるのを防ぐため）だが、この行だけは
+     normal に戻す。BASEの「6.6% ＋ 40円」を1行に伸ばすと、320pxで
+     一番大事な「手元に残る額」の列を押し出してしまう（原則27g）。
+     折り返しは許して、幅は増やさない。 */
+  .ratesub { display: block; font-size: .7rem; color: var(--muted); font-weight: normal;
+             white-space: normal; margin-top: 2px; }
   .unverified { color: var(--muted); font-size: .78rem; text-align: right; white-space: normal; }
   .flag { color: #b0533f; font-weight: bold; }
   .note { font-size: .78rem; color: var(--muted); margin-top: 14px; }
@@ -83,7 +90,16 @@
 
 <header>
   <h1>minne・Creema・BASE・メルカリShopsの<br>手数料・手取り比較計算</h1>
-  <p class="sub">同じ販売価格・同じ送料・同じ原価で、4つの販路の手取りをならべて計算します。<strong>販売手数料だけでなく、振込にかかる費用まで</strong>含めた金額です。</p>
+  <!-- 【2026-07-28 デザイン部・企画部R53(R49解除)】「同じ入力を1回入れるだけで4販路の手取りが
+       料率と手数料がかかる範囲つきで同時に出る」を書いてよい、と企画部が実ファイル実測の上で解除した。
+       ただし企画部R58の補足に従い『いつでも最新』『常に最新』へは言い換えない（更新が止まったことを
+       実装が検知できないため、止まった瞬間に嘘になる）。
+       さらに一歩固くする: 「今日時点」という語も静的に書くと同じ壊れ方をするので、**日付そのものを
+       META から描画する**（下の #heroasof）。データが古くなれば、その古い日付が画面に出る。 -->
+  <!-- 【短く保つこと】ここを1文増やしたら、比較表が49px下がった（実測）。
+       このページは「答えが何画面目に出るか」で価値が決まる。前文を足したくなったら、
+       代わりに表の中で言えないかを先に考える。 -->
+  <p class="sub">同じ販売価格・送料・原価を<strong>1回入れるだけ</strong>で、4販路の手取りが<strong>料率つき</strong>で同時に出ます。<strong>振込にかかる費用まで</strong>含めた金額です。<span id="heroasof"></span></p>
 </header>
 
 <div class="wrap">
@@ -124,7 +140,7 @@
 
     <div class="tw">
       <table id="result">
-        <thead><tr><th>販路</th><th>販売<br>手数料</th><th>振込費用<br><span class="thsub">1点あたり</span></th><th>手元に<br>残る額</th></tr></thead>
+        <thead><tr><th>販路</th><th>販売<br>手数料<br><span class="thsub">下段は料率</span></th><th>振込費用<br><span class="thsub">1点あたり</span></th><th>手元に<br>残る額</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -253,6 +269,16 @@
     };
   }
 
+  /* 【2026-07-28 デザイン部・実測で自検出】料率(%)は、このページの中で
+     「他の誰も正しくやっていない」唯一の差別化（情報調査部 #84: 料率を出さない競合が2本、
+     出す5本は全て誤りを持つ）。ところが実測すると、料率が画面に初めて現れるのは
+     **スクロール37〜38%地点・2.6〜4.7画面目**で、しかも本命の表ではなくBASEの決済方法の注記だった。
+     答え（比較表）は1画面目にあるのに、そこに料率が1つも無い。
+     **持っているのに、渡していなかった。** 金額の真下に率を置く。 */
+  function rateSub(key) {
+    return "<span class='ratesub'>" + F.META.channels[key].rateText + "</span>";
+  }
+
   function renderMain(v) {
     var tb = document.querySelector("#result tbody");
     tb.innerHTML = "";
@@ -260,13 +286,13 @@
       var r = row(c.key, v);
       if (r.payout === null) {
         tb.insertAdjacentHTML("beforeend",
-          "<tr><td>" + c.name + "</td><td class='minus'>-" + yen(r.fee) + "</td>" +
+          "<tr><td>" + c.name + "</td><td class='minus'>-" + yen(r.fee) + rateSub(c.key) + "</td>" +
           "<td colspan='2' class='unverified'>振込にかかる費用が未確認のため比較対象外(調査中)</td></tr>");
         return;
       }
       tb.insertAdjacentHTML("beforeend",
         "<tr><td>" + c.name + (r.below ? " <span class='flag'>※</span>" : "") + "</td>" +
-        "<td class='minus'>-" + yen(r.fee) + "</td>" +
+        "<td class='minus'>-" + yen(r.fee) + rateSub(c.key) + "</td>" +
         "<td class='minus'>-" + yen(r.payout) + "</td>" +
         "<td class='net'>" + yen(r.net) + (r.below ? " <span class='flag'>※</span>" : "") + "</td></tr>");
     });
@@ -333,6 +359,12 @@
 
     var asof = F.channels.map(function (c) { return m[c.key].asof; })
                           .sort()[0];
+    /* 冒頭にも確認日を出す。差別化の中身は「率を出していること」ではなく
+       「**その率がいつの値か言えること**」で、競合7本はどちらも満たしていない。
+       日付は必ず META から描く——静的に書くと、データが止まっても文言だけが新しいままになる
+       （企画部R58が『いつでも最新』を禁じたのと同じ壊れ方）。 */
+    document.getElementById("heroasof").textContent =
+      "料率は各社公式ヘルプの " + asof + " 時点の値です。";
     document.getElementById("asof").textContent =
       "販売手数料の最終確認日: " + asof + "（率と振込にかかる費用は4販路とも各社の公式ヘルプ・公式告知で確認）／ 料率データの版: " + F.META.data_version;
   }

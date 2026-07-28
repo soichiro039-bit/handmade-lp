@@ -450,7 +450,7 @@
   <div class="card">
     <h2>手数料率について</h2>
     <table><thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用</th></tr></thead><tbody id="feeTable"></tbody></table>
-    <div class="note">販売手数料は2026年7月23日時点、振込にかかる費用は2026年7月25日時点の各社公式告知等に基づく概算です。手数料は改定される場合があります。最新は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。<br>
+    <div class="note"><span id="feeAsofNote"></span>手数料は改定される場合があります。最新は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。<br>
     <!-- 【2026-07-27 開発部】※印の出典が弱い旨を述べた一文を削除した（原則20）。
          PAYOUTの4販路は現在すべて conf:"primary"/"unverified" で secondary が1つも無く、
          ※は1つも描画されない。実在しない印について出典が弱いと説明し続けており、
@@ -582,6 +582,21 @@ const CHANNELS = [
   { key:"mercari", name:"メルカリShops", fee: t => t*0.10 }
 ];
 const FEE_LABEL = { minne:"10.659%", creema:"10.67%", base:"6.6% + 40円", mercari:"10%" };
+
+/* 【2026-07-28 デザイン部】確認日は正本(fee_master v0 の channels[].rate_asof)から取った値を持ち、
+   利用者へ見せる文は必ず rateAsofPhrase() から作る。CHANNELS配列とは別に持つ——CHANNELSは
+   LPのchannels配列と1円もずれてはならず(原則6)、そこへ日付を混ぜると照合が壊れるため。
+
+   なぜ要るか: 直書きしていた2か所が同じ古い日付のままで、正本(r47)と4日ずれていた。
+   金額を突き合わせる検査はすべて通っていた——**数字は正しく、説明だけが誤っていた**ため。 */
+const RATE_ASOF = { minne:"2026-07-27", creema:"2026-07-27", base:"2026-07-27", mercari:"2026-07-27" };
+function rateAsofPhrase(){
+  const a = CHANNELS.map(c=>RATE_ASOF[c.key]).filter(Boolean).sort();
+  if(!a.length) return "確認日未設定";
+  const w = s => s.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_,y,m,d)=>`${y}年${+m}月${+d}日`);
+  return a[0]===a[a.length-1] ? `${w(a[0])}時点`
+    : `${w(a[0])}〜${w(a[a.length-1])}時点（販路ごとに確認日が異なります）`;
+}
 
 /* ===== 手数料の基数と端数処理(原則21) =====
    4販路とも「注文の合計金額(送料ふくむ)」に率を掛ける。したがって送料別(購入者が送料を
@@ -1201,7 +1216,7 @@ function renderPrice(){
         }).join("")}</tbody>
       </table>
       <div class="note"><b>どの販路でも手元に同じだけ残るように価格を逆算しています</b>ので、違いは「必要な価格」に出ます。<b>販売手数料だけでなく振込にかかる費用も含めています。</b>販売手数料だけで比べると結果が変わります——たとえばBASEは販売手数料の率が低い一方、振込1回ごとに250円、振込額が2万円未満だとさらに500円かかります。<br>
-      前提: 振込は月1回・ひと月に${Math.max(1,+db.cfg.sales||1)}点販売（設定で変更できます）。同じだけ手元に残すために必要な価格は、販路によって変わります。手数料は2026年7月23日時点の各社公式告知に基づく概算で、実際の受取額を保証するものではありません。どの販路が有利かは販売点数・振込回数・振込先の銀行で変わるため、この表は順位づけではありません。</div>
+      前提: 振込は月1回・ひと月に${Math.max(1,+db.cfg.sales||1)}点販売（設定で変更できます）。同じだけ手元に残すために必要な価格は、販路によって変わります。手数料は${rateAsofPhrase()}の各社公式告知に基づく概算で、実際の受取額を保証するものではありません。どの販路が有利かは販売点数・振込回数・振込先の銀行で変わるため、この表は順位づけではありません。</div>
     </div>
     ${payCard}`;
 }
@@ -1219,6 +1234,8 @@ function renderSet(){
     const mark = p.conf==="secondary" ? "※" : "";
     return `<tr><td>${c.name}</td><td>${FEE_LABEL[c.key]}</td><td>${p.label||"未確認"}${mark}</td></tr>`;
   }).join("");
+  const _fa = document.getElementById("feeAsofNote");
+  if (_fa) _fa.textContent = `販売手数料は${rateAsofPhrase()}の各社公式告知等に基づく概算です。`;
 }
 function saveCfg(){
   db.cfg.wage = +cfgWage.value||0; db.cfg.margin = +cfgMargin.value||0; db.cfg.ch = cfgCh.value;

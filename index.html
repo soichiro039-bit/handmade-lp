@@ -133,7 +133,7 @@
          入力欄は増やさない——出品者は購入者の決済方法を事前に選べないため（正本 display_policy）。
          出典: help.thebase.in 記事5701758066585（2026年7月27日 情報調査部が一次取得）。 -->
     <strong>BASEの手数料は購入者が選ぶ決済方法で変わります。</strong>Amazon Pay・PayPal・PayPay の場合は7.6%+40円(それ以外は6.6%+40円)。出品者は事前に選べないため、この表では低い側の6.6%+40円で計算しています。<br>
-    出典: 販売手数料は各公式告知ページ(2026年7月23日時点)、振込にかかる費用は各公式ヘルプ等(2026年7月25日時点)の概算。いずれも各社の公式ヘルプ・公式告知で確認した値です。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。</p>
+    出典: 販売手数料は各公式告知ページ(<span id="lpRateAsof"></span>)、振込にかかる費用は各公式ヘルプ等の概算。いずれも各社の公式ヘルプ・公式告知で確認した値です。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。</p>
   </div>
 
   <div class="card pain">
@@ -328,6 +328,20 @@
   document.getElementById("ch").addEventListener("change", calc);
   // select は端末によって input イベントを出さないことがあるため change でも拾う
   document.getElementById("shipMode").addEventListener("change", calc);
+
+  /* 【2026-07-28 デザイン部】確認日は直書きしていたが、正本(fee_master r47)と4日ずれていた。
+     金額を突き合わせる検査はすべて通っていた——数字は正しく、説明だけが誤っていたため。
+     channels 配列とは別に持つ（原則6の照合が channels を正規表現で抜くため、日付を混ぜない）。 */
+  const RATE_ASOF = { minne:"2026-07-27", creema:"2026-07-27", base:"2026-07-27", mercari:"2026-07-27" };
+  (function(){
+    const a = channels.map(c=>RATE_ASOF[c.key]).filter(Boolean).sort();
+    const w = s => s.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_,y,m,d)=>`${y}年${+m}月${+d}日`);
+    const el = document.getElementById("lpRateAsof");
+    if (el) el.textContent = !a.length ? "確認日未設定"
+      : (a[0]===a[a.length-1] ? `${w(a[0])}時点`
+                              : `${w(a[0])}〜${w(a[a.length-1])}時点`);
+  })();
+
   calc();
 </script>
 <!-- Cloudflare Web Analytics(アクセス数計測・クッキーレス) -->
