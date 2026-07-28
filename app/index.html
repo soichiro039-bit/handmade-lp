@@ -665,7 +665,10 @@ const PAYOUT_TIMING = {
     minYen:752, expiryText:"計上日から180日で失効します",
     fastText:"" },
   mercari: {
-    control:"auto", controlText:"要りません（自動で振り込まれます）",
+    // 2026-07-28 開発部: "auto" だったが正本(fee_master mercari_shops)は "none"。
+    // autoは「申請しなくても入る」(minne)、noneは「申請したくてもできない」(Shops)で意味が違う。
+    // R43が3値目を設けた理由そのものを、画面側が2値へ潰していた。原則26で機械が突合する。
+    control:"none", controlText:"できません（申請という手続きがなく、自動で振り込まれます）",
     leadText:"未確認", leadNote:"振込までの日数は公式ヘルプに明記が見つかっていません",
     cycleText:"月1回または月2回から選べます（申請という手続きはありません）",
     minText:"販売利益が5,000円未満の月は、次回へ繰り越されます",
