@@ -42,10 +42,37 @@
 <script>
 (function () {
   var KEY = "meipla_noanalytics";
+
+  // 【2026-07-29 開発部・情報調査部11時台A-2の②】このページは既に立っている旗しか見ておらず、
+  // ?noanalytics=1 を読んでいなかった。上の開示文は「URLの末尾に ?noanalytics=1 を付けて
+  // 一度開いてください」と案内しているので、**案内どおりに操作しても止まらない**状態だった。
+  // 掲示している停止方法が効かないのは、計測していること自体より重い（原則29c/29dと同じ性質）。
+  // 判定は /app/ と同じ形に揃える（旗の持ち方が2枚でずれると、片方で止めても片方が送る）。
+  var q = new URLSearchParams(location.search).get("noanalytics");
+
+  function setFlag(on) {
+    try {
+      if (on) { localStorage.setItem(KEY, "1"); } else { localStorage.removeItem(KEY); }
+    } catch (e) { /* プライベートモード等でlocalStorageが使えなくてもCookie側で成立させる */ }
+    // Instagram等のアプリ内ブラウザはlocalStorageが消えることがあるためCookieにも二重で持つ
+    document.cookie = KEY + "=" + (on ? "1" : "") + ";path=/;max-age=" + (on ? 63072000 : 0) + ";SameSite=Lax";
+  }
+
   function hasFlag() {
     try { if (localStorage.getItem(KEY) === "1") { return true; } } catch (e) {}
     return document.cookie.indexOf(KEY + "=1") !== -1;
   }
+
+  if (q === "1" || q === "0") {
+    setFlag(q === "1");
+    // noanalytics=1 付きURLがそのまま共有されると、踏んだ一般の閲覧者まで計測から外れて
+    // 数字が過少になるため、アドレスバーからクエリを消す（/app/ と同じ理由・統括X指摘）
+    try {
+      history.replaceState(null, "", location.pathname + location.hash);
+    } catch (e) { /* file:// 等でreplaceStateが使えない環境では何もしない */ }
+  }
+
+  window.MEIPLA_NOANALYTICS = hasFlag();
   if (hasFlag()) { return; }
   var s = document.createElement("script");
   s.defer = true;
