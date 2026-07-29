@@ -401,9 +401,9 @@
     </select>
     <div class="note">どの販路でも、販売手数料は「購入者が払った合計（送料をふくむ）」にかかります。送料別で出品していると、送料の分にも手数料がかかります。分からなければ送料込みのままで大丈夫です。</div>
     <div id="wShipCostRow" hidden>
-      <label for="wShipCost">そのうち、運送会社へ実際に払う額(円)</label>
+      <label for="wShipCost">そのうち、あなたが実際に払う額(円)</label>
       <input type="number" id="wShipCost" min="0" placeholder="空欄なら上と同じ">
-      <div class="note">箱代を上乗せして送料を設定している場合だけ入れてください。たとえば宅急便コンパクトの実費が500円で、箱代をふくめて600円を請求しているなら、上に600、ここに500と入れます。空欄なら「請求した額をそのまま払っている」として計算します。</div>
+      <div class="note">送料に箱代を上乗せして請求している場合だけ入れてください。<b>箱や梱包材の代金も、あなたが払う額にふくめます。</b>たとえば運送会社へ払う送料が500円、箱代が70円なら、あなたが実際に払うのは570円です。600円を請求しているなら、上に600、ここに570と入れます。空欄なら「請求した額をそのまま払っている」として計算します。</div>
     </div>
     <div class="note" id="wAgain"></div>
     <label for="wPrice">今つけている価格(円) ※まだ決めていなければ空欄でOK</label>
@@ -726,12 +726,16 @@ function renderRateStale(now){
 const FEE_ROUND = { minne:Math.floor, creema:Math.ceil, base:Math.round, mercari:Math.floor };
 /** 購入者が作品価格とは別に払う送料。送料込みなら0(価格に含まれており二重に足さない) */
 function shipOnTop(w){ return (w && w.shipMode === "sep") ? (+w.ship||0) : 0; }
-/** 作家が実際に運送会社へ払う額(原則34)。
+/** 作家が発送のために実際に払う額(送料＋箱・梱包材。原則34/36)。
     送料別のとき「購入者へ請求する送料」と「作家の実費」は別物である——
     BASE公式が「かんたん発送の宅急便コンパクトが500円でも、箱代をふくめた600円などを
     送料に設定してもかまわない」と明記している(help.thebase.in 6926377397657)。
     是正前は w.ship 1つを請求額と実費の両方に使っており、600円と設定した作家の原価が
     600円で計上されていた。実費は500円なので、**手取りが100円ぶん低く出ていた**。
+    【2026-07-29 原則36】その是正の文言が「そのうち、運送会社へ実際に払う額」だったため、
+    今度は**箱代が原価から丸ごと落ちていた**。送料込みでは同じ欄が「梱包・発送」＝箱代こみ
+    なので、同じアプリが送料の扱いによって箱代を数えたり数えなかったりしていた。
+    数えない側は手取りを多く見せる向きの誤りなので、**箱・梱包材をふくめる側へ統一**した。
     shipCost は省略可(空欄＝請求額と同じ)。送料込みのときは請求という概念が無いので
     w.ship がそのまま実費であり、shipCost は使わない。 */
 function shipActual(w){
@@ -1132,7 +1136,7 @@ function renderWorkForm(){
 /** 制作時間と梱包・発送は作品ごとにほとんど変わらない。
     前回保存した作品の値を最初から入れておき、違うときだけ直してもらう。
     画面に固定値を書かず、必ず保存済みデータから出す(サンプルを変えても文言が古くならない) */
-/** 「運送会社へ実際に払う額」は送料別のときだけ意味を持つ(原則34)。
+/** 「あなたが実際に払う額」は送料別のときだけ意味を持つ(原則34/36)。
     送料込みでは請求という概念が無く、上の欄がそのまま実費なので出さない。
     あわせて上の欄の見出しも切り替える——同じ欄が、送料別では「購入者へ請求する額」に変わるため。 */
 function syncShipCostRow(){
@@ -1390,7 +1394,7 @@ function renderPrice(){
       </div>
       <table><tbody>
         <tr><td>材料費</td><td>${yen(materialCost(w))}</td></tr>
-        <tr><td>梱包・発送${shipActual(w) !== (+w.ship||0) ? "（運送会社へ払う実費）" : ""}</td><td>${yen(shipActual(w))}</td></tr>
+        <tr><td>梱包・発送${shipActual(w) !== (+w.ship||0) ? "（あなたが実際に払う額）" : ""}</td><td>${yen(shipActual(w))}</td></tr>
         ${shipActual(w) !== (+w.ship||0) ? `<tr><td>購入者へ請求する送料（実費との差 ${yen((+w.ship||0)-shipActual(w))}。この差にも手数料がかかります）</td><td>${yen(+w.ship||0)}</td></tr>` : ""}
         ${shipOnTop(w) ? `<tr><td>送料別のため、手数料は「価格＋送料」にかかります</td><td>基数 ${yen(recP + shipOnTop(w))}</td></tr>` : ""}
         <tr><td>あなたの手間(${w.min}分 × 時給${yen(db.cfg.wage)})</td><td>${yen(laborCost(w))}</td></tr>
@@ -1498,7 +1502,7 @@ function obStart(){
     <div class="ob-row"><span class="l">売れた価格</span><span class="v">${yen(price)}</span></div>
     <div class="ob-row"><span class="l">${chName}の手数料</span><span class="v">− ${yen(a.fee)}</span></div>
     <div class="ob-row"><span class="l">材料費</span><span class="v">− ${yen(materialCost(w))}</span></div>
-    <div class="ob-row"><span class="l">梱包・発送${shipActual(w) !== (+w.ship||0) ? "（運送会社へ払う実費）" : ""}</span><span class="v">− ${yen(shipActual(w))}</span></div>
+    <div class="ob-row"><span class="l">梱包・発送${shipActual(w) !== (+w.ship||0) ? "（あなたが実際に払う額）" : ""}</span><span class="v">− ${yen(shipActual(w))}</span></div>
     ${a.payoutKnown
       ? `<div class="ob-row"><span class="l">振込にかかる費用(1点あたり)</span><span class="v">− ${yen(a.payout)}</span></div>`
       : `<div class="ob-row"><span class="l">振込にかかる費用</span><span class="v">未確認のため含めていません</span></div>`}
