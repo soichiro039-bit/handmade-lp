@@ -60,6 +60,12 @@
   .srclink { display: inline-flex; align-items: center; min-height: 44px; margin-top: 10px;
              font-size: .88rem; line-height: 1.6; color: var(--main); text-decoration: underline;
              text-underline-offset: 3px; }
+  /* 料率の鮮度切れを知らせる帯（原則28・型D／2026-07-29 開発部がLPへ移植）。
+     公開版アプリ・比較ページ・プロトタイプと同じ見た目にする——同じ状態を4つの見え方で出さない */
+  .rate-stale { background:#fff7ed; border-left:5px solid #d98324; color:var(--text);
+                padding:12px 13px; border-radius:9px; margin-bottom:12px; line-height:1.6; font-size:.88rem; }
+  .rate-stale .rs-body { color:var(--muted); font-size:.83rem; margin-top:5px; }
+  .rate-stale .rs-when { display:block; margin-top:4px; font-size:.78rem; }
   @media (max-width: 400px) {
     table { font-size: .82rem; }
     th, td { padding: 7px 3px; }
@@ -123,6 +129,11 @@
       </label>
     </div>
     <p class="note" style="margin-top:6px">※振込にかかる費用を1点あたりに割り振るために使います</p>
+
+    <!-- 料率が古くなったことを知らせる帯（原則28・型D）。閾値の内側では空のまま出ない。
+         表のすぐ上に置く——古いのは表の中の金額であり、金額を読む前に目に入る位置でなければ
+         「見たあとで注意書きに気づく」ことになる。 -->
+    <div id="rateStale" aria-live="polite"></div>
 
     <table id="result">
       <thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用<br><span class="thsub">1点あたり</span></th><th>手取り</th></tr></thead>
@@ -359,15 +370,100 @@
      金額を突き合わせる検査はすべて通っていた——数字は正しく、説明だけが誤っていたため。
      channels 配列とは別に持つ（原則6の照合が channels を正規表現で抜くため、日付を混ぜない）。 */
   const RATE_ASOF = { minne:"2026-07-27", creema:"2026-07-27", base:"2026-07-27", mercari:"2026-07-27" };
-  (function(){
-    const a = channels.map(c=>RATE_ASOF[c.key]).filter(Boolean).sort();
-    const w = s => s.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_,y,m,d)=>`${y}年${+m}月${+d}日`);
-    const el = document.getElementById("lpRateAsof");
-    if (el) el.textContent = !a.length ? "確認日未設定"
-      : (a[0]===a[a.length-1] ? `${w(a[0])}時点`
-                              : `${w(a[0])}〜${w(a[a.length-1])}時点`);
-  })();
 
+  /* 【2026-07-29 開発部】確認日には意味の違う2つがあり、混ぜてはならない（公開版アプリと同じ）。
+       RATE_ASOF  = その料率の値を最後に取得・改定した日 → 上の脚注「◯月◯日時点」だけに使う
+       CHECKED_AT = 変更が無かったことを含めて最後に確認できた日 → 下の帯（型D）の起算日だけに使う
+     rate_asof を帯の起算にすると、改定が無い限り値が動かないので**監視が止まっても帯が出ず、
+     逆に監視が健全でも閾値を過ぎた瞬間に4販路同時で出て二度と消えない**（正常を異常として鳴らす）。
+     どちらも正本 fee_master_v0.json 由来で、料率マスタ/sync_rates_to_public.py が機械で配る。
+     手で書き換えないこと——手で直す運用は必ず忘れられ、画面だけが古い日付で凍る。 */
+  const CHECKED_AT = { minne:"2026-07-29", creema:"2026-07-29", base:"2026-07-29", mercari:"2026-07-29" };
+
+  function renderRateAsofNote(){
+    /* 【2026-07-29 開発部・実値を条件別に読んで自検出】以前は filter(Boolean) で
+       読めない販路を捨てていた。捨てると、日付が壊れた販路だけが脚注から消えて
+       **残りの日付だけで「◯月◯日時点」と言い切る**ことになる（比較ページの脚注で踏んだのと同じ穴）。
+       読めない販路が1つでもあれば、その名前を明記する。 */
+    const w = s => String(s).replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_,y,m,d)=>`${y}年${+m}月${+d}日`);
+    const 読める = [], 読めない = [];
+    channels.forEach(c => {
+      const v = RATE_ASOF[c.key];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(v || ""))) 読める.push(v); else 読めない.push(c.name);
+    });
+    読める.sort();
+    const 但し = 読めない.length ? `（ただし ${読めない.join("・")} は値の時点が記録されていません）` : "";
+    const el = document.getElementById("lpRateAsof");
+    if (el) el.textContent = !読める.length ? "値の時点が記録されていません"
+      : (読める[0]===読める[読める.length-1] ? `${w(読める[0])}時点${但し}`
+                                            : `${w(読める[0])}〜${w(読める[読める.length-1])}時点${但し}`);
+  }
+  renderRateAsofNote();
+
+  /* ===== 料率が古くなったことを知らせる（原則28・型D／2026-07-29 開発部がLPへ移植） =====
+     統括15:07の判定「帯は3本そろえる」に対し、実測ではLPだけが CHECKED_AT すら持っていなかった。
+     このLPも公開版アプリと同じ計算で4販路の手取りを出し、脚注で「◯月◯日時点」と名乗る。
+     料率の更新が止まれば、その名乗りは静かに嘘へ変わるのに画面は何も変わらない——
+     **正常に静かなのか、壊れて静かなのかが区別できない**。危険は app とまったく同じ。 */
+  const RATE_STALE_DAYS = 7;   // app/index.html・比較ページの同名定数と同じ値。ずれは invariants_check が突き合わせる
+  const escT = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  /** 確認日から今日までの日数。UTCの日単位で引く（時刻・タイムゾーンで1日ずれるのを避ける）。
+      読めない値は null を返し「0日」に丸めない——読めないことを新しさとして扱ってはならない。 */
+  function daysSinceChecked(checked, now){
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(checked || ""));
+    if (!m) return null;
+    return Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+                       - Date.UTC(+m[1], +m[2]-1, +m[3])) / 86400000);
+  }
+  /** 閾値を超えた販路だけを返す。読めない販路は落とさず出す——除外すると、日付が壊れた販路だけが
+      帯から消えて**最も新鮮に見える**。now を引数に取るのは、検査が任意の日付で実物を描かせて
+      測れるようにするため（原則23）。 */
+  function rateStaleList(now){
+    const t = now || new Date();
+    return channels.map(c => ({ name:c.name, checked:CHECKED_AT[c.key],
+                                days:daysSinceChecked(CHECKED_AT[c.key], t) }))
+                   .filter(x => x.days === null || x.days >= RATE_STALE_DAYS);
+  }
+  function renderRateStale(now){
+    const box = document.getElementById("rateStale");
+    if (!box) return;
+    /* 呼ばれた事実そのものを印として残す。閾値の内側では帯が空になるため、
+       「呼ばれて空」と「一度も呼ばれていない」は中身を見ても区別できない（配線が検査の外へ出る）。 */
+    box.setAttribute("data-rendered", "1");
+    const st = rateStaleList(now);
+    if (!st.length) { box.innerHTML = ""; return; }
+    const nm = arr => arr.map(x => escT(x.name)).join("・");
+    const aged   = st.filter(x => x.days !== null);   // 確認日は読めて、そこから閾値を過ぎた販路
+    const unread = st.filter(x => x.days === null);   // 確認日そのものが読み取れない販路
+    const w = s => String(s).replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_,y,m,d)=>`${y}年${+m}月${+d}日`);
+    /* 【方向は書かない】持っているのは「最後に確認できた日」だけで、改定が起きたかどうかも知らない。
+       【主語を総称にしない】古いのが1販路でも「各社が」と書くと、まだ新しい残りまで古く見せる。
+       【状態を混ぜない】①日数が経った ②確認日が読み取れない、は意味が違う。1文にまとめると
+       ②の販路について「日数が経っています」と、持っていない情報を断言することになる。 */
+    const head = [
+      aged.length   ? `${nm(aged)}の手数料は、最後に確認できた日から日数が経っています。` : "",
+      unread.length ? `${nm(unread)}の手数料は、いつ確認した値なのかこのページでは分かりません。` : ""
+    ].join("");
+    const body = [
+      aged.length   ? `この間に${nm(aged)}が手数料を改定していても、このページはまだ取り込めていません。` : "",
+      unread.length ? `${nm(unread)}は確認した日そのものが記録されていないため、いつの時点の値なのか確かめられません。` : "",
+      `表示している金額は目安としてご覧いただき、値付けを決める前に${nm(st)}の公式サイトで現在の手数料をご確認ください。`
+    ].join("");
+    box.innerHTML = `<div class="rate-stale" role="status"><b>${head}</b>` +
+      `<div class="rs-body">${body}<span class="rs-when">` +
+      st.map(x => x.days === null
+        ? `${escT(x.name)}: 確認日を読み取れません`
+        : `${escT(x.name)}: ${escT(w(x.checked))}に確認（${x.days}日前）`).join("／") +
+      `</span></div></div>`;
+  }
+  // 検査（原則23）が任意の日付・任意の状態で実物を描かせて測れるように外へ出す
+  window.__renderRateStale = renderRateStale;
+  window.__renderRateAsofNote = renderRateAsofNote;   // 脚注も同じ条件で描き直せるようにする
+  window.__rateStaleDays = RATE_STALE_DAYS;
+  window.__lpCheckedAt = CHECKED_AT;
+  window.__lpRateAsof = RATE_ASOF;
+
+  renderRateStale();
   calc();
 </script>
 <!-- Cloudflare Web Analytics(アクセス数計測・クッキーレス) -->
