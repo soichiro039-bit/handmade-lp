@@ -84,6 +84,12 @@
     th, td { padding: 6px 2px; }
     .thsub { font-size: .66rem; }
   }
+  /* 料率の鮮度切れを知らせる帯（原則28・型D／2026-07-29 開発部が比較ページへ移植）。
+     app/index.html・プロトタイプと同じ見た目にする——同じ状態を3つの見え方で出さない */
+  .rate-stale { background:#fff7ed; border-left:5px solid #d98324; color:var(--text);
+                padding:12px 13px; border-radius:9px; margin-bottom:12px; line-height:1.6; font-size:.88rem; }
+  .rate-stale .rs-body { color:var(--muted); font-size:.83rem; margin-top:5px; }
+  .rate-stale .rs-when { display:block; margin-top:4px; font-size:.78rem; }
 </style>
 </head>
 <body>
@@ -103,6 +109,10 @@
 </header>
 
 <div class="wrap">
+
+  <!-- 料率が古くなったことを知らせる帯（原則28・型D）。中身は renderRateStale() が入れる。
+       表より上に置く——古い値で値付けを決めてしまう前に見える必要がある。 -->
+  <div id="rateStale" aria-live="polite"></div>
 
   <!-- 【最上部に動く計算を置く】記事から始めない。
        GPTの指摘: 「記事だけなら優位ではない。比較計算まで動いて初めて候補になる」。
@@ -356,8 +366,14 @@
 
     document.getElementById("sources").innerHTML = F.channels.map(function (c) {
       var d = m[c.key];
+      /* 【2026-07-29 開発部・情報調査部15:29の要対応2】asof を「最終確認」と書いていた。
+         asof は"その率の値を最後に取得・改定した日"であって、"最後に確認した日"ではない。
+         改定が無い限り asof は永久に動かないので、監視が毎日回っていても最終確認日だけが
+         古いまま表示され続ける（＝事実誤認）。最後に確認した日は checked が持っている。
+         2つは意味が違うので、片方を消して置き換えるのではなく両方を別の語で出す。 */
       return "<dt>" + d.name + "</dt>" +
-             "<dd>販売手数料 " + d.rateText + "（最終確認 " + d.asof + "） 出典: " + d.rateSrc + "</dd>" +
+             "<dd>販売手数料 " + d.rateText + "（この率の時点 " + d.asof +
+             " ／ 最終確認 " + (d.checked || "記録なし") + "） 出典: " + d.rateSrc + "</dd>" +
              "<dd>振込にかかる費用 " + d.payoutText + " 出典: " + d.payoutSrc + "</dd>" +
              (d.payoutNote ? "<dd>" + d.payoutNote + "</dd>" : "");
     }).join("");
@@ -370,9 +386,106 @@
        （企画部R58が『いつでも最新』を禁じたのと同じ壊れ方）。 */
     document.getElementById("heroasof").textContent =
       "料率は各社公式ヘルプの " + asof + " 時点の値です。";
+    /* 最終確認日は checked から取る（asof ではない。上の #sources のコメントを参照）。
+       いちばん古い販路を出す——4販路のうち1つでも古ければ、このページの答えは古い。
+       【2026-07-29 開発部・実値を条件別に読んで自検出】確認日が読めない販路を filter で
+       捨てると、その販路が最も新鮮な扱いになり、脚注だけが「最終確認日 ◯◯」と
+       言い切ってしまう（帯は正しく「読み取れません」と出しているのに、脚注が上書きする）。
+       帯で踏んだのと同じ穴が脚注に残っていた。読めない販路が1つでもあれば数を明記する。 */
+    var 読める = [], 読めない = [];
+    F.channels.forEach(function (c) {
+      var v = m[c.key].checked;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(v || ""))) { 読める.push(v); } else { 読めない.push(m[c.key].name); }
+    });
+    読める.sort();
+    var checkedText = 読める.length
+      ? 読める[0] + (読めない.length ? "（ただし " + 読めない.join("・") + " は確認日が記録されていません）" : "")
+      : "記録がありません";
     document.getElementById("asof").textContent =
-      "販売手数料の最終確認日: " + asof + "（率と振込にかかる費用は4販路とも各社の公式ヘルプ・公式告知で確認）／ 料率データの版: " + F.META.data_version;
+      "料率の値の時点: " + asof + " ／ 最終確認日: " + checkedText +
+      "（率と振込にかかる費用は4販路とも各社の公式ヘルプ・公式告知で確認）／ 料率データの版: " + F.META.data_version;
   }
+
+  /* ===== 料率が古くなったことを知らせる（原則28・型D）=====
+     2026-07-29 開発部が app/index.html から移植。統括15:07の判定「帯は3本そろえる」に従う。
+     このページも app と同じ計算で金額を出すので、古い料率で値付けさせる危険はまったく同じ。
+     起算日は checked（＝最後に確認できた日）であって asof ではない。asof は改定が無い限り
+     動かないため、正常に監視できている状態を異常として鳴らす向きの誤りになる。 */
+  var RATE_STALE_DAYS = 7;   // app/index.html の同名定数と同じ値。ずれは invariants_check が突き合わせる
+
+  function escText(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  /** 確認日から今日までの日数。読めない値は null を返し「0日」に丸めない
+      （読めないことを新しさとして扱ってはならない） */
+  function daysSinceChecked(checked, now) {
+    var m2 = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(checked || ""));
+    if (!m2) { return null; }
+    var a = Date.UTC(+m2[1], +m2[2] - 1, +m2[3]);
+    var n = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.floor((n - a) / 86400000);
+  }
+  /** 閾値を超えた販路だけを返す。now を引数に取るのは、検査が任意の日付で実物を描かせて
+      測れるようにするため（原則23）。確認日が読めない販路は落とさず出す——除外すると
+      日付が壊れた販路だけが帯から消えて最も新鮮に見える。 */
+  function rateStaleList(now) {
+    var t = now || new Date();
+    var m3 = F.META.channels;
+    return F.channels.map(function (c) {
+      return { name: m3[c.key].name, checked: m3[c.key].checked,
+               days: daysSinceChecked(m3[c.key].checked, t) };
+    }).filter(function (x) { return x.days === null || x.days >= RATE_STALE_DAYS; });
+  }
+  function renderRateStale(now) {
+    var box = document.getElementById("rateStale");
+    if (!box) { return; }
+    /* 【2026-07-29 開発部・破壊テストで自検出】この関数の呼び出しを丸ごと消しても検査が
+       通ってしまった。検査が window.__renderRateStale() を自分で呼んでいたため、
+       関数は測れていても「ページが読み込み時に呼んでいるか」＝配線を一度も見ていなかった。
+       原則23と同じ型（部品は見ているのに画面を通していない）。
+       閾値の内側では帯が空になり、「呼ばれて空」と「一度も呼ばれていない」が見分けられないので、
+       呼ばれた事実そのものを印として残す。 */
+    box.setAttribute("data-rendered", "1");
+    var st = rateStaleList(now);
+    if (!st.length) { box.innerHTML = ""; return; }
+    var nm = function (arr) { return arr.map(function (x) { return escText(x.name); }).join("・"); };
+    var aged   = st.filter(function (x) { return x.days !== null; });  // 確認日は読めて、閾値を過ぎた販路
+    var unread = st.filter(function (x) { return x.days === null; });  // 確認日そのものが読み取れない販路
+    var w = function (s) {
+      return String(s).replace(/^(\d{4})-(\d{2})-(\d{2})$/, function (_, y, mo, d) {
+        return y + "年" + (+mo) + "月" + (+d) + "日";
+      });
+    };
+    /* 【方向は書かない】持っているのは「最後に確認できた日」だけで、改定が起きたかどうかも
+       分からない。「変わっているかもしれません」までは言えるが「上がった／下がった」は言えない。
+       【主語を総称にしない】古いのが1販路でも「各社が」と書くと残りまで古く見せる。
+       【状態を混ぜない】①日数が経った ②確認日が読み取れない、は意味が違う。1文にまとめると
+       ②の販路について「日数が経っています」と、持っていない情報を断言することになる。 */
+    var head = [
+      aged.length   ? nm(aged) + "の手数料は、最後に確認できた日から日数が経っています。" : "",
+      unread.length ? nm(unread) + "の手数料は、いつ確認した値なのかこのページでは分かりません。" : ""
+    ].join("");
+    var body = [
+      aged.length   ? "この間に" + nm(aged) + "が手数料を改定していても、このページはまだ取り込めていません。" : "",
+      unread.length ? nm(unread) + "は確認した日そのものが記録されていないため、いつの時点の値なのか確かめられません。" : "",
+      "表示している金額は目安としてご覧いただき、値付けを決める前に" + nm(st) + "の公式サイトで現在の手数料をご確認ください。"
+    ].join("");
+    box.innerHTML = "<div class=\"rate-stale\" role=\"status\"><b>" + head + "</b>" +
+      "<div class=\"rs-body\">" + body +
+      "<span class=\"rs-when\">" + st.map(function (x) {
+        return x.days === null
+          ? escText(x.name) + ": 確認日を読み取れません"
+          : escText(x.name) + ": " + escText(w(x.checked)) + "に確認（" + x.days + "日前）";
+      }).join("／") + "</span></div></div>";
+  }
+  /* 検査（原則23）が任意の日付・任意の状態で実物を描かせて測れるように外へ出す。
+     脚注（#asof・#sources）も renderStatic を通してしか作らないので一緒に出す——
+     帯だけ描き直して脚注を古いままにすると、実際には矛盾していても検査は通ってしまう。 */
+  window.__renderRateStale = renderRateStale;
+  window.__renderStatic = renderStatic;
+  window.__rateStaleDays = RATE_STALE_DAYS;
 
   function calc() {
     var v = inputs();
@@ -380,6 +493,7 @@
     renderLadder(v);
   }
   renderStatic();
+  renderRateStale();
   document.querySelectorAll("input, select").forEach(function (i) {
     i.addEventListener("input", calc);
     i.addEventListener("change", calc); // selectはinputを出さない端末がある
