@@ -780,6 +780,55 @@ const SHIP_PRESETS = {
     {label:"宅急便コンパクト（実費の目安）", fee:500, box:"unknown"}
   ]}
 };
+/* ===== 送料プリセットの出典・取得日(原則39／2026-07-29 法務部H-31の是正) =====
+   欠けていたのは値ではなく「いつ・どこから取った値か」の開示だった。
+   料率側には rateAsofPhrase() と鮮度切れの帯が既にあるのに、同じ日に公開した送料には
+   何も無く、注記は「（各社公式）」の5文字だけだった。**誤りの向きが危険側である**——
+   実際の送料が上がったのに古い安い値を出し続けると、原価が小さく出て手取りが多く見える
+   （原則34/36で二度直したのと同じ向き。値の取り違えではなく開示の不在から同じ結果に至る）。
+   【既存の免責を広げず、別に置く理由】このページの免責2本はいずれも主語が「手数料」に
+   限定されている。そこへ送料を混ぜると、手数料について書いた文が送料の話も兼ねることになり、
+   どちらの話なのか読めなくなる。送料の断りは送料の欄のそばへ置く（値が入る場所で言う）。
+   値の正本: 07_開発移行/料率マスタ/送料プリセット一次情報_2026-07-29.md */
+const SHIP_SOURCES = {
+  creema:  { asof:"2026-07-29", name:"Creema公式ヘルプ", url:"https://help.creema.jp/archives/help/12361" },
+  minne:   { asof:"2026-07-29", name:"minne公式ヘルプ",   url:"https://help.minne.com/hc/ja/articles/10547857943443" },
+  mercari: { asof:"2026-07-29", name:"メルカリShops公式ヘルプ", url:"https://support.mercari-shops.com/hc/ja/articles/4406910093593" },
+  base:    { asof:"2026-07-29", name:"BASE公式ヘルプ",    url:"https://help.thebase.in/hc/ja/articles/6926377397657" }
+};
+/** 送料を鮮度切れとみなす日数。【暫定値・根拠つき】
+    料率(RATE_STALE_DAYS=7)と同じ値にしてはならない——料率は1日4回の自動監視があるので
+    7日空けば異常だが、**送料には自動監視が無い**。7日にすると2026-08-05以降ずっと帯が出続け、
+    誤検知が常態化した警告は読まれなくなる（＝沈黙と同じ結末）。
+    90日の根拠: ヤマト運輸・日本郵便とも改定はおおむね年1回で、公式は1〜2か月前に告知する。
+    四半期に一度取り直せば改定の告知に間に合う。**送料の定期再取得が仕組みとして立ったら、
+    その間隔に合わせてこの1行だけを直す**（日数を他所へ写さない＝原則7bの教訓）。 */
+const SHIP_STALE_DAYS = 90;
+/** 販路1つぶんの「◯年◯月◯日時点」。プリセットは販路ごとに別の出典から取っているので、
+    販路をまたいで最古〜最新をまとめる rateAsofPhrase() とは別に、その販路の日付だけを言う */
+function shipAsofPhrase(ch){
+  const s = SHIP_SOURCES[ch];
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s && s.asof || ""));
+  return m ? `${+m[1]}年${+m[2]}月${+m[3]}日時点` : "取得日を記録できていません";
+}
+/** 送料の断り書き1本。出典・取得日・改定しうる旨の3点を必ず同時に出す(法務H-31のD2)。
+    鮮度切れは同じ文の中で足す——別の帯を新設すると、料率の帯と2本並んで
+    どちらが何の話か読めなくなる。now を引数に取るのは検査が任意の日付で測れるようにするため */
+function shipSourceNote(ch, now){
+  const s = SHIP_SOURCES[ch];
+  if(!s) return "この販路の送料は出典を記録できていないため、金額の由来を確かめられません。";
+  const d = daysSinceAsof(s.asof, now || new Date());
+  /* 【知らないことを知っているように書かない】読めない取得日を「0日前」に丸めない(原則28の型D) */
+  const stale = (d === null)
+    ? "　⚠ この送料をいつ確認したのかこのアプリでは分かりません。値付けの前に必ず公式でご確認ください。"
+    : (d >= SHIP_STALE_DAYS
+        ? `　⚠ 確認から${d}日が経っています。この間に改定されていても、このアプリはまだ取り込めていません。`
+        : "");
+  return `送料は${shipAsofPhrase(ch)}の<a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a>の値です。`
+       + `送料は改定される場合があります。最新は各社公式でご確認ください。${stale}`;
+}
+/** 上のHTML版から印を落とした文字列版（textContent へ入れる場所で使う） */
+function shipSourceText(ch, now){ return shipSourceNote(ch, now).replace(/<[^>]+>/g, ""); }
 /** プリセット1件から「作家が実際に払う額」を作る。箱代が判明している分だけ足す(原則37) */
 function presetAmount(it){ return (+it.fee||0) + (typeof it.box === "number" ? it.box : 0); }
 /** 作家が発送のために実際に払う額(送料＋箱・梱包材。原則34/36)。
@@ -1222,7 +1271,7 @@ function renderShipPresets(){
   if(!p){ sel.innerHTML = `<option value="">（${chName}の料金表は未登録です）</option>`; note.textContent = ""; return; }
   sel.innerHTML = `<option value="">選ぶと下の欄に金額が入ります</option>` +
     p.items.map((it,i)=>`<option value="${i}">${esc(it.label)}　${yen(presetAmount(it))}${it.box==="unknown"?"（別に専用BOX代）":""}</option>`).join("");
-  note.textContent = `${p.head}。実際のサイズ・重さで差額が出た場合は出品者の負担になります（各社公式）。金額は入れたあとで直せます。`;
+  note.innerHTML = `${esc(p.head)}。実際のサイズ・重さで差額が出た場合は出品者の負担になります。金額は入れたあとで直せます。<br>${shipSourceNote(db.cfg.ch)}`;
 }
 /** 選ばれたプリセットを、モードに応じた「実費」の欄へ入れる(原則37) */
 function applyShipPreset(){
@@ -1239,7 +1288,7 @@ function applyShipPreset(){
   const boxMsg = (it.box === "unknown")
     ? `　⚠ この配送方法は<b>専用BOX代が別にかかります</b>（各社公式が「利用料に含まれない」と明記）。箱代は送料ではなくあなたの実費なので、<b>${where}へ箱代を足してください</b>。`
     : (typeof it.box === "number" ? `　専用BOX代 ${yen(it.box)} を足した額です。` : "");
-  note.innerHTML = `${esc(it.label)} ${yen(+it.fee||0)} を${where}へ入れました。${boxMsg}<br>${esc(p.head)}。実際のサイズ・重さで差額が出た場合は出品者の負担になります（各社公式）。金額は直せます。`;
+  note.innerHTML = `${esc(it.label)} ${yen(+it.fee||0)} を${where}へ入れました。${boxMsg}<br>${esc(p.head)}。実際のサイズ・重さで差額が出た場合は出品者の負担になります。金額は直せます。<br>${shipSourceNote(db.cfg.ch)}`;
 }
 function offerLastWork(){
   const last = db.works[db.works.length-1];
