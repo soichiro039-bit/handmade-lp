@@ -52,6 +52,14 @@
   .verdict .hl { font-size: 1.25rem; font-weight: bold; }
   .verdict .sub { display: block; margin-top: 8px; font-size: .85rem; color: var(--text); }
   .cta.soft { background: #fff; color: var(--accent); border: 2px solid var(--accent); font-size: .95rem; padding: 12px; }
+  /* 根拠へ渡す導線（2026-07-29 デザイン部）。CTAにはしない——このページの主行動は
+     「まず計算してみる」で、勝ち色のボタンを3つ目に増やすと主行動が薄まる。
+     .note(12px)の中へ素の<a>で埋めるのも採らない: 12pxの行内リンクはタップ領域が
+     44pxに届かず、55歳以上の新規流入層(minne n=912・44%がスキルゼロ)を切り捨てる。
+     よって「静かだが確実に押せる」= 下線つき・14px相当・高さ44pxの独立ブロックにする。 */
+  .srclink { display: inline-flex; align-items: center; min-height: 44px; margin-top: 10px;
+             font-size: .88rem; line-height: 1.6; color: var(--main); text-decoration: underline;
+             text-underline-offset: 3px; }
   @media (max-width: 400px) {
     table { font-size: .82rem; }
     th, td { padding: 7px 3px; }
@@ -134,6 +142,15 @@
          出典: help.thebase.in 記事5701758066585（2026年7月27日 情報調査部が一次取得）。 -->
     <strong>BASEの手数料は購入者が選ぶ決済方法で変わります。</strong>Amazon Pay・PayPal・PayPay の場合は7.6%+40円(それ以外は6.6%+40円)。出品者は事前に選べないため、この表では低い側の6.6%+40円で計算しています。<br>
     出典: 販売手数料は各公式告知ページ(<span id="lpRateAsof"></span>)、振込にかかる費用は各公式ヘルプ等の概算。いずれも各社の公式ヘルプ・公式告知で確認した値です。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。</p>
+    <!-- 【2026-07-29 デザイン部】情報調査部07:27・分析部08:40の指摘2件目への対応。
+         実測: このLPから販路比較ページへの内部リンクは0本（逆向きは2本ある）。
+         直したのは「リンクが無い」ことではなく、その結果として起きていたこと——
+         上の出典文は「各公式告知ページ」としか言っておらず、URLがこのページに1本も無い。
+         個別の出典URL・端数の丸め方・販売価格別の一覧は、隣の比較ページに全部ある。
+         つまり根拠を**持っているのに渡していなかった**（デザイン部SKILL 原則27hと同じ型）。
+         リンク文言はWCAG 2.2 SC 2.4.4(Level A)に従い、文言だけで行き先が分かる形にする
+         ＝「詳しくはこちら」の類は使わない。文脈(出典文)はリンクより前に置く。 -->
+    <a class="srclink" href="./tools/marketplace-fee-comparison/#sources">4販路それぞれの公式ヘルプ出典URL・端数の丸め方・販売価格別の一覧を見る</a>
   </div>
 
   <div class="card pain">
