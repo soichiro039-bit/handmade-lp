@@ -400,6 +400,9 @@
       <option value="sep">送料別（購入者が送料を別に払う）</option>
     </select>
     <div class="note">どの販路でも、販売手数料は「購入者が払った合計（送料をふくむ）」にかかります。送料別で出品していると、送料の分にも手数料がかかります。分からなければ送料込みのままで大丈夫です。</div>
+    <label for="wShipPreset" id="wShipPresetLbl">配送方法から送料を入れる</label>
+    <select id="wShipPreset" onchange="applyShipPreset()"></select>
+    <div class="note" id="wShipPresetNote"></div>
     <div id="wShipCostRow" hidden>
       <label for="wShipCost">そのうち、あなたが実際に払う額(円)</label>
       <input type="number" id="wShipCost" min="0" placeholder="空欄なら上と同じ">
@@ -726,6 +729,59 @@ function renderRateStale(now){
 const FEE_ROUND = { minne:Math.floor, creema:Math.ceil, base:Math.round, mercari:Math.floor };
 /** 購入者が作品価格とは別に払う送料。送料込みなら0(価格に含まれており二重に足さない) */
 function shipOnTop(w){ return (w && w.shipMode === "sep") ? (+w.ship||0) : 0; }
+
+/* 【2026-07-29 開発部・原則37】配送方法を選ぶと送料が入る（送料プリセット）。
+   正本 = 07_開発移行/料率マスタ/送料プリセット一次情報_2026-07-29.md（4販路とも公式ヘルプが出典）。
+
+   なぜ「金額を入れるだけ」で終わらせないか:
+   - **専用BOX代は送料に含まれない**（Creema記事12876・メルカリShops公式が明記）。作家の実費なので
+     梱包費側＝この欄に入る（原則36で「箱・梱包材こみで尋ねる」に統一済み）。プリセットが運送会社の
+     送料だけを入れて黙ると、**原則36で塞いだ穴がプリセット経由で開き直る**（手取りを多く見せる向き）。
+     → 箱代が公式に判明している販路は足した額を入れ、判明していない販路は足さずに**画面で足すよう促す**。
+       推測で埋めない（金額を作らない）／黙って落とさない、の両方を満たす形はこれしかない。
+   - **プリセットは「設定値」であって「確定額」ではない。** Creema記事12361が「配送会社で計測した
+     サイズ・重さが適用され、差額が発生した場合は出品者負担」と明記している。言い切ると過小に出る。
+   box: 数値=公式に判明している専用BOX代／"unknown"=必要だが公式に金額が無い／未設定=不要 */
+const SHIP_PRESETS = {
+  creema: { head:"Creemaあんしん匿名便（全国一律・税込）", items:[
+    {label:"ネコポス", fee:250},
+    {label:"宅急便コンパクト", fee:650, box:"unknown"},
+    {label:"宅急便 60サイズ（〜2kg）", fee:850},
+    {label:"宅急便 80サイズ（〜5kg）", fee:1000},
+    {label:"宅急便 100サイズ（〜10kg）", fee:1300},
+    {label:"宅急便 120サイズ（〜15kg）", fee:1600},
+    {label:"宅急便 140サイズ（〜20kg）", fee:1950},
+    {label:"宅急便 160サイズ（〜25kg）", fee:2150},
+    {label:"宅急便 180サイズ（〜30kg）", fee:2750},
+    {label:"宅急便 200サイズ（〜30kg）", fee:3350}
+  ]},
+  minne: { head:"かんたんミンネ便ほか（匿名配送は+50円）", items:[
+    {label:"クリックポスト", fee:185},
+    {label:"ゆうパケットポストmini", fee:190},
+    {label:"スマートレター", fee:210},
+    {label:"ゆうパケットポスト", fee:230},
+    {label:"ネコポス", fee:230},
+    {label:"ゆうパケット", fee:290},
+    {label:"宅急便コンパクト", fee:590, box:"unknown"}
+  ]},
+  mercari: { head:"らくらくメルカリ便（ゆうゆうメルカリ便は非対応）", items:[
+    {label:"ネコポス", fee:210},
+    {label:"宅急便コンパクト", fee:450, box:70},
+    {label:"宅急便 60サイズ", fee:750},
+    {label:"宅急便 80サイズ", fee:850},
+    {label:"宅急便 100サイズ", fee:1050},
+    {label:"宅急便 120サイズ", fee:1200},
+    {label:"宅急便 140サイズ", fee:1450},
+    {label:"宅急便 160サイズ", fee:1700}
+  ]},
+  /* BASEだけは公式が「購入者へ請求する送料は作家の自由設定」と明記しており、料金表が存在しない。
+     取れた一次情報は「かんたん発送の宅急便コンパクトが500円」の1点のみなので、それだけを目安として出す */
+  base: { head:"かんたん発送（ヤマト）の実費の目安。購入者へ請求する送料は自由に決められます", items:[
+    {label:"宅急便コンパクト（実費の目安）", fee:500, box:"unknown"}
+  ]}
+};
+/** プリセット1件から「作家が実際に払う額」を作る。箱代が判明している分だけ足す(原則37) */
+function presetAmount(it){ return (+it.fee||0) + (typeof it.box === "number" ? it.box : 0); }
 /** 作家が発送のために実際に払う額(送料＋箱・梱包材。原則34/36)。
     送料別のとき「購入者へ請求する送料」と「作家の実費」は別物である——
     BASE公式が「かんたん発送の宅急便コンパクトが500円でも、箱代をふくめた600円などを
@@ -1146,6 +1202,44 @@ function syncShipCostRow(){
   if(row) row.hidden = !sep;
   const lbl = document.getElementById("wShipLbl");
   if(lbl) lbl.textContent = sep ? "購入者へ請求する送料(円)" : "梱包・発送(円)";
+  renderShipPresets();
+}
+/** プリセットの選択肢を、設定で選んでいる販路から作り直す(原則37)。
+    販路を選ばないと候補が決まらない——同じ「宅急便コンパクト」が450〜650円で、販路ごとに違う */
+function renderShipPresets(){
+  const sel = document.getElementById("wShipPreset");
+  const lbl = document.getElementById("wShipPresetLbl");
+  const note = document.getElementById("wShipPresetNote");
+  if(!sel) return;
+  const p = SHIP_PRESETS[db.cfg.ch];
+  const chName = (CHANNELS.find(c=>c.key===db.cfg.ch)||CHANNELS[0]).name;
+  const sep = wShipMode.value === "sep";
+  /* 入れ先は「作家が実際に払う額」の欄。送料別ではそれが下の実費欄になる——
+     上の欄は購入者への請求額で、作家が自分で決める値なので、こちらが埋めてはいけない */
+  if(lbl) lbl.textContent = sep
+    ? `配送方法から「実際に払う額」を入れる（${chName}）`
+    : `配送方法から「梱包・発送」を入れる（${chName}）`;
+  if(!p){ sel.innerHTML = `<option value="">（${chName}の料金表は未登録です）</option>`; note.textContent = ""; return; }
+  sel.innerHTML = `<option value="">選ぶと下の欄に金額が入ります</option>` +
+    p.items.map((it,i)=>`<option value="${i}">${esc(it.label)}　${yen(presetAmount(it))}${it.box==="unknown"?"（別に専用BOX代）":""}</option>`).join("");
+  note.textContent = `${p.head}。実際のサイズ・重さで差額が出た場合は出品者の負担になります（各社公式）。金額は入れたあとで直せます。`;
+}
+/** 選ばれたプリセットを、モードに応じた「実費」の欄へ入れる(原則37) */
+function applyShipPreset(){
+  const sel = document.getElementById("wShipPreset");
+  const note = document.getElementById("wShipPresetNote");
+  const p = SHIP_PRESETS[db.cfg.ch];
+  if(!sel || !p || sel.value === "") return;
+  const it = p.items[+sel.value]; if(!it) return;
+  const sep = wShipMode.value === "sep";
+  const target = sep ? document.getElementById("wShipCost") : document.getElementById("wShip");
+  target.value = presetAmount(it);
+  const where = sep ? "「そのうち、あなたが実際に払う額」" : "「梱包・発送」";
+  /* 箱代を黙って落とさない。判明していない販路では、こちらで金額を作らず作家に足してもらう(原則36/37) */
+  const boxMsg = (it.box === "unknown")
+    ? `　⚠ この配送方法は<b>専用BOX代が別にかかります</b>（各社公式が「利用料に含まれない」と明記）。箱代は送料ではなくあなたの実費なので、<b>${where}へ箱代を足してください</b>。`
+    : (typeof it.box === "number" ? `　専用BOX代 ${yen(it.box)} を足した額です。` : "");
+  note.innerHTML = `${esc(it.label)} ${yen(+it.fee||0)} を${where}へ入れました。${boxMsg}<br>${esc(p.head)}。実際のサイズ・重さで差額が出た場合は出品者の負担になります（各社公式）。金額は直せます。`;
 }
 function offerLastWork(){
   const last = db.works[db.works.length-1];
@@ -1451,6 +1545,7 @@ function saveCfg(){
   db.cfg.wage = +cfgWage.value||0; db.cfg.margin = +cfgMargin.value||0; db.cfg.ch = cfgCh.value;
   db.cfg.sales = Math.max(1, +cfgSales.value||1);
   save(); renderHome(); renderPrice();
+  renderShipPresets(); // 販路を変えたら送料の候補も変わる(原則37)
 }
 
 function esc(s){ return String(s).replace(/[&<>"]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
