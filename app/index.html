@@ -606,6 +606,20 @@ const FEE_LABEL = { minne:"10.659%", creema:"10.67%", base:"6.6% + 40円", merca
    なぜ要るか: 直書きしていた2か所が同じ古い日付のままで、正本(r47)と4日ずれていた。
    金額を突き合わせる検査はすべて通っていた——**数字は正しく、説明だけが誤っていた**ため。 */
 const RATE_ASOF = { minne:"2026-07-27", creema:"2026-07-27", base:"2026-07-27", mercari:"2026-07-27" };
+
+/* 【2026-07-29 開発部・企画部R66】確認日には意味の違う2つがあり、混ぜてはならない。
+     RATE_ASOF  = その料率の値を最後に取得・改定した日（正本 channels[].rate_asof）
+                  → 用途は上の rateAsofPhrase()「◯月◯日時点の値です」だけ
+     CHECKED_AT = 変更が無かったことを含めて最後に確認できた日（正本 channels[].checked_at）
+                  → 用途は下の型D（鮮度切れの帯）の起算日だけ
+   なぜ分けたか: 型Dは RATE_ASOF を起算していたが、rate_asof は改定が無い限り永久に動かない。
+   監視(1日4回)が正常に回って「変動なし」を確認し続けても値は 2026-07-27 のまま止まるので、
+   **2026-08-03 に監視が健全なまま4販路同時で帯が出て、以後どれだけ確認しても二度と消えない**。
+   型Dが検知したいのは「監視が止まったこと」なのに、実際に測っていたのは
+   「料率が改定されないこと」だった——正常な状態を異常として鳴らす向きの誤り。
+   正本の checked_at は 料率マスタ/stamp_checked_at.py で押す（手書き禁止）。 */
+const CHECKED_AT = { minne:"2026-07-29", creema:"2026-07-29", base:"2026-07-29", mercari:"2026-07-29" };
+
 function rateAsofPhrase(){
   const a = CHANNELS.map(c=>RATE_ASOF[c.key]).filter(Boolean).sort();
   if(!a.length) return "確認日未設定";
@@ -632,8 +646,8 @@ const RATE_STALE_DAYS = 7;
 /** 確認日から今日までの日数。日付の文字列同士をUTCの日単位で引く
     (時刻・タイムゾーン・夏時間で1日ずれるのを避ける)。読めない値は null を返し、
     「0日」に丸めない——読めないことを新しさとして扱ってはならない */
-function daysSinceAsof(asof, now){
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(asof || ""));
+function daysSinceAsof(checked, now){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(checked || ""));
   if(!m) return null;
   const a = Date.UTC(+m[1], +m[2] - 1, +m[3]);
   const n = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
@@ -646,8 +660,8 @@ function daysSinceAsof(asof, now){
     経過日数の代わりに「読み取れない」と書いて必ず面へ出す。 */
 function rateStaleList(now){
   const t = now || new Date();
-  return CHANNELS.map(c => ({ name:c.name, asof:RATE_ASOF[c.key],
-                              days:daysSinceAsof(RATE_ASOF[c.key], t) }))
+  return CHANNELS.map(c => ({ name:c.name, checked:CHECKED_AT[c.key],
+                              days:daysSinceAsof(CHECKED_AT[c.key], t) }))
                  .filter(x => x.days === null || x.days >= RATE_STALE_DAYS);
 }
 function renderRateStale(now){
@@ -685,7 +699,7 @@ function renderRateStale(now){
     <div class="rs-body">${body}
       <span class="rs-when">${st.map(x => x.days === null
           ? `${esc(x.name)}: 確認日を読み取れません`
-          : `${esc(x.name)}: ${esc(w(x.asof))}に確認（${x.days}日前）`).join("／")}</span></div>
+          : `${esc(x.name)}: ${esc(w(x.checked))}に確認（${x.days}日前）`).join("／")}</span></div>
   </div>`;
 }
 
