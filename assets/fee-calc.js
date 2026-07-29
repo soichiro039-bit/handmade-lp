@@ -73,6 +73,20 @@
     return Math.max(0, price) + (shipMode === "sep" ? Math.max(0, +ship || 0) : 0);
   }
 
+  /** 作家が実際に払う発送の実費（送料＋箱・梱包材）。原則34/36。
+      app/index.html の shipActual(w) と同じ規則で、式は写さず同じ分岐をそのまま置く:
+      ・送料別のときだけ「そのうち、あなたが実際に払う額」を使う
+      ・空欄は「請求額と同じ」であって0円ではない。負・非数も0でなく請求額へ倒す
+        （0へ丸めると実費が消え、手取りを多く見せる側へ誤る）
+      ・送料込みでは「請求」という概念が無く、上の欄がそのまま実費なので shipCost を使わない */
+  function shipActual(ship, shipCost, shipMode) {
+    if (shipMode === "sep" && shipCost !== null && shipCost !== undefined && shipCost !== "") {
+      var v = +shipCost;
+      if (isFinite(v) && v >= 0) { return v; }
+    }
+    return +ship || 0;
+  }
+
   /* ひと月の入金見込みが下限に届かないと、その月は手元に来ない（原則15）。
      app/index.html の PAYOUT_TIMING[key].minYen と同じ値。
      minne 1,000円・メルカリShops 5,000円 は fee_master の min_payout_jpy が正本。
@@ -155,6 +169,7 @@
     channelFee: channelFee,
     payoutPerItem: payoutPerItem,
     grossOf: grossOf,
+    shipActual: shipActual,
     PAYOUT_MIN: PAYOUT_MIN,
     payoutBelowMin: payoutBelowMin,
     META: META,

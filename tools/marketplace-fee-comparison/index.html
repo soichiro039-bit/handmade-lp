@@ -132,7 +132,7 @@
       <label>材料費(円)
         <input type="number" id="material" value="800" min="0">
       </label>
-      <label>梱包・発送の実費(円)
+      <label><span id="shipLbl">梱包・発送の実費(円)</span>
         <input type="number" id="ship" value="250" min="0">
       </label>
     </div>
@@ -146,6 +146,20 @@
       <label>ひと月に売れる点数
         <input type="number" id="sales" value="5" min="1">
       </label>
+    </div>
+
+    <!-- 【2026-07-29 開発部・原則34/36】送料の欄が1つしか無く、同じ値を
+         「作家の実費」と「手数料の基数（＝購入者が払った合計）」の両方に使っていた。
+         BASE公式が認めているとおり、箱代を上乗せして送料を設定している作家では
+         この2つは別々の額になる。1つの欄で兼ねると、実費570円・請求500円の作家では
+         購入者が払っていない70円が入金側へ乗り、**手取りを多く見せる**（危険側）。
+         appは fde4274 で是正済みだったが、このページとLPには入っておらず、
+         同じ会社の3画面が同じ入力に違う金額を出していた（情報調査部19時台の指摘）。 -->
+    <div id="shipCostRow" hidden>
+      <label>そのうち、あなたが実際に払う額(円)
+        <input type="number" id="shipCost" placeholder="空欄なら上と同じ" min="0">
+      </label>
+      <p class="note" style="margin-top:6px">送料に箱代を上乗せして請求している場合だけ入れてください。<strong>箱や梱包材の代金も、あなたが払う額にふくめます。</strong>たとえば運送会社へ払う送料が500円、箱代が70円なら、あなたが実際に払うのは570円です。600円を請求しているなら、上に600、ここに570と入れます。空欄なら「請求した額をそのまま払っている」として計算します。</p>
     </div>
 
     <div class="tw">
@@ -261,8 +275,22 @@
     return {
       price: g("price"), material: g("material"), ship: g("ship"),
       sales: Math.max(1, g("sales")),
-      mode: document.getElementById("shipMode").value
+      mode: document.getElementById("shipMode").value,
+      // 空欄を 0 に丸めない。空欄は「請求額と同じ」であって0円ではない（原則34）。
+      // g() を通すと "" が 0 になり、実費が消えて手取りを多く見せてしまう
+      shipCost: document.getElementById("shipCost").value
     };
+  }
+
+  /** 「そのうち、あなたが実際に払う額」の欄は送料別のときだけ意味を持つ（原則34/36）。
+      送料込みでは請求という概念が無く、上の欄がそのまま実費なので出さない。
+      あわせて上の欄の見出しも切り替える——同じ欄が、送料別では「購入者へ請求する額」に変わる。 */
+  function syncShipCostRow(v) {
+    var sep = v.mode === "sep";
+    var row = document.getElementById("shipCostRow");
+    if (row) { row.hidden = !sep; }
+    var lbl = document.getElementById("shipLbl");
+    if (lbl) { lbl.textContent = sep ? "購入者へ請求する送料(円)" : "梱包・発送の実費(円)"; }
   }
 
   /* 1点あたりの内訳。app/index.html の analyze() と同じ定義:
@@ -273,11 +301,14 @@
     var shipTop = gross - Math.max(0, v.price);
     var fee = F.channelFee(key, gross);
     var payout = F.payoutPerItem(key, v.price, shipTop, v.sales);
+    // 原価に乗るのは「作家が実際に払う額」、手数料の基数は「購入者へ請求した額」のまま。
+    // 一緒に動かすと販路への支払いを実際より少なく見せる＝手取りを多く見せる（原則34）
+    var actual = F.shipActual(v.ship, v.shipCost, v.mode);
     if (payout === null) { return { fee: fee, payout: null, deposit: null, net: null, below: false }; }
     return {
       fee: fee, payout: payout,
       deposit: gross - fee - payout,                          // 入金額（原価を引く前）
-      net: gross - fee - payout - v.material - v.ship,        // 手元に残る額
+      net: gross - fee - payout - v.material - actual,        // 手元に残る額
       // ひと月の入金見込みが下限に届かない条件では、その月は実際には手元へ来ない。
       // 金額だけ出すと「入金される額」に見えるため、必ず印を付けて別に説明する（原則15）
       below: F.payoutBelowMin(key, v.price, shipTop, v.sales)
@@ -321,10 +352,24 @@
         }).join("、") +
         "。届かない月は次の月へ繰り越されるか、振込の申請ができません。<strong>売れた月と、お金が実際に入る月がずれます。</strong>上の表の金額は、振込が行われた場合のものです。"
       : "";
+    // 実費と請求額が違うときは、黙って実費だけを見せず**両方と差額**を出す（原則34e）。
+    // 差額を「手元に残る」と言い切らない——請求した送料にも販売手数料がかかる（原則34i）
+    var actual = F.shipActual(v.ship, v.shipCost, v.mode);
+    // 【2026-07-29 実値を読んで自検出】符号で文を分ける。1本の文にすると
+    // 実費が請求額を上回る場合に「差額 -70円」と出て、上乗せ分がある側の説明が付く。
+    // 実費が多い側は上乗せではなく**自腹**であり、向きが逆の説明になる
+    var 差 = "";
+    if (v.mode === "sep" && actual !== v.ship) {
+      差 = v.ship > actual
+        ? "購入者へ請求する送料は " + yen(v.ship) + "、そのうちあなたが実際に払うのは " + yen(actual) +
+          " です（差 " + yen(v.ship - actual) + "）。<strong>この差にも販売手数料がかかる</strong>ため、そのまま手元に残るわけではありません。"
+        : "購入者へ請求する送料は " + yen(v.ship) + " ですが、あなたが実際に払うのは " + yen(actual) +
+          " で、<strong>請求より " + yen(actual - v.ship) + " 多く払っています</strong>。その分は手取りから引かれています。";
+    }
     document.getElementById("assump").innerHTML =
       "前提: 振込は月1回・ひと月に" + v.sales + "点を販売。" +
       (v.mode === "sep"
-        ? "送料別のため、購入者が払う合計は " + yen(v.price) + " ＋ 送料 " + yen(v.ship) + " ＝ <strong>" + yen(v.price + v.ship) + "</strong> で、この合計に販売手数料がかかります。"
+        ? "送料別のため、購入者が払う合計は " + yen(v.price) + " ＋ 購入者へ請求する送料 " + yen(v.ship) + " ＝ <strong>" + yen(v.price + v.ship) + "</strong> で、この合計に販売手数料がかかります。" + 差
         : "送料込みのため、購入者が払う合計は <strong>" + yen(v.price) + "</strong> で、この合計に販売手数料がかかります。") +
       "<strong>どの販路が有利かは販売点数・振込回数・振込先の銀行で変わるため、この表は順位づけではありません。</strong>";
   }
@@ -337,7 +382,8 @@
     var tb = document.querySelector("#ladder tbody");
     tb.innerHTML = LADDER.map(function (p) {
       var cells = F.channels.map(function (c) {
-        var r = row(c.key, { price: p, material: v.material, ship: v.ship, sales: v.sales, mode: v.mode });
+        var r = row(c.key, { price: p, material: v.material, ship: v.ship,
+                             shipCost: v.shipCost, sales: v.sales, mode: v.mode });
         if (r.payout === null) { return "<td class='unverified'>比較対象外</td>"; }
         return "<td><span class='minus'>-" + yen(r.fee + r.payout) + "</span><br>" +
                "<span class='net'>" + yen(r.deposit) + "</span></td>";
@@ -489,6 +535,7 @@
 
   function calc() {
     var v = inputs();
+    syncShipCostRow(v);   // 欄の出し入れと見出しの切替は、どの入力変更でも必ず追随させる
     renderMain(v);
     renderLadder(v);
   }
