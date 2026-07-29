@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>試作テストのお願い｜高中工業</title>
+<style>
+  :root{ --ink:#1f2328; --muted:#5c6672; --line:#e3e6ea; --accent:#d98324; --bg:#fff; }
+  @media (prefers-color-scheme: dark){
+    :root{ --ink:#e8eaed; --muted:#a2abb5; --line:#333a42; --bg:#16191d; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+       line-height:1.85;font-size:16px}
+  .wrap{max-width:680px;margin:0 auto;padding:32px 20px 72px}
+  h1{font-size:1.5rem;line-height:1.5;margin:0 0 8px}
+  h2{font-size:1.1rem;margin:36px 0 10px;padding-top:20px;border-top:1px solid var(--line)}
+  p{margin:0 0 14px}
+  ul{margin:0 0 14px;padding-left:1.25em}
+  li{margin-bottom:8px}
+  .lead{color:var(--muted);margin-bottom:24px}
+  .box{border:1px solid var(--line);border-left:4px solid var(--accent);
+       padding:14px 16px;border-radius:6px;margin:18px 0;background:rgba(217,131,36,.05)}
+  .muted{color:var(--muted);font-size:.9rem}
+  footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:.88rem}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>試作中の「原価・利益の計算ツール」を、<br>20〜30分ためしていただける方を探しています</h1>
+<p class="lead">ハンドメイド作品を販売した経験のある方へのお願いです。<br>
+販売でも勧誘でもなく、<strong>作りかけの物を直すため</strong>のお願いです。</p>
+
+<h2>誰が、なぜ作っているか</h2>
+<p>高中工業という小さな会社です。3Dプリンターで鉢を作り、BASEで販売しています。</p>
+<p>自分たちで値段を決めるとき、材料費と販売手数料と自分の作業時間をどう入れればいいのか
+分からなくなりました。<strong>それを計算するための道具を、自分たちのために作りました。</strong></p>
+<p>ただ、これが<strong>自分たちにしか使えない物になっていないか</strong>が分かりません。
+実際に作品を売っている方に触っていただかないと、確かめようがないと考えました。</p>
+
+<h2>お願いしたいこと</h2>
+<ul>
+  <li><strong>20〜30分</strong>、オンラインでお付き合いください</li>
+  <li>はじめに、普段どうやって値段を決めているかを少しだけ伺います</li>
+  <li>そのあと、<strong>こちらで用意したサンプルのデータ</strong>を使って、
+      ブラウザで動く試作を操作していただきます</li>
+  <li>操作中に<strong>迷った所・分かりにくかった所</strong>を、そのまま教えてください</li>
+</ul>
+
+<div class="box">
+  <p style="margin:0"><strong>「使えそうですか」を聞きたいのではありません。</strong><br>
+  <strong>どこで手が止まるかを見せていただくことが目的です。</strong>
+  詰まっていただいて構いません。むしろ、詰まった所こそが知りたいことです。</p>
+</div>
+
+<h2>お聞きしないこと</h2>
+<ul>
+  <li><strong>実際の売上額・原価・利益</strong>は伺いません（サンプルのデータを使います）</li>
+  <li><strong>ご住所・お電話番号・口座情報</strong>は伺いません</li>
+  <li>作品や店舗を、こちらの宣伝に使うことはありません</li>
+</ul>
+
+<h2>謝礼</h2>
+<p>終了後に <strong>2,000円分のAmazonギフトカード</strong>（コードをメッセージでお送りします）
+をお渡しします。</p>
+<p><strong>ご意見の内容によって謝礼が変わることはありません。</strong>
+「分かりにくい」「これは使わない」と率直に言っていただくことが、こちらの目的です。</p>
+
+<h2>記録について</h2>
+<ul>
+  <li><strong>録画はしません。</strong></li>
+  <li>操作中の画面を拝見する場合は、<strong>事前に方法をご説明し、同意をいただいてから</strong>行います</li>
+  <li>いただいたご意見は、この試作を直すためだけに使います。
+      <strong>お名前が分かる形で外部へ出すことはありません</strong></li>
+  <li>試作に入力したデータは<strong>お使いの端末の中だけ</strong>に保存され、こちらへは送られません</li>
+  <!-- 【H-27b是正 2026-07-29 法務部】この直前の「こちらへは送られません」は入力データに限定した
+       正しい文だが、限定が効いていても、直後にアクセス解析の存在が書かれていないと
+       「一切なにも送信されない」と読める。試作(/app/)には Cloudflare Web Analytics と
+       完了計測(/events/calc-done/)が実在する（実測: app/index.html にビーコンあり）。
+       H-13と同じ「否定の主張 vs 実装」の型なので、限定を明示する1行を足して閉じる。 -->
+  <li>ただし、ページが何回開かれたかの<strong>閲覧数の計測</strong>は行っています(入力内容は含みません)。
+      詳しくは<a href="privacy.html">プライバシーポリシー</a>をご覧ください</li>
+</ul>
+<!-- 【H-27是正 2026-07-29 法務部】このページで取得する情報は、公開中の privacy.html が
+     一切カバーしていない（同ファイルを「テスト」「謝礼」「ギフト」でgrepして0件）。
+     privacy.html が書いているのは①事前登録フォームのメールアドレス ②ウェブ版のアクセス解析
+     の2類型だけで、観察テストは第3の類型にあたる。個人情報保護法21条の利用目的の明示は、
+     取得する場面で示す必要があるため、まずこのページ側で閉じる。
+     privacy.html 本体への追記は、同ファイルがApp Store Connectへ提出中の申告と紐づくため
+     統括へ申し送りとする（法務チェック.md H-27）。 -->
+<h2>いただく情報の扱い</h2>
+<ul>
+  <li>このテストで頂くのは<strong>ご連絡先（ご返信いただくメッセージ）と、当日いただくご意見</strong>だけです</li>
+  <li>謝礼のギフトカードのコードは、<strong>ご連絡差し上げたのと同じ経路</strong>でお送りします。
+      そのために別途ご住所・口座を伺うことはありません</li>
+  <li>利用目的は<strong>この試作を直すことだけ</strong>です。広告・営業には使いません</li>
+  <li><strong>第三者への提供はいたしません</strong>（法令に基づき開示が求められる場合を除きます）</li>
+  <li>削除をご希望の場合は、下記の連絡先へお申し付けください。いただいたご意見の記録を消します</li>
+</ul>
+
+<h2>SNSへの投稿について</h2>
+<p><strong>SNSやブログへの投稿はお願いしていません。</strong>
+書いていただく必要は一切ありません。<br>
+もし触れてくださる場合は、<strong>謝礼を受け取ったことが分かるように書いてください</strong>
+（景品表示法で、対価があることを隠した紹介が禁止されているためです）。</p>
+
+<h2>お断りについて</h2>
+<p>ご都合が合わない場合、ご関心がない場合は、<strong>お返事は不要です。</strong>
+こちらから重ねてご連絡することはありません。</p>
+<p>お引き受けいただいたあとでも、<strong>途中でおやめいただけます。</strong>
+その場合も謝礼はお渡しします。</p>
+
+<h2>お申し込み</h2>
+<p>ご連絡差し上げたメッセージに、そのままご返信ください。
+日程の候補をお送りします。</p>
+
+<p class="muted">試作が出す金額は概算です。実際の受取額を保証するものではありません。
+手数料は各販路が改定することがあります。</p>
+
+<footer>
+  高中工業（MEIPLA）／運営者: 中村宗一朗<br>
+  連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a><br>
+  このページは、個別にご連絡した方向けの案内です。<br>
+  <a href="index.html">紹介ページ</a>｜<a href="privacy.html">プライバシーポリシー</a>
+</footer>
+
+</div>
+</body>
+</html>
