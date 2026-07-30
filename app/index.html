@@ -372,9 +372,17 @@
     <input type="text" id="pName" placeholder="例: 天然石ビーズ 6mm">
     <div class="row">
       <div><label for="pTotal">仕入れ総額(円)</label><input type="number" id="pTotal" placeholder="1400" min="0"></div>
-      <div><label for="pQty">入数(個)</label><input type="number" id="pQty" placeholder="50" min="1"></div>
+      <div><label for="pQty">仕入れた量</label>
+        <div style="display:flex;gap:6px">
+          <input type="number" id="pQty" placeholder="50" min="0" step="any" style="flex:1">
+          <select id="pUnitSel" aria-label="単位" style="width:5.6rem">
+            <option value="個">個</option><option value="g">g</option><option value="ml">ml</option><option value="cm">cm</option><option value="枚">枚</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="note" id="pUnit">1個あたりの単価を自動計算します</div>
+    <div class="note">1kg2300円の糸のように、<b>買った単位と使う単位が違う材料</b>は「2300円 ÷ 1000 g」で登録してください。作品では「160 g使う」と入れられます。</div>
     <div class="again" id="pAgain"></div>
     <button class="btn" onclick="addPart()">パーツを追加</button>
   </div>
@@ -631,7 +639,7 @@ const RATE_ASOF = { minne:"2026-07-27", creema:"2026-07-27", base:"2026-07-27", 
    型Dが検知したいのは「監視が止まったこと」なのに、実際に測っていたのは
    「料率が改定されないこと」だった——正常な状態を異常として鳴らす向きの誤り。
    正本の checked_at は 料率マスタ/stamp_checked_at.py で押す（手書き禁止）。 */
-const CHECKED_AT = { minne:"2026-07-29", creema:"2026-07-29", base:"2026-07-29", mercari:"2026-07-29" };
+const CHECKED_AT = { minne:"2026-07-31", creema:"2026-07-31", base:"2026-07-31", mercari:"2026-07-31" };
 
 function rateAsofPhrase(){
   const a = CHANNELS.map(c=>RATE_ASOF[c.key]).filter(Boolean).sort();
@@ -1006,6 +1014,13 @@ function resetAll(){ db = JSON.parse(JSON.stringify(SAMPLE)); save(); renderAll(
 /* ===== 計算 ===== */
 const yen = n => Math.round(n).toLocaleString()+"円";
 const unitPrice = p => p.qty>0 ? p.total/p.qty : 0;
+/* 【2026-07-31 統括】買った単位と使う単位が違う材料への対応。
+   糸・レジン・革・生地はハンドメイドの大半がこの型で、1kg2300円を買って160g使う。
+   単位を「個」に固定していたため 0.16個 と入れるしかなく、画面の表示も全部「個」だった。
+   単位はパーツごとに持たせ、**未設定の既存データは「個」として読む**（過去の登録を壊さない）。 */
+const pu = p => (p && p.unit) ? p.unit : "個";
+/* 1gあたり2.3円のような小さい単価が 2.3 と出るように、桁で丸め方を変える */
+const up = x => x >= 10 ? x.toFixed(1) : x.toFixed(2);
 function partById(id){ return db.parts.find(p=>p.id===id); }
 
 function materialCost(w){
@@ -1199,8 +1214,8 @@ function renderParts(){
     const used = db.works.filter(w=>w.recipe.some(r=>r.pid===p.id)).length;
     return `<div class="list-item">
       <div><div class="name">${esc(p.name)}</div>
-        <div class="meta">${p.total}円 ÷ ${p.qty}個${used?` ・ ${used}作品で使用中`:""}</div></div>
-      <div class="val">${unitPrice(p).toFixed(1)}円<span class="meta">/個</span>
+        <div class="meta">${p.total}円 ÷ ${p.qty}${pu(p)}${used?` ・ ${used}作品で使用中`:""}</div></div>
+      <div class="val">${up(unitPrice(p))}円<span class="meta">/${pu(p)}</span>
         <button class="dup" aria-label="${esc(p.name)}をもとに新しく登録する" onclick="dupPart(${p.id})">複製</button>
         <button class="del" aria-label="${esc(p.name)}を削除" onclick="delPart(${p.id})">×</button></div>
     </div>`;
@@ -1212,20 +1227,20 @@ function renderPartAgain(){
   const box = document.getElementById("pAgain");
   const last = db.parts[db.parts.length-1];
   if(!last){ box.innerHTML=""; return; }
-  box.innerHTML = `<button type="button" class="chip" onclick="fillPart(${last.total},${last.qty})">前回と同じ ${last.total}円 ÷ ${last.qty}個</button>`;
+  box.innerHTML = `<button type="button" class="chip" onclick="fillPart(${last.total},${last.qty},'${pu(last)}')">前回と同じ ${last.total}円 ÷ ${last.qty}${pu(last)}</button>`;
 }
-function fillPart(total, qty){ pTotal.value=total; pQty.value=qty; updUnit(); pName.focus(); }
+function fillPart(total, qty, unit){ pTotal.value=total; pQty.value=qty; if(unit) pUnitSel.value=unit; updUnit(); pName.focus(); }
 /** パーツの複製。名前だけ変えれば済む状態でフォームへ差し出す(即登録はしない=取り違えを防ぐ) */
 function dupPart(id){
   const p = partById(id); if(!p) return;
-  pName.value = p.name + " のコピー"; pTotal.value = p.total; pQty.value = p.qty;
+  pName.value = p.name + " のコピー"; pTotal.value = p.total; pQty.value = p.qty; pUnitSel.value = pu(p);
   updUnit(); pName.focus(); pName.select();
 }
 function addPart(){
-  const name=pName.value.trim(), total=+pTotal.value, qty=+pQty.value;
-  if(!name || !(total>=0) || !(qty>0)){ alert("パーツ名・仕入れ総額・入数を入力してください"); return; }
-  db.parts.push({id:db.seq++, name, total, qty}); save();
-  pName.value=pTotal.value=pQty.value=""; pUnit.textContent="1個あたりの単価を自動計算します";
+  const name=pName.value.trim(), total=+pTotal.value, qty=+pQty.value, unit=pUnitSel.value;
+  if(!name || !(total>=0) || !(qty>0)){ alert("パーツ名・仕入れ総額・仕入れた量を入力してください"); return; }
+  db.parts.push({id:db.seq++, name, total, qty, unit}); save();
+  pName.value=pTotal.value=pQty.value=""; pUnitSel.value="個"; pUnit.textContent="1個あたりの単価を自動計算します";
   renderAll();
 }
 function delPart(id){
@@ -1347,10 +1362,10 @@ function renderRecipe(){
     ${editRecipe.map(r=>{ const p=partById(r.pid); if(!p) return "";
       return `<div class="list-item" style="border-color:#e3d6ca">
         <div><div class="name" style="font-size:.83rem">${esc(p.name)}</div>
-        <div class="meta">${unitPrice(p).toFixed(1)}円/個</div></div>
-        <div class="val"><input type="number" value="${r.n}" min="0" style="width:5rem;padding:6px 8px;text-align:right"
-          aria-label="${esc(p.name)} の個数"
-          oninput="setN(${r.pid}, this.value)"><span class="meta">個</span></div></div>`;}).join("")}
+        <div class="meta">${up(unitPrice(p))}円/${pu(p)}</div></div>
+        <div class="val"><input type="number" value="${r.n}" min="0" step="any" style="width:5rem;padding:6px 8px;text-align:right"
+          aria-label="${esc(p.name)} の使う量(${pu(p)})"
+          oninput="setN(${r.pid}, this.value)"><span class="meta">${pu(p)}</span></div></div>`;}).join("")}
     <div style="text-align:right;font-size:.85rem;margin-top:7px">材料費 <b id="wMatTotal">${yen(materialTotalOfEdit())}</b></div>
   </div>`;
 }
@@ -1612,9 +1627,10 @@ function renderAll(){ renderRateStale(); renderHome(); renderParts(); renderSet(
 
 document.getElementById("pTotal").addEventListener("input", updUnit);
 document.getElementById("pQty").addEventListener("input", updUnit);
+document.getElementById("pUnitSel").addEventListener("change", updUnit);
 function updUnit(){
-  const t=+pTotal.value, q=+pQty.value;
-  pUnit.textContent = (t>0&&q>0) ? `1個あたり ${(t/q).toFixed(1)}円で計算されます` : "1個あたりの単価を自動計算します";
+  const t=+pTotal.value, q=+pQty.value, u=pUnitSel.value;
+  pUnit.textContent = (t>0&&q>0) ? `1${u}あたり ${up(t/q)}円で計算されます` : `1${u}あたりの単価を自動計算します`;
 }
 
 /* ===== はじめての1分(オンボーディング) =====
