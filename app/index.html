@@ -351,7 +351,7 @@
   </div>
   <div class="card">
     <h2>パーツの単価を変えると…<span class="badge">自動反映</span></h2>
-    <p style="font-size:.88rem;color:var(--muted)">パーツの仕入れ値を1か所変えるだけで、そのパーツを使っている<b>すべての作品の原価と適正価格</b>が計算し直されます。Excelのように全部直す必要はありません。</p>
+    <p style="font-size:.88rem;color:var(--muted)">パーツの仕入れ値を1か所変更すると、そのパーツを使っている<b>作品の原価と販売価格の目安</b>がまとめて再計算されます。</p>
     <button class="btn sub" onclick="go('s-parts')">パーツの単価を見る</button>
   </div>
   <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
@@ -523,7 +523,7 @@
          相対パス(../privacy.html)ではなく公開URLを直接書く。理由は下のbackToLpと同じで、
          プロトタイプ本体(07_開発移行/)から開いた時に同じ場所へ着地させるため。 -->
     <p style="font-size:.88rem;color:var(--muted)"><a href="https://soichiro039-bit.github.io/handmade-lp/privacy.html">プライバシーポリシー(全文)</a></p>
-    <p style="font-size:.88rem;color:var(--muted)">運営者: 中村宗一朗 ／ 連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></p>
+    <p style="font-size:.88rem;color:var(--muted)">運営者: 高中工業 ／ 連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></p>
     <!-- 相対パス(../)ではなく公開URLを直接書く。プロトタイプ本体と公開中の /app/ とで
          同じ場所に着地させるため（相対だと前者は 07_開発移行/ のフォルダ一覧へ落ちる） -->
     <a class="btn sub" id="backToLp" href="https://soichiro039-bit.github.io/handmade-lp/" style="display:block;text-align:center;text-decoration:none">このアプリの紹介ページへ戻る</a>
@@ -1370,12 +1370,15 @@ function saveWork(){
   const name = wName.value.trim();
   if(!name){ alert("作品名を入力してください"); return; }
   if(!editRecipe.length){ alert("使うパーツを1つ以上選んでください"); return; }
-  db.works.push({ id:db.seq++, name, recipe:JSON.parse(JSON.stringify(editRecipe)),
+  // 【2026-07-31 統括】保存した作品を値付け画面の初期選択にする。ここを入れないと
+  // 自分の作品を登録した直後に値付けを開いてもサンプルの答えが出る（統括の通し実行で実測）
+  const newId = db.seq++;
+  db.works.push({ id:newId, name, recipe:JSON.parse(JSON.stringify(editRecipe)),
     min:+wMin.value||0, ship:+wShip.value||0, price:+wPrice.value||0,
     shipMode: wShipMode.value === "sep" ? "sep" : "in",
     // 空欄は「請求額と同じ」であって0円ではない。0へ丸めると実費0＝手取りを多く見せる方向へ誤る
     shipCost: (wShipMode.value === "sep" && wShipCost.value !== "") ? (+wShipCost.value||0) : null });
-  save(); editRecipe=[]; wName.value=""; wPrice.value=""; wShipCost.value="";
+  save(); focusId = newId; editRecipe=[]; wName.value=""; wPrice.value=""; wShipCost.value="";
   wShipMode.dataset.touched = "";
   renderAll(); go('s-home');
 }
@@ -1554,7 +1557,7 @@ function renderPrice(){
         <tr><td>${chName}の手数料</td><td>${yen(analyze(w,recP,db.cfg.ch).fee)}</td></tr>
         <tr><td><b>${above?"下限ライン":"推奨価格"}</b></td><td><b>${yen(recP)}</b></td></tr>
       </tbody></table>
-      <div class="note">この「逆算」が、他の記録アプリにはない部分です。原価を記録するだけでなく、いくらで売ればあなたの手間が報われるかまで出します。<br>
+      <div class="note">この「逆算」が、このアプリの中心です。原価を記録するだけでなく、作業時間や目標利益を踏まえた販売価格の目安を出します。<br>
       ※これは<b>あなたの手間が報われる下限</b>です。デザイン性や希少性、ブランドの評価は数字に表れません。これより高く売れているなら、それはあなたの作品の価値です。下げる理由にはしないでください。</div>
     </div>
     ${steps}
