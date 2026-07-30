@@ -117,7 +117,7 @@
     channels: {
       minne: {
         name: "minne", rate: 0.10659, fixed: 0, rateText: "10.659%",
-        asof: "2026-07-27", checked: "2026-07-29", rateConf: "primary",
+        asof: "2026-07-27", checked: "2026-07-31", rateConf: "primary",
         rateSrc: "help.minne.com 記事4406260070675 ほか3件 ＋ minne.com/lp/getting-started",
         taxBaseConf: "primary",
         taxBaseText: "販売価格＋購入オプション＋送料（ラッピングを含まない）",
@@ -128,7 +128,7 @@
       },
       creema: {
         name: "Creema", rate: 0.1067, fixed: 0, rateText: "10.67%",
-        asof: "2026-07-27", checked: "2026-07-29", rateConf: "primary",
+        asof: "2026-07-27", checked: "2026-07-31", rateConf: "primary",
         rateSrc: "creema.jp/news/1480/detail（公式改定告知）",
         taxBaseConf: "primary",
         taxBaseText: "決済総額（作品＋オプション＋ラッピング＋送料）",
@@ -139,7 +139,7 @@
       },
       base: {
         name: "BASE", rate: 0.066, fixed: 40, rateText: "6.6% ＋ 40円",
-        asof: "2026-07-27", checked: "2026-07-29", rateConf: "primary",
+        asof: "2026-07-27", checked: "2026-07-31", rateConf: "primary",
         rateSrc: "help.thebase.in 記事5701758066585",
         taxBaseConf: "unconfirmed",
         taxBaseText: "送料を含む前提で計算（公式に明記が見つかっていません）",
@@ -150,7 +150,7 @@
       },
       mercari: {
         name: "メルカリShops", rate: 0.10, fixed: 0, rateText: "10%",
-        asof: "2026-07-27", checked: "2026-07-29", rateConf: "primary",
+        asof: "2026-07-27", checked: "2026-07-31", rateConf: "primary",
         rateSrc: "support.mercari-shops.com 記事900005534186・900006449763",
         taxBaseConf: "unconfirmed",
         taxBaseText: "送料を含む前提で計算（公式に明記が見つかっていません）",
