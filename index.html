@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ハンドメイドの値段の付け方・手取り計算 | minne/Creema/BASE手数料込み値付けアプリ(開発中)</title>
-<meta name="description" content="minne・Creema・BASEの販売手数料に加えて、見落としがちな振込にかかる費用まで差し引いた「本当の手取り」と、時給まで含めた「適正価格」がその場でわかる無料計算ツール。ハンドメイド作家のための値付けアプリを開発中、事前登録受付中です。">
+<meta name="description" content="材料費・作業時間(目標時給)・販売手数料・設定した利益分から、販売価格を試算できる無料ツール。minne・Creema・BASEの販売手数料と、見落としがちな振込にかかる費用を反映した受取額もその場でわかります。ハンドメイド作家のための値付けアプリを開発中、事前登録受付中です。">
 <meta property="og:title" content="ハンドメイドの値段の付け方・手取り計算アプリ(開発中)">
-<meta property="og:description" content="販売手数料と振込にかかる費用まで差し引いた「本当の手取り」と適正価格がすぐわかる、ハンドメイド作家のための値付けアプリ。無料の手取り計算ツールを今すぐ試せます。">
+<meta property="og:description" content="販売手数料と振込にかかる費用を反映した受取額と、入力条件に基づく販売価格を試算できる、ハンドメイド作家のための値付けアプリ。無料の計算ツールを今すぐ試せます。">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary">
@@ -76,14 +76,14 @@
 <body>
 <header>
   <h1>その作品、いくらで売れば<br>手元にいくら残るか、すぐ言えますか?</h1>
-  <p class="sub">販売手数料<strong>と振込にかかる費用</strong>まで差し引いた「本当の手取り」と、あなたの時給まで含めた「適正価格」がわかる、ハンドメイド作家のための値付けアプリを開発中です。</p>
+  <p class="sub">販売手数料<strong>と振込にかかる費用</strong>を反映した受取額と、材料費だけでなく作業時間・目標時給まで含めた値付けの試算ができる、ハンドメイド作家のための値付けアプリを開発中です。</p>
   <a class="jump" href="#calc">まずは無料の計算ツールを試す ↓</a>
 </header>
 
 <div class="wrap">
 
   <div class="card" id="calc">
-    <h2>お試し版:振込費用まで引いた「本当の手取り」をその場で計算</h2>
+    <h2>お試し版:振込費用まで引いた受取額をその場で計算</h2>
     <label>販売価格(円)
       <input type="number" id="price" value="3000" min="0">
     </label>
@@ -194,7 +194,7 @@
     <ul>
       <li>材料費は覚えてるけど、手数料を引いた残りは計算したことがない</li>
       <li>Excelの原価表がパーツ増加で更新崩壊した</li>
-      <li>値上げしたいけど適正価格の根拠がない</li>
+      <li>値上げしたいけど、価格を決める根拠が持てない</li>
       <li>販売サイトごとの手数料の違いがよく分からない</li>
     </ul>
   </div>
@@ -407,7 +407,7 @@
       el.innerHTML = `${via}、いまの価格だと
         <span class="hl">時給 ${yen(hourly)}</span>。目標の ${yen(wage)} には ${yen(wage - hourly)} 届いていません。
         <span class="sub">材料費も手数料も振込費用も、作品ごとに毎回この計算が必要です。それを自動でやって、
-        いくらで売れば手間が報われるかまで出すアプリを開発中です。</span>${caveat}${cta}`;
+        作業時間や目標時給、設定した利益分を踏まえた販売価格を試算するアプリを開発中です。</span>${caveat}${cta}`;
     } else {
       el.className = "verdict ok";
       el.innerHTML = `${via}、手数料と材料費・振込費用を引いても <span class="hl">時給 ${yen(hourly)}</span> が残ります。

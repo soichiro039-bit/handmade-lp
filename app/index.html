@@ -8,7 +8,7 @@
      指で広げて読む動作を塞ぐのは実利の損失が大きい。
      出典 https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html (2026-07-26確認) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ハンドメイド値付けアプリ(プロトタイプ) | 原価・手取り・適正価格</title>
+<title>ハンドメイド値付けアプリ(プロトタイプ) | 原価・手取り・値付け試算</title>
 <style>
   /* 配色はすべてWCAG AA(通常文字4.5:1)を満たす値に調整済み。
      根拠: Apple HIG「最小コントラスト比4.5:1／文字は11pt未満にしない」。
@@ -1009,7 +1009,7 @@ function load(){
   return JSON.parse(JSON.stringify(SAMPLE));
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
-function resetAll(){ db = JSON.parse(JSON.stringify(SAMPLE)); save(); renderAll(); go('s-home'); }
+function resetAll(){ db = JSON.parse(JSON.stringify(SAMPLE)); focusId = null; save(); renderAll(); go('s-home'); }
 
 /* ===== 計算 ===== */
 const yen = n => Math.round(n).toLocaleString()+"円";
@@ -1393,13 +1393,20 @@ function saveWork(){
     shipMode: wShipMode.value === "sep" ? "sep" : "in",
     // 空欄は「請求額と同じ」であって0円ではない。0へ丸めると実費0＝手取りを多く見せる方向へ誤る
     shipCost: (wShipMode.value === "sep" && wShipCost.value !== "") ? (+wShipCost.value||0) : null });
-  save(); focusId = newId; editRecipe=[]; wName.value=""; wPrice.value=""; wShipCost.value="";
+  setFocus(newId); editRecipe=[]; wName.value=""; wPrice.value=""; wShipCost.value="";
   wShipMode.dataset.touched = "";
   renderAll(); go('s-home');
 }
 
-let focusId = null;
-function focusWork(id){ focusId=id; go('s-price'); }
+/* 値付け画面が「誰の答え」を見せるか。**dbへ保存する**（2026-07-31 開発部・原則41c）。
+   変数だけだと開き直した瞬間にnullへ戻り、下の `|| db.works[0]` がサンプルを拾う。
+   07-31 00:35の修正は保存時にfocusIdを入れただけで、**開き直すと毎回サンプルの答えへ
+   戻る**状態が両版に残っていた（統括Xが実測。検査は保存直後しか測らずPASSのまま）。
+   フォールバックは消さない——works[0]すら無い状態があるため。消すのは非永続の方。
+   書き換え口は setFocus 1つに寄せる（同じ代入が散ると、また片方だけ直る）。 */
+let focusId = (db && db.focusId != null) ? db.focusId : null;
+function setFocus(id){ focusId = id; db.focusId = id; save(); }
+function focusWork(id){ setFocus(id); go('s-price'); }
 
 /* ===== 関門②の計測「計算を最後まで終えた人」（2026-07-29 開発部・統括07:10依頼） =====
    きっかけ（実測）: 07-28のリールは340再生あったのにLP訪問は0。段のどこで落ちているかを
@@ -1458,7 +1465,8 @@ function renderPrice(){
   const body = document.getElementById("priceBody");
   if(!db.works.length){ body.innerHTML='<div class="card"><div class="empty">先に作品を登録してください</div></div>'; return; }
   const w = db.works.find(x=>x.id===focusId) || db.works[0];
-  focusId = w.id;
+  // フォールバックで拾った時もdbへ書き戻す。書かないと開き直すたびに同じ迷子が起きる
+  if(focusId !== w.id || db.focusId !== w.id) setFocus(w.id);
   const cur = +w.price||0;
   const a = analyze(w, cur, db.cfg.ch);
   const rec = recommend(w, db.cfg.ch);
@@ -1548,7 +1556,7 @@ function renderPrice(){
   body.innerHTML = `
     <div class="card">
       <h2>作品を選ぶ</h2>
-      <select aria-label="値付けを見る作品を選ぶ" onchange="focusId=+this.value;renderPrice()">
+      <select aria-label="値付けを見る作品を選ぶ" onchange="setFocus(+this.value);renderPrice()">
         ${db.works.map(x=>`<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}</option>`).join("")}
       </select>
       <label for="curPrice">いまつけている価格(円)</label>
@@ -1556,7 +1564,7 @@ function renderPrice(){
     </div>
     ${coach}
     <div class="card">
-      <h2>${above ? "この価格を下回らないで" : "あなたの適正価格"}<span class="lock">有料機能</span></h2>
+      <h2>${above ? "この価格を下回らないで" : "値付けの試算結果"}<span class="lock">有料機能</span></h2>
       <div class="hero-num">
         <div class="n" ${above?'style="color:var(--muted);font-size:1.9rem"':""}>${yen(recP)}</div>
         <div class="u">${above ? `${chName}での下限ライン（いまは ${yen(cur)}／余裕あり）` : `${chName}で販売する場合`}</div>
@@ -1572,8 +1580,12 @@ function renderPrice(){
         <tr><td>${chName}の手数料</td><td>${yen(analyze(w,recP,db.cfg.ch).fee)}</td></tr>
         <tr><td><b>${above?"下限ライン":"推奨価格"}</b></td><td><b>${yen(recP)}</b></td></tr>
       </tbody></table>
-      <div class="note">この「逆算」が、このアプリの中心です。原価を記録するだけでなく、作業時間や目標利益を踏まえた販売価格の目安を出します。<br>
-      ※これは<b>あなたの手間が報われる下限</b>です。デザイン性や希少性、ブランドの評価は数字に表れません。これより高く売れているなら、それはあなたの作品の価値です。下げる理由にはしないでください。</div>
+      <!-- 【H-32是正 2026-07-31 法務部】成果の言い切りを外し、計算に使った入力項目の列挙へ置き換えた。
+           旧文は法務チェック.md H-32 に保管する（是正コメントへ旧文を写すと、次の文字列走査が
+           未是正と誤検知する＝2026-07-27/07-29と同じ失敗の再発になるため）。
+           列挙する項目は下の内訳表と1対1で対応させること。計算へ入れていない項目を書いてはならない。 -->
+      <div class="note">この「逆算」が、このアプリの中心です。原価を記録するだけでなく、作業時間や目標利益を踏まえた販売価格を試算します。<br>
+      ※この金額は、入力した材料費・梱包発送費・作業時間・目標時給・販売手数料・振込にかかる費用・設定した利益分に基づく試算です。需要、競合価格、デザイン性、希少性、ブランドの評価は含みません。最終的な販売価格は、これらも踏まえてご自身で決めてください。</div>
     </div>
     ${steps}
     <div class="card">
