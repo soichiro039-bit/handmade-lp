@@ -1184,6 +1184,41 @@ function renderHome(){
   }
   // 伴走メッセージ
   const box = document.getElementById("coachHome");
+
+  /* 【2026-07-31 開発部・原則41e】保存した直後の行き止まりを塞ぐ（統括08:28の指摘）。
+     saveWork は go('s-home') で戻すだけで、「保存できたのか」も「次にどこを押すのか」も
+     画面のどこにも出ていなかった。とくに価格未設定で登録した人（＝いくらにすればいいか
+     分からないから使いに来た人）は、下の priced 判定で弾かれて伴走欄が空のまま返っていた。
+     関門②は「値付け画面に自分の作品が出た」時点で1件なので、ここで導線が切れている限り
+     完遂は構造的に増えない。保存を数えず到達を数える定義（原則29g）と表裏。 */
+  if(justSavedId != null){
+    const jw = db.works.find(w=>w.id===justSavedId);
+    justSavedId = null;                       // 一度きり。再描画で出し続けない
+    if(jw){
+      box.innerHTML = `<div class="coach good">
+        「${esc(jw.name)}」を保存しました。かかっている原価は <b>${yen(directCost(jw)+laborCost(jw))}</b> です。<br>
+        つづけて、いくらで売ればこの手間に見合うのかを見てみましょう。
+        <button class="btn mini" style="margin-top:9px" onclick="focusWork(${jw.id})">この作品の適正価格を見る</button>
+      </div>`;
+      return;
+    }
+  }
+
+  /* 保存の合図は一度きりなので、閉じて開き直した人には出ない。そこで「自分の作品を
+     登録したのに、まだ値付けまで進んでいない」状態を別に拾う。ここが無いと、
+     保存した直後に離脱した人は次に開いた時また案内のない画面に戻る。
+     サンプルは対象外（サンプルの値付けを勧めても、その人の答えにはならない）。 */
+  const unpriced = db.works.filter(w => isOwnWork(w) && !(+w.price > 0));
+  if(unpriced.length){
+    const t = unpriced[0];
+    box.innerHTML = `<div class="coach info">
+      「${esc(t.name)}」は、まだ売る値段が決まっていません。<br>
+      原価は <b>${yen(directCost(t)+laborCost(t))}</b> です。いくらなら手間に見合うかを見てみましょう。
+      <button class="btn mini" style="margin-top:9px" onclick="focusWork(${t.id})">この作品の適正価格を見る</button>
+    </div>`;
+    return;
+  }
+
   const priced = db.works.filter(w=>+w.price>0 && +w.min>0);
   if(!priced.length){ box.innerHTML=""; return; }
   const worst = priced.reduce((a,b)=> analyze(a,+a.price,db.cfg.ch).hourly < analyze(b,+b.price,db.cfg.ch).hourly ? a:b);
@@ -1395,6 +1430,7 @@ function saveWork(){
     shipCost: (wShipMode.value === "sep" && wShipCost.value !== "") ? (+wShipCost.value||0) : null });
   setFocus(newId); editRecipe=[]; wName.value=""; wPrice.value=""; wShipCost.value="";
   wShipMode.dataset.touched = "";
+  justSavedId = newId;   // 保存できた事実と、次にどこへ行くかを s-home で出す（原則41e）
   renderAll(); go('s-home');
 }
 
@@ -1407,6 +1443,12 @@ function saveWork(){
 let focusId = (db && db.focusId != null) ? db.focusId : null;
 function setFocus(id){ focusId = id; db.focusId = id; save(); }
 function focusWork(id){ setFocus(id); go('s-price'); }
+
+/* 保存した直後の1回だけ、s-home の伴走欄へ「保存しました＋次へ」を出すための印。
+   描いたら消す（消さないと他の操作で再描画するたびに同じ通知が出続ける）。
+   永続させないのは意図的——保存の瞬間の合図であって、状態ではない。
+   閉じて開き直した人は、下の「まだ値付けしていない自分の作品」の側で拾う。 */
+let justSavedId = null;
 
 /* ===== 関門②の計測「計算を最後まで終えた人」（2026-07-29 開発部・統括07:10依頼） =====
    きっかけ（実測）: 07-28のリールは340再生あったのにLP訪問は0。段のどこで落ちているかを
