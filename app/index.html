@@ -9,6 +9,23 @@
      出典 https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html (2026-07-26確認) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ハンドメイド値付けアプリ(プロトタイプ) | 原価・手取り・値付け試算</title>
+<!-- ホーム画面へ追加したときの配線(2026-07-31 開発部が追加)。
+     技術調査部00:49の一次情報: iOS26のWebKitは、ホーム画面へ追加した全サイトを
+     既定でスタンドアロン起動する。つまり無改修でも「アプリのように」開くが、
+     **名前とアイコンだけは無改修だと制御できない**。
+     何も書かないと、ホーム画面の名前は上の<title>になり、iPhoneの1行に入らず
+     「ハンドメイド値付けアプ…」で切れて何のアプリか分からない。アイコンは
+     ページの見た目から自動生成された物が並ぶ。社長の実機ゲートはここを通るので、
+     名前とアイコンは明示する。manifestは同一オリジンの静的ファイルなので、
+     原則11(端末の外へ通信しない)は破らない。 -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="値付け試算">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#faf6f2">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png" type="image/png">
 <style>
   /* 配色はすべてWCAG AA(通常文字4.5:1)を満たす値に調整済み。
      根拠: Apple HIG「最小コントラスト比4.5:1／文字は11pt未満にしない」。
@@ -40,7 +57,13 @@
   .phone { max-width:430px; margin:0 auto; background:var(--bg); min-height:100vh; position:relative; }
 
   header {
-    background:var(--main); color:#fff; padding:14px 18px;
+    background:var(--main); color:#fff;
+    /* 上の余白だけ安全域を足す(2026-07-31 開発部)。ホーム画面から起動すると
+       Safariの上部バーが無くなり、本文の原点が画面の一番上へ来る。14pxのままだと
+       見出しが時計・電波表示の裏へもぐる。下端は既に3か所で安全域を足しているのに
+       上端だけ抜けていた。ブラウザで開いている間は inset-top が0なので見た目は変わらない
+       ＝この1行はホーム画面から起動した時だけ効く */
+    padding:calc(14px + env(safe-area-inset-top, 0px)) 18px 14px;
     position:sticky; top:0; z-index:20; box-shadow:0 2px 8px rgba(61,50,41,.15);
   }
   header h1 { font-size:1rem; font-weight:bold; }
@@ -116,6 +139,12 @@
   .again { display:flex; flex-wrap:wrap; gap:7px; margin:-2px 0 10px; }
 
   .empty { text-align:center; color:var(--muted); font-size:.86rem; padding:22px 8px; }
+  /* 【2026-07-31 デザイン部・原則43】自分の作品とサンプルの境目。
+     サンプルを消さずに「ここからは例です」と名乗る（原則40と同じ考え方＝
+     並んでいるものが何なのかを、読み手に推測させない）。 */
+  .list-sep { font-size:.78rem; color:var(--muted); background:var(--soft);
+              border-radius:8px; padding:7px 10px; margin:10px 0 2px;
+              overflow-wrap:anywhere; }
 
   table { width:100%; border-collapse:collapse; margin-top:8px; font-size:.85rem; }
   /* 文字を大きくしても、長い項目名が表を画面外へ押し出さないように折り返させる */
@@ -1164,16 +1193,32 @@ function renderHome(){
   document.getElementById("sampleTag").hidden = !isSampleWorks();
   const q = findQuery("workSearch");
   document.getElementById("workFind").hidden = (db.works.length < FIND_MIN && !q);
-  const shown = db.works.filter(w=>matchName(w.name, q));
+  /* 【2026-07-31 デザイン部・原則43】自分の作品を、サンプルより先に出す。
+     実測(2026-07-31・3幅): サンプル2件の下に積まれるため、375x667では自分の作品が
+     top=789px(公開版828px)＝画面高667の**外**に落ちていた。登録した本人が、
+     自分の作品を一度も見ないまま home に留まれてしまう。
+     Apple HIG(Onboarding)「Teach through interactivity ... instead of just viewing
+     instructional material」——サンプルは"見る材料"、自分の作品は"やった結果"。
+     やった結果が、見る材料より下にあってはならない。
+     sort は安定なので、群の中の元の並びは保たれる（＝41bの陰性対照を壊さない）。
+     db.works 自体は並べ替えない（isSampleWorks と renderPrice の先頭判定に触らないため）。 */
+  const shown = db.works.filter(w=>matchName(w.name, q))
+                        .sort((a,b)=>(isOwnWork(b)?1:0)-(isOwnWork(a)?1:0));
+  const 自分の件数 = shown.filter(isOwnWork).length;
   if(!db.works.length){ el.innerHTML = '<div class="empty">まだ作品がありません。<br>下のボタンから登録してみましょう。</div>'; }
   else if(!shown.length){ el.innerHTML = '<div class="empty">「'+esc(q)+'」に当てはまる作品はありません。</div>'; }
   else {
-    el.innerHTML = shown.map(w=>{
+    el.innerHTML = shown.map((w,_i)=>{
+      /* 自分の作品が1件でもある時だけ、サンプルの手前に境目を出す。
+         全部サンプル（＝まだ何も登録していない人）には出さない＝陰性対照 */
+      const _sep = (自分の件数 > 0 && _i === 自分の件数)
+        ? `<div class="list-sep">ここから下は、使い方の例としてはじめから入っているサンプルです</div>`
+        : "";
       const a = analyze(w, +w.price||0, db.cfg.ch);
       const hr = (+w.price>0 && +w.min>0) ? a.hourly : null;
       const cls = hr===null ? "" : (hr >= db.cfg.wage ? "pos" : "neg");
       const hrTxt = hr===null ? "価格未設定" : "時給 "+yen(hr);
-      return `<div class="list-item">
+      return _sep + `<div class="list-item">
         <div><div class="name">${esc(w.name)}</div>
           <div class="meta">原価 ${yen(directCost(w) + laborCost(w))}（材料・送料 ${yen(directCost(w))}＋人件費 ${yen(laborCost(w))}）／ ${w.min}分</div></div>
         <div class="val"><span class="${cls}">${hrTxt}</span>

@@ -1,0 +1,18 @@
+{
+  "name": "ハンドメイド値付け試算(開発中)",
+  "short_name": "値付け試算",
+  "description": "材料費と手間から原価と手取りを適正価格が分かる道具です。まだ開発中の試作です。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf6f2",
+  "theme_color": "#faf6f2",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
