@@ -659,33 +659,14 @@
 })();
 </script>
 
-<!-- Cloudflare Web Analytics(アクセス数計測・クッキーレス)
-     社内アクセスの除外は index.html と同じ仕組み。「?noanalytics=1」で以後この端末は計測しない。 -->
-<script>
-(function () {
-  var KEY = "meipla_noanalytics";
-  var q = new URLSearchParams(location.search).get("noanalytics");
-  function setFlag(on) {
-    try {
-      if (on) { localStorage.setItem(KEY, "1"); } else { localStorage.removeItem(KEY); }
-    } catch (e) {}
-    document.cookie = KEY + "=" + (on ? "1" : "") + ";path=/;max-age=" + (on ? 63072000 : 0) + ";SameSite=Lax";
-  }
-  function hasFlag() {
-    try { if (localStorage.getItem(KEY) === "1") { return true; } } catch (e) {}
-    return document.cookie.indexOf(KEY + "=1") !== -1;
-  }
-  if (q === "1" || q === "0") {
-    setFlag(q === "1");
-    try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
-  }
-  if (hasFlag()) { return; }
-  var s = document.createElement("script");
-  s.defer = true;
-  s.src = "https://static.cloudflareinsights.com/beacon.min.js";
-  s.setAttribute("data-cf-beacon", '{"token": "c562137589a5429b8c1b2c456441f9ca"}');
-  document.head.appendChild(s);
-})();
-</script>
+<!-- 閲覧数の計測。opt-out(?noanalytics=1)の判定ごと analytics.js に一本化してある。
+     【2026-07-31 開発部】ここには同じ処理のインライン複製が置かれていた。analytics.js は
+     「写すと opt-out の判定が2箇所になる」ことを避けるために切り出した物なのに、
+     このページだけが切り出す前の写しのまま取り残されていた＝二重実装。
+     実際にずれていた: 本体は opt-out が効いている端末へ「計測OFF」の印を出すが、
+     写しの側にはその1行が無い。検証観測部21:55の「比較ページだけバッジが出ない」は
+     表示の差ではなく、**判定そのものが別のコードだった**ことの症状。
+     金額と違って症状が出ないので、外した本人以外には見えない(原則38と同じ沈黙する経路)。 -->
+<script src="../../analytics.js" defer></script>
 </body>
 </html>
