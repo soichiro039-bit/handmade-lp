@@ -1819,7 +1819,7 @@ function obStart(){
     ${a.payoutKnown
       ? `<div class="ob-row"><span class="l">振込にかかる費用(1点あたり)</span><span class="v">− ${yen(a.payout)}</span></div>`
       : `<div class="ob-row"><span class="l">振込にかかる費用</span><span class="v">未確認のため含めていません</span></div>`}
-    <div class="ob-row total"><span class="l">手元に残る</span><span class="v">${yen(a.profit)}</span></div>`;
+    <div class="ob-row total"><span class="l">残る額（概算）</span><span class="v">${yen(a.profit)}</span></div>`;
   document.getElementById("obCap").textContent =
     (+w.min > 0) ? `「${w.name}」に${w.min}分かけた場合、時給 ${yen(a.hourly)}` : `「${w.name}」の場合`;
 
