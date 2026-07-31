@@ -1704,7 +1704,7 @@ function renderPrice(){
         <div class="n" ${above?'style="color:var(--muted);font-size:1.9rem"':""}>${yen(recP)}</div>
         <div class="u">${above ? `${chName}での下限ライン（いまは ${yen(cur)}／余裕あり）` : `${chName}で販売する場合`}</div>
       </div>
-      <table><tbody>
+      <table class="breakdown"><tbody>
         <tr><td>材料費</td><td>${yen(rowMaterial)}</td></tr>
         <tr><td>梱包・発送${shipActual(w) !== (+w.ship||0) ? "（あなたが実際に払う額）" : ""}</td><td>${yen(rowShip)}</td></tr>
         ${shipActual(w) !== (+w.ship||0) ? `<tr class="ref"><td>（参考・上に足しません）購入者へ請求する送料（実費との差 ${yen((+w.ship||0)-shipActual(w))}。この差にも手数料がかかります）</td><td>${yen(+w.ship||0)}</td></tr>` : ""}
