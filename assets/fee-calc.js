@@ -132,7 +132,7 @@
         rateSrc: "creema.jp/news/1480/detail（公式改定告知）",
         taxBaseConf: "primary",
         taxBaseText: "決済総額（作品＋オプション＋ラッピング＋送料）",
-        roundText: "公式に明記がないため切り上げ（手取りを多く見せない側へ倒す）",
+        roundText: "公式に明記がないため切り上げ（残る額を多く見せない側へ倒す）",
         payoutText: "200円／回（振込額3万円以上は275円）", payoutConf: "primary",
         payoutSrc: "creema.jp/news/1480/detail（2025-11-27改定後・全金融機関一律）",
         payoutNote: ""

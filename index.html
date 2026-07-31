@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ハンドメイドの値段の付け方・手取り計算 | minne/Creema/BASE手数料込み値付けアプリ(開発中)</title>
-<meta name="description" content="材料費・作業時間(目標時給)・販売手数料・設定した利益分から、販売価格を試算できる無料ツール。minne・Creema・BASEの販売手数料と、見落としがちな振込にかかる費用を反映した受取額もその場でわかります。ハンドメイド作家のための値付けアプリを開発中、事前登録受付中です。">
-<meta property="og:title" content="ハンドメイドの値段の付け方・手取り計算アプリ(開発中)">
-<meta property="og:description" content="販売手数料と振込にかかる費用を反映した受取額と、入力条件に基づく販売価格を試算できる、ハンドメイド作家のための値付けアプリ。無料の計算ツールを今すぐ試せます。">
+<title>ハンドメイドの値段の付け方・残る額の計算 | minne/Creema/BASE手数料込み値付けアプリ(開発中)</title>
+<meta name="description" content="材料費・作業時間(目標時給)・販売手数料・設定した利益分から、販売価格を試算できる無料ツール。minne・Creema・BASEの販売手数料と、見落としがちな振込にかかる費用も含めた4つの費用（販売手数料・振込にかかる費用・材料費・梱包発送の実費）を差し引いたあと、いくら残るかがその場でわかります。ハンドメイド作家のための値付けアプリを開発中、事前登録受付中です。">
+<meta property="og:title" content="ハンドメイドの値段の付け方・残る額の計算アプリ(開発中)">
+<meta property="og:description" content="販売手数料・振込にかかる費用・材料費・梱包発送の実費を差し引いたあと、いくら残るかを概算できます。入力条件に基づく販売価格も試算できる、ハンドメイド作家のための値付けアプリ。無料の計算ツールを今すぐ試せます。">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary">
@@ -76,14 +76,14 @@
 <body>
 <header>
   <h1>その作品、いくらで売れば<br>手元にいくら残るか、すぐ言えますか?</h1>
-  <p class="sub">販売手数料<strong>と振込にかかる費用</strong>を反映した受取額と、材料費だけでなく作業時間・目標時給まで含めた値付けの試算ができる、ハンドメイド作家のための値付けアプリを開発中です。</p>
+  <p class="sub">販売価格から<strong>販売手数料・振込にかかる費用・材料費・梱包発送の実費</strong>を差し引いたあと、いくら残るかを概算できます。作業時間と目標時給からの値付けの試算もできる、ハンドメイド作家のための値付けアプリを開発中です。</p>
   <a class="jump" href="#calc">まずは無料の計算ツールを試す ↓</a>
 </header>
 
 <div class="wrap">
 
   <div class="card" id="calc">
-    <h2>お試し版:振込費用まで引いた受取額をその場で計算</h2>
+    <h2>お試し版:費用を差し引いたあと、いくら残るかをその場で概算</h2>
     <label>販売価格(円)
       <input type="number" id="price" value="3000" min="0">
     </label>
@@ -149,9 +149,13 @@
     <div id="rateStale" aria-live="polite"></div>
 
     <table id="result">
-      <thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用<br><span class="thsub">1点あたり</span></th><th>手取り</th></tr></thead>
+      <thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用<br><span class="thsub">1点あたり</span></th><th>残る額<br><span class="thsub">概算</span></th></tr></thead>
       <tbody></tbody>
     </table>
+
+    <!-- 列名を短くしたぶん、定義はここで言う（H-41の3C＝短縮した列名には近接した完全定義への導線が必須）。
+         列挙は完全列挙にする。1つでも省くと、省いた分が販路の取り分に見える（H-41の3A） -->
+    <p class="note" style="margin-top:8px">「残る額（概算）」は、購入者が払った合計から<strong>販売手数料・振込にかかる費用・材料費・梱包発送の実費</strong>を引いた1点あたりの金額です（あなたの手間の対価はまだ含んでいません）。</p>
 
     <!-- 請求額と実費が違うときだけ出す。黙って実費だけを見せない（原則34e） -->
     <p class="note" id="shipDiff"></p>
@@ -176,8 +180,8 @@
          正本r49自身が「該当する作家には誤った手取りが出る」と書いている。
          入力欄は増やさない（MVPスコープを変えない）——開示だけで危険側を消す。
          出典: help.creema.jp/archives/help/181（2026年7月29日 分析部が一次取得）。 -->
-    <strong>Creemaの手数料は取扱カテゴリと販売サイトで変わります。</strong>この表は「作品・素材」(日本サイト)の10.67%で計算しています。フードは15.4%、台湾・香港サイトは21%+42円のため、食品を扱う方は表示より手取りが少なくなります。<br>
-    出典: 販売手数料は各公式告知ページ(<span id="lpRateAsof"></span>)、振込にかかる費用は各公式ヘルプ等の概算。いずれも各社の公式ヘルプ・公式告知で確認した値です。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際の受取額を保証するものではありません。決済オプション等は含みません。</p>
+    <strong>Creemaの手数料は取扱カテゴリと販売サイトで変わります。</strong>この表は「作品・素材」(日本サイト)の10.67%で計算しています。フードは15.4%、台湾・香港サイトは21%+42円のため、食品を扱う方は表示より残る額が少なくなります。<br>
+    出典: 販売手数料は各公式告知ページ(<span id="lpRateAsof"></span>)、振込にかかる費用は各公式ヘルプ等の概算。いずれも各社の公式ヘルプ・公式告知で確認した値です。手数料は改定される場合があります。最新の情報は各公式サイトをご確認ください。計算結果は概算であり、実際に手元へ残る額を保証するものではありません。決済オプション等は含みません。</p>
     <!-- 【2026-07-29 デザイン部】情報調査部07:27・分析部08:40の指摘2件目への対応。
          実測: このLPから販路比較ページへの内部リンクは0本（逆向きは2本ある）。
          直したのは「リンクが無い」ことではなく、その結果として起きていたこと——
@@ -203,7 +207,7 @@
     <h2>開発中のアプリでできること</h2>
     <ul class="pain">
       <li><strong>パーツ登録だけで原価がわかる</strong> — 仕入れ値を変えれば全作品に自動反映</li>
-      <li><strong>販路ごとの手取りを一発比較</strong> — 振込にかかる費用まで含めた計算が作品ごとに自動で</li>
+      <li><strong>販路ごとに残る額を一発比較</strong> — 販売手数料・振込にかかる費用・材料費・梱包発送の実費を差し引いた概算が作品ごとに自動で</li>
       <li><strong>「いくらで売るべきか」を提案</strong> — 時給と目標利益から推奨価格を逆算</li>
     </ul>
     <!-- 【2026-07-28 統括・主従を入れ替えた】17:20のGPT審査で、最初に求める行動は
@@ -362,7 +366,7 @@
     if (diffEl) diffEl.innerHTML = (mode !== "sep" || sAct === s) ? ""
       : (s > sAct
         ? `購入者へ請求する送料は ${yen(s)}、そのうちあなたが実際に払うのは ${yen(sAct)} です（差 ${yen(s - sAct)}）。<strong>この差にも販売手数料がかかる</strong>ため、そのまま手元に残るわけではありません。`
-        : `購入者へ請求する送料は ${yen(s)} ですが、あなたが実際に払うのは ${yen(sAct)} で、<strong>請求より ${yen(sAct - s)} 多く払っています</strong>。その分は手取りから引かれています。`);
+        : `購入者へ請求する送料は ${yen(s)} ですが、あなたが実際に払うのは ${yen(sAct)} で、<strong>請求より ${yen(sAct - s)} 多く払っています</strong>。その分だけ、残る額が少なくなります。`);
     const tbody = document.querySelector("#result tbody");
     tbody.innerHTML = "";
     let mine = null;
@@ -401,11 +405,11 @@
     const cta = `<a class="cta soft" href="${FORM}" target="_blank" rel="noopener">この計算を自動でやるアプリの先行案内を受け取る(無料)</a>`;
     // 振込費用が未確認の販路を選んだ場合は、その分が引かれていないことを必ず添える。
     const caveat = mine.payout === null
-      ? `<span class="sub">※${mine.name || mine.c.name}は振込にかかる費用が確認できていないため、その分は差し引けていません。実際の手取りはこれより少なくなります。</span>` : "";
+      ? `<span class="sub">※${mine.name || mine.c.name}は振込にかかる費用が確認できていないため、その分は差し引けていません。実際に残る額はこれより少なくなります。</span>` : "";
     const via = `${mine.c.name}で売った場合`;
     if (mins <= 0) {
       el.className = "verdict ok";
-      el.innerHTML = `${via}、手数料と材料費・振込費用を引いて手元に残るのは <span class="hl">${yen(mine.net)}</span>。
+      el.innerHTML = `${via}、販売手数料・振込にかかる費用・材料費・梱包発送の実費を引いて残るのは（概算） <span class="hl">${yen(mine.net)}</span>。
         <span class="sub">制作時間を入れると、時給がいくらになるかも出せます。</span>${caveat}${cta}`;
       return;
     }
@@ -418,7 +422,7 @@
         作業時間や目標時給、設定した利益分を踏まえた販売価格を試算するアプリを開発中です。</span>${caveat}${cta}`;
     } else {
       el.className = "verdict ok";
-      el.innerHTML = `${via}、手数料と材料費・振込費用を引いても <span class="hl">時給 ${yen(hourly)}</span> が残ります。
+      el.innerHTML = `${via}、販売手数料・振込にかかる費用・材料費・梱包発送の実費を引いても <span class="hl">時給 ${yen(hourly)}</span> が残ります。
         ${wage > 0 ? `目標の ${yen(wage)} を満たせています。` : ""}
         <span class="sub">作品が増えても、パーツの仕入れ値が変わっても、この計算を全作品に自動で反映するアプリを開発中です。</span>${caveat}${cta}`;
     }
