@@ -1112,6 +1112,21 @@ function analyze(w, price, chKey){
   return { fee, net, profit, afterLabor, hourly, gross, shipTop, payout, payoutKnown };
 }
 
+/* 【2026-07-31 デザイン部・原則49f】profit から引いているものの名前を、ここ1か所で持つ。
+   なぜ1か所か: 内訳(1行ずつ出す表示)と、コーチ文(算式を言葉で説明する表示)は
+   別の場所で組み立てられており、**片方だけ直すと説明の側が控除の一部しか挙げていない
+   状態が生まれる**。それがH-41の実害そのもの——挙げなかった控除の分だけ、
+   利用者が逆算した額と画面の額がずれ、**差が販路の取り分に見える**(他社を悪く見せる向き)。
+   金額は1円も間違っていないので、金額どうしを突き合わせる検査では原理的に見つからない。
+   ★ここへ控除を1つ足したら、内訳もコーチ文も自動で追随する。手で2か所直さない。 */
+function deductLabels(a, chName){
+  const L = [`${chName}の手数料`, "材料費", "梱包・発送"];
+  if(a.payoutKnown) L.push("振込にかかる費用");   // 未確認の販路は引いていないので挙げない
+  return L;
+}
+/** 原則49: 結果の金額の名前。正本＝事業原則md 原則49「UIの列名は『残る額（概算）』」 */
+const RESIDUAL_LABEL = "残る額（概算）";
+
 /** 逆算値付け: 目標時給と目標利益率を満たす販売価格を販路ごとに逆算 */
 function recommend(w, chKey){
   const ch = CHANNELS.find(c=>c.key===chKey) || CHANNELS[0];
@@ -1562,14 +1577,14 @@ function renderPrice(){
     if(a.hourly < db.cfg.wage){
       const gap = recP - cur;
       coach = `<div class="coach warn">
-        いまの ${yen(cur)} だと、${chName}の手数料・材料費${a.payoutKnown ? "・振込にかかる費用" : ""}を引いたあとに残るのは <b>${yen(a.profit)}</b>。<br>
+        いまの ${yen(cur)} だと、${deductLabels(a, chName).join("、")}を引いたあと${RESIDUAL_LABEL}は <b>${yen(a.profit)}</b>。<br>
         ${w.min}分かけているので、<b>時給にすると ${yen(a.hourly)}</b> です。<br><br>
         目標の時給 ${yen(db.cfg.wage)} と上乗せ率 ${db.cfg.margin}% を満たすには
         <b>${yen(recP)}</b>（いまより ${yen(gap)} 上）が目安です。
       </div>`;
     } else {
       coach = `<div class="coach good">
-        いまの ${yen(cur)} なら、手数料と材料費を引いても <b>時給 ${yen(a.hourly)}</b> が残ります。
+        いまの ${yen(cur)} なら、${deductLabels(a, chName).join("、")}を引いても <b>時給 ${yen(a.hourly)}</b> が残ります。
         目標の ${yen(db.cfg.wage)} を超えています。<b>この価格に自信を持って大丈夫です。</b><br><br>
         下限は ${yen(recP)}。<b>下げる必要はありません</b>——いまの価格は、あなたの手間に見合っています。
       </div>`;
@@ -1813,13 +1828,13 @@ function obStart(){
   document.getElementById("obPrice").textContent = yen(price);
   document.getElementById("obBreak").innerHTML = `
     <div class="ob-row"><span class="l">売れた価格</span><span class="v">${yen(price)}</span></div>
-    <div class="ob-row"><span class="l">${chName}の手数料</span><span class="v">− ${yen(a.fee)}</span></div>
-    <div class="ob-row"><span class="l">材料費</span><span class="v">− ${yen(materialCost(w))}</span></div>
-    <div class="ob-row"><span class="l">梱包・発送${shipActual(w) !== (+w.ship||0) ? "（あなたが実際に払う額）" : ""}</span><span class="v">− ${yen(shipActual(w))}</span></div>
+    <div class="ob-row"><span class="l">${deductLabels(a, chName)[0]}</span><span class="v">− ${yen(a.fee)}</span></div>
+    <div class="ob-row"><span class="l">${deductLabels(a, chName)[1]}</span><span class="v">− ${yen(materialCost(w))}</span></div>
+    <div class="ob-row"><span class="l">${deductLabels(a, chName)[2]}${shipActual(w) !== (+w.ship||0) ? "（あなたが実際に払う額）" : ""}</span><span class="v">− ${yen(shipActual(w))}</span></div>
     ${a.payoutKnown
-      ? `<div class="ob-row"><span class="l">振込にかかる費用(1点あたり)</span><span class="v">− ${yen(a.payout)}</span></div>`
+      ? `<div class="ob-row"><span class="l">${deductLabels(a, chName)[3]}(1点あたり)</span><span class="v">− ${yen(a.payout)}</span></div>`
       : `<div class="ob-row"><span class="l">振込にかかる費用</span><span class="v">未確認のため含めていません</span></div>`}
-    <div class="ob-row total"><span class="l">残る額（概算）</span><span class="v">${yen(a.profit)}</span></div>`;
+    <div class="ob-row total"><span class="l">${RESIDUAL_LABEL}</span><span class="v">${yen(a.profit)}</span></div>`;
   document.getElementById("obCap").textContent =
     (+w.min > 0) ? `「${w.name}」に${w.min}分かけた場合、時給 ${yen(a.hourly)}` : `「${w.name}」の場合`;
 
