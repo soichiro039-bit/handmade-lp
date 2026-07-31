@@ -245,6 +245,14 @@
        App Store Connect はプライバシーポリシーのURLを必須項目として求めるが、
        本文中の1段落では指せず、指せるURLが存在しなかった。 -->
   <p><a href="./privacy.html">プライバシーポリシー(全文)</a></p>
+  <!-- 【2026-07-31 開発部】募集ページへの導線。統括10:35が公開物の文言変更として承認。
+       理由=募集ページの入口が今はDMだけで、統括X実測でIG到達313・リンククリック0。
+       DMが1通も送れていない以上、募集ページを直しても誰にも見えない。
+       tester.html 側の noindex は維持する(検索流入を増やす意図ではなく、
+       すでに来ている人を志願者へ変えるための導線)。
+       【測り方】analytics.js を tester.html にも入れたので、以後この導線の到達が
+       Cloudflare の pageviews に出る。0のままなら位置が悪いという結論を出せる。 -->
+  <p><a href="./tester.html">お試し版を一緒に見てくださる方を探しています(最大30分・謝礼あり)</a></p>
   <p>運営者: 高中工業 / 連絡先: soichiro039@gmail.com</p>
   <p>© 2026</p>
 </footer>
@@ -531,48 +539,6 @@
   解除は「?noanalytics=0」。数字を守るために社長が閲覧を我慢する運用をやめるための仕組み。
   端末ごとに1回ずつ必要（PC / iPhoneのSafari / Instagramアプリ内ブラウザ）。
 -->
-<script>
-(function () {
-  var KEY = "meipla_noanalytics";
-  var q = new URLSearchParams(location.search).get("noanalytics");
-
-  function setFlag(on) {
-    try {
-      if (on) { localStorage.setItem(KEY, "1"); } else { localStorage.removeItem(KEY); }
-    } catch (e) { /* プライベートモード等でlocalStorageが使えなくてもCookie側で成立させる */ }
-    // Instagram等のアプリ内ブラウザはlocalStorageが消えることがあるためCookieにも二重で持つ
-    document.cookie = KEY + "=" + (on ? "1" : "") + ";path=/;max-age=" + (on ? 63072000 : 0) + ";SameSite=Lax";
-  }
-
-  function hasFlag() {
-    try { if (localStorage.getItem(KEY) === "1") { return true; } } catch (e) {}
-    return document.cookie.indexOf(KEY + "=1") !== -1;
-  }
-
-  if (q === "1" || q === "0") {
-    setFlag(q === "1");
-    // アドレスバーからクエリを消す。noanalytics=1 付きのURLがそのまま共有・コピペされると、
-    // 踏んだ一般の閲覧者まで計測から外れて数字が過少になるため（統括X指摘・2026-07-26）
-    try {
-      history.replaceState(null, "", location.pathname + location.hash);
-    } catch (e) { /* file:// 等でreplaceStateが使えない環境では何もしない */ }
-  }
-
-  if (hasFlag()) {
-    // 効いていることを自分の目で確認できるよう、画面隅に小さく出す
-    var badge = document.createElement("div");
-    badge.textContent = "計測OFF";
-    badge.setAttribute("style", "position:fixed;right:6px;bottom:6px;z-index:9999;font-size:11px;line-height:1;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,.55);color:#fff;font-family:sans-serif;pointer-events:none");
-    document.body.appendChild(badge);
-    return; // ビーコンを読み込まない＝この端末の閲覧は数に入らない
-  }
-
-  var s = document.createElement("script");
-  s.defer = true;
-  s.src = "https://static.cloudflareinsights.com/beacon.min.js";
-  s.setAttribute("data-cf-beacon", '{"token": "c562137589a5429b8c1b2c456441f9ca"}');
-  document.head.appendChild(s);
-})();
-</script>
+<script src="analytics.js" defer></script>
 </body>
 </html>
