@@ -1198,7 +1198,7 @@ function renderHome(){
       box.innerHTML = `<div class="coach good">
         「${esc(jw.name)}」を保存しました。かかっている原価は <b>${yen(directCost(jw)+laborCost(jw))}</b> です。<br>
         つづけて、いくらで売ればこの手間に見合うのかを見てみましょう。
-        <button class="btn mini" style="margin-top:9px" onclick="focusWork(${jw.id})">この作品の適正価格を見る</button>
+        <button class="btn mini" style="margin-top:9px" onclick="focusWork(${jw.id})">いくらにすればいいか見る</button>
       </div>`;
       return;
     }
@@ -1214,7 +1214,7 @@ function renderHome(){
     box.innerHTML = `<div class="coach info">
       「${esc(t.name)}」は、まだ売る値段が決まっていません。<br>
       原価は <b>${yen(directCost(t)+laborCost(t))}</b> です。いくらなら手間に見合うかを見てみましょう。
-      <button class="btn mini" style="margin-top:9px" onclick="focusWork(${t.id})">この作品の適正価格を見る</button>
+      <button class="btn mini" style="margin-top:9px" onclick="focusWork(${t.id})">いくらにすればいいか見る</button>
     </div>`;
     return;
   }
