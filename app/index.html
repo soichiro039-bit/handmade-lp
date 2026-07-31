@@ -247,6 +247,17 @@
   /* 最小文字サイズは11px相当を下回らせない(Apple HIG。55歳以上の新規流入層を含むため実利に直結) */
   .note { font-size:.8rem; color:var(--muted); margin-top:10px; line-height:1.6; }
   .proto-tag { background:#fffbe6; border:1px dashed #d9c48a; color:#8a6d1f; font-size:.78rem; padding:8px 11px; border-radius:9px; margin-bottom:12px; line-height:1.55; }
+  /* 料率の改定を知らせる帯（原則25・型C／2026-07-31 開発部が公開版へ移植）。
+     07-29に型Dだけを移植し、型Cを移植し忘れていた。**作家が値付けを決めるのは
+     公開中のこの画面**なので、料率が改定されても公開版の利用者には一度も知らされない
+     状態が2日続いた。作業を止めない位置に置き、閉じられるようにする——
+     気づけないことが問題なのであって、毎回立ちはだかることが目的ではない */
+  .rate-notice { background:var(--soft); border-left:5px solid var(--accent); color:var(--text);
+                 padding:12px 13px; border-radius:9px; margin-bottom:12px; line-height:1.6; font-size:.88rem; }
+  .rate-notice .rn-body { color:var(--muted); font-size:.83rem; margin-top:5px; }
+  .rate-notice .rn-when { display:block; margin-top:4px; font-size:.78rem; }
+  /* .btn.mini は44pxに満たないため、ここで明示的に確保する(原則12h) */
+  .rate-notice .rn-btn { min-height:44px; margin-top:10px; }
   /* 料率の鮮度切れを知らせる帯（原則28・型D／2026-07-29 開発部が公開版へ移植）。
      プロトタイプ側の .rate-stale と同じ見た目にする——同じ状態を2つの見え方で出さない */
   .rate-stale { background:#fff7ed; border-left:5px solid #d98324; color:var(--text);
@@ -357,8 +368,21 @@
      09:07に閲覧数の計測ビーコンが入ったため、限定なしの言い切りは事実と食い違う（H-13同型）。
      守るべき約束は「入力内容を送らない」であって「一切通信しない」ではない——
      前者は今も100%守っている。約束の範囲を正確に書く。 -->
-<div class="proto-tag">これは開発中アプリの動作プロトタイプです。入力内容はこの端末のブラウザにのみ保存され、外部へ送信されません（閲覧数と、計算を最後まで見ていただけた回数だけを数えています。詳しくは設定画面の「このアプリについて」）。</div>
+<!-- 【2026-07-31 法務部・H-38b】17:54と18:21にこの画面から計測を外した際、開示の是正が
+     設定画面側の段落(L561付近)にしか入らず、**画面最上部のこの帯だけが外す前のまま残っていた**。
+     実測＝この画面には外部スクリプトを読み込むタグが1つも無く、インラインの script は1本のみ。
+     第三者計測・完了イベントの識別子はいずれも0件（識別子そのものはここへ写さない。
+     写すと次回の走査で実装が在ると誤判定される＝法務部が7回目・11回目に自ら決めた規律）。
+     行っていない計測を「行っている」と書き続けるのは、H-13(行っている計測を書いていない)の
+     向きが逆なだけで同じ食い違い。**同じページの中で帯と詳細が反対のことを言う状態**でもあった。
+     **開示は1ページに複数ある。片方を直したら、同じ語で全部を走査してから完了と書くこと。** -->
+<div class="proto-tag">これは開発中アプリの動作プロトタイプです。入力内容はこの端末のブラウザにのみ保存され、外部へ送信されません（この画面では、閲覧数の計測も行っていません。詳しくは設定画面の「このアプリについて」）。</div>
 
+<!-- 料率の改定を知らせる帯（原則25・型C）。画面を問わず出したいので section の外に置く。
+     中身は renderRateNotice() が入れる。改定が無い回・初回起動では空のまま。
+     型Dの帯（下）とは別物である——こちらは「変わった」という出来事、
+     あちらは「確認できていない」という状態。片方だけでは穴が残る。 -->
+<div id="rateNotice" aria-live="polite"></div>
 <!-- 料率が「確認できていないまま古くなった」ことを知らせる帯（原則28・型D）。
      このアプリは「販売手数料は◯年◯月◯日時点の各社公式告知等に基づく概算です」と
      名乗っている。料率の更新が止まっても画面は何も変わらないので、その名乗りだけが
@@ -1043,7 +1067,7 @@ function load(){
   return JSON.parse(JSON.stringify(SAMPLE));
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
-function resetAll(){ db = JSON.parse(JSON.stringify(SAMPLE)); focusId = null; save(); renderAll(); go('s-home'); }
+function resetAll(){ db = JSON.parse(JSON.stringify(SAMPLE)); focusId = null; save(); seedRateSeen(); renderAll(); go('s-home'); }
 
 /* ===== 計算 ===== */
 const yen = n => Math.round(n).toLocaleString()+"円";
@@ -1690,7 +1714,58 @@ function saveCfg(){
 }
 
 function esc(s){ return String(s).replace(/[&<>"]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
-function renderAll(){ renderRateStale(); renderHome(); renderParts(); renderSet(); }
+/* ===== 料率が変わったことを知らせる(原則25・型C／2026-07-31 開発部が公開版へ移植) =====
+   「値の直後に取得時点を出す」(型A)ではなく「変わったときに知らせる」を採る。
+   利用者は毎回の日付を見たいのではなく、**前提が変わった瞬間に気づきたい**。
+
+   【なぜ2日遅れたか】07-29に型D(renderRateStale)だけを公開版へ移植し、型Cを置き忘れた。
+   検査(原則25g)は在ったが、公開版と名乗りながらプロトタイプ側を見ていたため
+   **#rateNotice が0件の公開版に対してPASSを返し続けていた**。実装の穴と検査の穴が
+   同じ向きに開くと、誰にも見えない。**作家が値付けを決めるのは公開中のこの画面**なので、
+   ここに無いことは「料率が改定されても利用者に一度も知らされない」と同義である。 */
+
+/** この端末が最後に見た料率の時点。初回は黙って記録するだけで、何も知らせない。
+    見たことのない相手へ「更新しました」と出すのは事実に反するうえ、
+    初回起動の第一印象を壊す(原則9)。既存の保存データにも rateSeen は無いので同じ扱いになる。 */
+function seedRateSeen(){
+  if(!db.cfg.rateSeen || typeof db.cfg.rateSeen !== "object"){
+    db.cfg.rateSeen = Object.assign({}, RATE_ASOF);
+    save();
+  }
+}
+/** 前に見た時点と食い違っている販路だけを返す。無ければ空配列 */
+function rateChanges(){
+  const seen = db.cfg.rateSeen;
+  if(!seen || typeof seen !== "object") return [];
+  return CHANNELS.filter(c => seen[c.key] && RATE_ASOF[c.key] && seen[c.key] !== RATE_ASOF[c.key])
+                 .map(c => ({ name:c.name, from:seen[c.key], to:RATE_ASOF[c.key] }));
+}
+function ackRateNotice(){
+  db.cfg.rateSeen = Object.assign({}, RATE_ASOF);
+  save();
+  renderRateNotice();
+  renderAll();   // 手数料の説明文にも時点が出るため、閉じた後の画面も描き直す
+}
+function renderRateNotice(){
+  const box = document.getElementById("rateNotice");
+  if(!box) return;
+  const ch = rateChanges();
+  if(!ch.length){ box.innerHTML = ""; return; }
+  const names = ch.map(c => esc(c.name)).join("・");
+  // 【文言の注意】「手数料が上がった/下がった」とは書かない。
+  //   ①こちらが持っているのは"確認した時点"であって改定の方向ではない(原則17)
+  //   ②下がったと書けば値下げの示唆に読まれうる(原則1)
+  //   だから促すのは「確認」だけで、価格をどちらへ動かすかは書かない。
+  box.innerHTML = `<div class="rate-notice" role="status">
+    <b>${names}の手数料を、公式の告知にあわせて更新しました。</b>
+    <div class="rn-body">手数料が変わると、同じ価格でも手元に残る金額が変わります。
+      保存してある価格はそのままにしてあります。${names}で出している作品の数字を、一度ご確認ください。
+      <span class="rn-when">${ch.map(c => `${esc(c.name)}: ${esc(c.from)}時点 → ${esc(c.to)}時点`).join("／")}</span></div>
+    <button class="btn mini sub rn-btn" onclick="ackRateNotice()">確認しました</button>
+  </div>`;
+}
+
+function renderAll(){ renderRateNotice(); renderRateStale(); renderHome(); renderParts(); renderSet(); }
 
 document.getElementById("pTotal").addEventListener("input", updUnit);
 document.getElementById("pQty").addEventListener("input", updUnit);
@@ -1782,6 +1857,7 @@ function obFinish(skipped){
   go("s-home");
 }
 
+seedRateSeen();   // 描画より前に置く。初回は記録するだけで帯は出ない(原則25・型C)
 renderAll();
 if(obNeeded()) obStart();
 </script>
