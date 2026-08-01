@@ -2,11 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<!-- 拡大を禁止しない(maximum-scale / user-scalable=no を書かない)。
-     WCAG 2.2 達成基準1.4.4「文字は支援技術なしで200%まで拡大できること」。
-     主対象は本業を別に持つ作家で、55歳以上の新規流入層も含む(minne調査 n=912・44.0%がスキルゼロ開始)。
-     指で広げて読む動作を塞ぐのは実利の損失が大きい。
-     出典 https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html (2026-07-26確認) -->
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ハンドメイド値付けアプリ(プロトタイプ) | 原価・残る額・値付け試算</title>
 
@@ -375,7 +371,7 @@
 
 <div id="rateStale" aria-live="polite"></div>
 
-<!-- ===== 作品一覧 ===== -->
+
 <section class="screen active" id="s-home" role="tabpanel" aria-label="作品">
   <div id="coachHome" aria-live="polite"></div>
   <div class="card">
@@ -394,7 +390,7 @@
   <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
 </section>
 
-<!-- ===== パーツ ===== -->
+
 <section class="screen" id="s-parts" role="tabpanel" aria-label="パーツ">
   <div class="card">
     <h2>パーツ・材料の登録</h2>
@@ -426,7 +422,7 @@
   <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
 </section>
 
-<!-- ===== 作品登録 ===== -->
+
 <section class="screen" id="s-work">
   <div class="card">
     <h2>作品を登録</h2>
@@ -461,13 +457,13 @@
   <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
 </section>
 
-<!-- ===== 値付け(本丸) ===== -->
+
 <section class="screen" id="s-price" role="tabpanel" aria-label="値付け">
   <div id="priceBody"></div>
   <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
 </section>
 
-<!-- ===== 設定 ===== -->
+
 <section class="screen" id="s-set" role="tabpanel" aria-label="設定">
   <div class="card">
     <h2>あなたの目標</h2>
@@ -524,39 +520,36 @@
     
     <p style="font-size:.88rem;color:var(--muted)"><a href="https://soichiro039-bit.github.io/handmade-lp/privacy.html">プライバシーポリシー(全文)</a></p>
     <p style="font-size:.88rem;color:var(--muted)">運営者: 高中工業 ／ 連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></p>
-    <!-- 相対パス(../)ではなく公開URLを直接書く。プロトタイプ本体と公開中の /app/ とで
-         同じ場所に着地させるため（相対だと前者は 07_開発移行/ のフォルダ一覧へ落ちる） -->
+    
     <a class="btn sub" id="backToLp" href="https://soichiro039-bit.github.io/handmade-lp/" style="display:block;text-align:center;text-decoration:none">このアプリの紹介ページへ戻る</a>
   </div>
 </section>
 </main>
 
-<!-- ===== はじめての1分(初回起動だけ表示) =====
-     この部の使命の中心。「インストール直後、まだ課金していない人が期待して初めて開く瞬間」。
-     受動的な説明を並べず、1枚目でサンプル作品の実計算を見せ、2枚目で2問だけ聞いて本体へ入る -->
+
 <div id="onboard" role="dialog" aria-modal="true" aria-labelledby="obHeading" hidden>
   <div class="ob-sheet">
     <button class="ob-skip" onclick="obFinish(true)">スキップ</button>
 
-    <!-- 1枚目: 価値を先に見せる(登録も課金も求めない) -->
+    
     <div class="ob-step" data-ob="1">
       <div class="ob-eyebrow">はじめまして</div>
       <h2 class="ob-h" id="obHeading"><span id="obPrice">2,800円</span>で売れた作品。<br><span class="q">手元にはいくら残ると思いますか?</span></h2>
       <div class="ob-big" aria-hidden="true"><span id="obNet">0</span><span class="ob-yen">円</span></div>
       <div class="ob-cap" id="obCap">&nbsp;</div>
       <div class="ob-break" id="obBreak"></div>
-      <!-- 日本語の文中で改行するとスペースが入って見えるため、1文を折り返さずに書く -->
+      
       <p class="ob-lead">手数料も材料費も、売れたときにまとめて引かれるので気づきにくいものです。このアプリは、その<b>見えない差額</b>を作品ごとに出します。</p>
       <p class="ob-note">※上の数字は、操作を試すために最初から入っているサンプル作品のものです。あなたの作品を登録すると、同じ計算があなたの数字で出ます。</p>
       <div class="ob-foot">
         <button class="btn" onclick="obGo(2)">自分の数字にしてみる</button>
-        <!-- 「登録前に価値を見せる」瞬間だからこそ、ここで不安を先に消す -->
+        
         <div class="ob-note" style="text-align:center">アカウント登録もログインも要りません。入力した内容はこの端末の中だけに保存されます。</div>
         <div class="ob-dots" aria-hidden="true"><i class="on"></i><i></i></div>
       </div>
     </div>
 
-    <!-- 2枚目: 質問は2問だけ。すべてタップで選べる(入力させない) -->
+    
     <div class="ob-step" data-ob="2" hidden>
       <div class="ob-eyebrow">あと2つだけ</div>
       <h2 class="ob-h">あなたの基準を決めましょう。</h2>
@@ -565,8 +558,7 @@
       <div class="ob-note">迷ったらお住まいの地域の最低賃金あたりで。あとから設定でいつでも変えられます。</div>
       <div class="ob-q">2. 主に使っている販路は?</div>
       <div class="ob-grid" id="obCh" role="group" aria-label="主に使っている販路を選ぶ"></div>
-      <!-- 企画部R37/R38: 「並べて比べられます」を売りにしない(無料のWebツールが6〜13販路の
-           横並びを既に提供している)。残っている差は並べ方の正しさ＝いつ時点の料率かを示すこと -->
+      
       <div class="ob-note">選んだ販路の手数料で計算します。手数料率は公式の告知を確認した日付つきで表示します。</div>
       <div class="ob-foot">
         <button class="btn" onclick="obFinish(false)">あなたの数字を見る</button>
@@ -578,9 +570,7 @@
 </div>
 
 <div class="nav-scrim"></div>
-<!-- 画面読み上げ(VoiceOver等)への対応。タブであること・今どこにいるかを機械に伝える。
-     アイコンのSVGは aria-hidden にして、隣の日本語ラベルだけを読ませる
-     (読ませないと「グラフィック」等と無意味に読み上げられる) -->
+
 <nav role="tablist" aria-label="画面の切り替え">
   <button class="on" role="tab" aria-selected="true" aria-controls="s-home" data-s="s-home" onclick="go('s-home')"><span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.4 12 3.2l9 7.2"/><path d="M5.6 9.6V20.4h12.8V9.6"/><path d="M9.9 20.4v-5.3h4.2v5.3"/></svg></span>作品</button>
   <button role="tab" aria-selected="false" aria-controls="s-parts" data-s="s-parts" onclick="go('s-parts')"><span class="ic"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.4 12.4 20.5a1.5 1.5 0 0 1-2.1 0L3.5 13.7V4.9a1.4 1.4 0 0 1 1.4-1.4h8.8l6.8 6.8a1.5 1.5 0 0 1 0 2.1Z"/><circle cx="7.9" cy="7.9" r="1.5"/></svg></span>パーツ</button>
@@ -1653,9 +1643,7 @@ function renderPrice(){
         ${db.works.map(x=>`<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}</option>`).join("")}
       </select>
       <label for="curPrice">いまつけている価格(円)</label>
-      <!-- 【2026-08-01】type="number" ではなく text + inputmode。理由は setPrice のコメント参照
-           （number は selectionStart/setSelectionRange を使えず、カーソル位置を戻せない）。
-           inputmode="numeric" なので、スマートフォンでは従来どおり数字キーボードが出る。 -->
+      
       <input id="curPrice" type="text" inputmode="numeric" pattern="[0-9]*" value="${cur||""}" placeholder="未設定" oninput="setPrice(${w.id},this.value)">
     </div>
     ${coach}
@@ -1701,13 +1689,7 @@ function renderPrice(){
         }).join("")}</tbody>
       </table>
       <div class="note"><b>どの販路でも手元に同じだけ残るように価格を逆算しています</b>ので、違いは「必要な価格」に出ます。<b>販売手数料だけでなく振込にかかる費用も含めています。</b>販売手数料だけで比べると結果が変わります——たとえばBASEは販売手数料の率が低い一方、振込1回ごとに250円、振込額が2万円未満だとさらに500円かかります。<br>
-      <!-- 【R72#3/#4/#5 + R86 是正 2026-07-31 開発部】旧文は1段落に4つの話が同居していた
-           （配賦の前提／長い免責／順位づけの否定／料率の確認日）。企画部R84の範囲訂正どおり
-           **按分そのものは残し**（この表の「うち振込費用」列と内訳表＝詳細側）、
-           初回結果に出していた前提と免責を「計算の前提を見る」へ後置する。
-           順位づけの否定文はR77の確定形（他販路を従属表示に留める）に伴い削除した——
-           比較を想起させておいて否定する構造そのものをやめる、が削減#5の趣旨。
-           日付は販売手数料と振込費用で分ける（R86。出典が別ホスト・別記事で確認日も違う）。 -->
+      
       振込にかかる費用は、月1回の振込を前提に1点あたりへ割った額です。販売手数料は${rateAsofPhrase()}、振込にかかる費用は${payoutAsofPhrase()}の各社公式告知に基づく概算です。
       <details style="margin-top:.45rem"><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer">計算の前提を見る</summary>
       <div style="padding:.15rem 0 .2rem">ひと月に${Math.max(1,+db.cfg.sales||1)}点売れるものとして計算しています（設定タブで変えられます）。同じだけ手元に残すために必要な価格は、販路によって変わります。<br>
