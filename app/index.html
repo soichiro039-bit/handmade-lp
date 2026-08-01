@@ -1711,7 +1711,7 @@ function renderPrice(){
     </div>
     ${coach}
     <div class="card">
-      <h2>${above ? "この価格を下回らないで" : "値付けの試算結果"}<span class="lock">有料機能</span></h2>
+      <h2>${above ? "この価格を下回らないで" : "値付けの試算結果"}</h2>
       <div class="hero-num">
         <div class="n" ${above?'style="color:var(--muted);font-size:1.9rem"':""}>${yen(recP)}</div>
         <div class="u">${above ? `${chName}での下限ライン（いまは ${yen(cur)}／余裕あり）` : `${chName}で販売する場合`}</div>
