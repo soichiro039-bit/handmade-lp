@@ -71,6 +71,13 @@
   footer { font-size: .75rem; color: var(--muted); padding: 24px 16px 48px; text-align: center; }
   footer a { color: var(--muted); display: inline-block; min-height: 44px; line-height: 44px; }
   .back { display: inline-block; min-height: 44px; line-height: 44px; font-size: .85rem; color: var(--main); }
+  /* 【2026-08-01 統括】運営者からの関連情報。監督GPTの指定「ツール本体と視覚的に分離する／
+     バナー・強調色を使わない」に従い、背景色も枠線も付けず、区切り線1本と抑えた文字色だけで分ける。
+     .card（白いカード）を使うと、このページの計算結果と同じ重みで見えてしまうので使わない。 */
+  .relinfo { border-top: 1px solid #e2dbd2; margin-top: 28px; padding-top: 16px; }
+  .relinfo h2 { font-size: .9rem; color: var(--muted); margin: 0 0 4px; }
+  .relinfo p { margin: 0; font-size: .85rem; }
+  .relinfo a { display: inline-block; min-height: 44px; line-height: 44px; color: var(--main); }
   @media (max-width: 400px) {
     table { font-size: .82rem; }
     th, td { padding: 7px 4px; }
@@ -269,6 +276,28 @@
   </div>
 
   <p><a class="back" href="../../">← ハンドメイド作家のための値付けアプリ(開発中)のご紹介ページへ戻る</a></p>
+
+  <!-- 【2026-08-01 14時台 統括・監督GPT14:11の判定に従って設置（案B・3案中の最優先と判定）】
+       このページは noindex を付けていない数少ないページで、狙っている検索語に競合が5本並ぶ。
+       にもかかわらず about.html と tester.html へのリンクが0本だった（統括が実測）。
+       ＝運営者を確かめる道と、試用に協力する道が、このページの読者には存在しなかった。
+       GPTが指定した置き方の原則をそのまま守る:
+         ・計算結果と注意事項をすべて読み終えた後に置く（このページ末尾）
+         ・ツール本体と視覚的に分離する／バナー・モーダル・追従表示・強調色・カウントダウンを使わない
+         ・「運営者からの関連情報」だと明示する（おすすめ・広告として出さない）
+         ・about を先、募集を後にする
+         ・任意・無謝礼であることを、リンクを開く前に分かるようにする
+         ・ツール利用と応募が関係しているように見せない／利用データが応募へ転用される印象を与えない
+       GPTが名指しで避けろと言った表現は使っていない:
+       「あなたもテスターになりませんか？」「今すぐ応募」「残り○名」「このツールが役立った方へ」
+       「もっと正確に計算したい方へ」。最後のものは、**この比較ツールが不十分である／試用アプリの
+       ほうが優れている**ことを、未検証のまま示唆してしまうため。 -->
+  <section class="relinfo">
+    <h2>運営者からの関連情報</h2>
+    <p><a href="../../about.html">計算方法・情報源・運営者について</a></p>
+    <p><a href="../../tester.html">原価計算アプリの試用協力について（任意・謝礼はありません）</a></p>
+    <p class="note">このツールのご利用と、上記への応募は関係ありません。このページへ入力した数値は送信しておらず、応募に使うこともありません。</p>
+  </section>
 
 </div>
 

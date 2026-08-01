@@ -1,0 +1,8 @@
+# 2026-08-01 統括が新設（それまで404だった）。
+# 全許可＋sitemapの所在を示すだけ。個別ページの index / noindex は
+# 各HTMLの <meta name="robots"> 側で決めており、このファイルでは制御しない
+# （2箇所で同じことを決めると、片方だけ直して食い違う）。
+User-agent: *
+Allow: /
+
+Sitemap: https://soichiro039-bit.github.io/handmade-lp/sitemap.xml
