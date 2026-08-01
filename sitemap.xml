@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 2026-08-01 統括が新設（それまで404だった）。
-     載せるのは index 可の4ページだけ。noindex を付けているページ
-     （tester.html / apply.html / events/calc-done/）は載せない——
-     sitemap は noindex を打ち消さないので、載せると
-     「検索に出したいのか出したくないのか」の意思表示が2箇所で食い違うだけになる。 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://soichiro039-bit.github.io/handmade-lp/</loc>
