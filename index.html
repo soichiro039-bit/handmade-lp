@@ -38,6 +38,8 @@
   .row2 > label { flex: 1; min-width: 0; }
   .thsub { font-size: .72rem; }
   .unverified { color: var(--muted); font-size: .78rem; text-align: right; }
+  /* 入金の下限に届かない行に付ける印。比較ページ(tools/marketplace-fee-comparison)と同色 */
+  .flag { color: #b0533f; font-weight: bold; }
   .pain li { margin: 8px 0 8px 1.2em; }
   .cta { display: block; width: 100%; text-align: center; background: var(--accent); color: #fff; padding: 14px; border-radius: 999px; font-size: 1.05rem; text-decoration: none; margin-top: 16px; border: none; cursor: pointer; }
   .note { font-size: .75rem; color: var(--muted); margin-top: 14px; }
@@ -152,6 +154,10 @@
       <thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用<br><span class="thsub">1点あたり</span></th><th>残る額<br><span class="thsub">概算</span></th></tr></thead>
       <tbody></tbody>
     </table>
+
+    <!-- 表の中の ※ が何を指すかを、表のすぐ下で説明する（原則53）。
+         離すと、印だけ見て意味が分からないまま金額が信じられる -->
+    <p class="note" id="belowmin" style="margin-top:8px"></p>
 
     <!-- 列名を短くしたぶん、定義はここで言う（H-41の3C＝短縮した列名には近接した完全定義への導線が必須）。
          列挙は完全列挙にする。1つでも省くと、省いた分が販路の取り分に見える（H-41の3A） -->
@@ -333,6 +339,26 @@
     const monthly = Math.max(0, gross - channelFee(c, gross)) * n; // 月の振込見込み額
     return p.fee(monthly) / n;
   }
+
+  /* 【2026-08-01 開発部・原則15/53】ひと月の入金見込みが下限に届かない月は、
+     その月は手元に来ない(繰り越し・振込申請不可)。
+     値は assets/fee-calc.js の PAYOUT_MIN、app/index.html の PAYOUT_TIMING[].minYen、
+     正本 fee_master_v0.json の min_payout_jpy と同じ(BASEだけは正本に無く、
+     「売上残高751円以下では振込申請ができない」help.thebase.in 由来)。
+     4者がずれていないことは invariants_check.py 原則27a2 が機械で突き合わせる。
+     Creema は下限の定めが無いため 0(＝この判定を行わない)。
+     **PAYOUT と同じく channels 配列とは必ず別に持つ**(原則6の照合が channels を
+     正規表現で抜くため、そこへ別の値を混ぜると照合が壊れる)。 */
+  const PAYOUT_MIN = { minne: 1000, creema: 0, base: 752, mercari: 5000 };
+  /** その月の入金見込みが下限に届かないとき true。fee-calc.js の payoutBelowMin と同一の式。 */
+  function payoutBelowMin(c, price, shipTop, n) {
+    const min = PAYOUT_MIN[c.key];
+    if (!min) return false;
+    n = Math.max(1, n || 1);
+    const gross = Math.max(0, price) + (+shipTop || 0);
+    const monthly = Math.max(0, gross - channelFee(c, gross)) * n;
+    return price > 0 && monthly < min;
+  }
   const yen = n => Math.round(n).toLocaleString() + "円";
   /* 【2026-07-29 開発部・原則34/36】作家が実際に払う発送の実費(送料＋箱・梱包材)。
      app/index.html の shipActual(w) と同じ規則を、同じ分岐のまま置く:
@@ -388,6 +414,7 @@
     const tbody = document.querySelector("#result tbody");
     tbody.innerHTML = "";
     let mine = null;
+    const 下限未満 = [];
     for (const c of channels) {
       const fee = channelFee(c, gross);
       const payout = payoutPerItem(c, p, shipTop, n);
@@ -404,12 +431,25 @@
       // 送料は送料込み/別のどちらでも実費として必ず引く(出品者が運送会社へ払うため)。
       // app側 analyze() の profit と同じ式: (gross - fee) - (材料 + 実費) - 振込費用。
       const net = gross - fee - m - sAct - payout;
+      // ひと月の入金見込みが下限に届かない条件では、その月は実際には手元へ来ない。
+      // 金額だけ出すと「入金される額」に見えるため、必ず印を付けて別に説明する(原則15/53)。
+      const below = payoutBelowMin(c, p, shipTop, n);
+      if (below) 下限未満.push(c);
+      const 印 = below ? ` <span class="flag">※</span>` : "";
       tbody.insertAdjacentHTML("beforeend",
-        `<tr><td>${c.name}</td><td class="minus">-${yen(fee)}</td>` +
+        `<tr><td>${c.name}${印}</td><td class="minus">-${yen(fee)}</td>` +
         `<td class="minus">-${yen(payout)}${PAYOUT[c.key].note}</td>` +
-        `<td class="net">${yen(net)}</td></tr>`);
-      if (c.key === key) mine = { c, fee, payout, net };
+        `<td class="net">${yen(net)}${印}</td></tr>`);
+      if (c.key === key) mine = { c, fee, payout, net, below };
     }
+    // 印だけ付けて説明しないと、何の印か分からないまま金額だけが信じられる(原則53)。
+    // 販路名と下限額を必ず書く——「一部の販路では」では自分に当てはまるか判断できない。
+    const bm = document.getElementById("belowmin");
+    if (bm) bm.innerHTML = 下限未満.length
+      ? `※ この条件（${yen(p)}・ひと月${n}点）では、` +
+        下限未満.map(c => `<strong>${c.name}は月の入金見込みが ${yen(PAYOUT_MIN[c.key])} に届きません</strong>`).join("、") +
+        `。届かない月は次の月へ繰り越されるか、振込の申請ができません。<strong>売れた月と、お金が実際に入る月がずれます。</strong>上の表の金額は、振込が行われた場合のものです。`
+      : "";
     renderVerdict(p, mins, wage, mine);
   }
 
@@ -424,11 +464,15 @@
     // 振込費用が未確認の販路を選んだ場合は、その分が引かれていないことを必ず添える。
     const caveat = mine.payout === null
       ? `<span class="sub">※${mine.name || mine.c.name}は振込にかかる費用が確認できていないため、その分は差し引けていません。実際に残る額はこれより少なくなります。</span>` : "";
+    // 選んだ販路が下限に届かないときは、金額の隣で言う。表の下の注記だけだと、
+    // 自分が選んだ販路の話だと気づかないまま金額を受け取ることになる(原則53)。
+    const 下限注 = mine.below
+      ? `<span class="sub">※この条件では${mine.c.name}のひと月の入金見込みが ${yen(PAYOUT_MIN[mine.c.key])} に届かないため、<strong>その月は手元に来ず、次の月へ繰り越されます</strong>。売れた月と、お金が入る月がずれます。</span>` : "";
     const via = `${mine.c.name}で売った場合`;
     if (mins <= 0) {
       el.className = "verdict ok";
       el.innerHTML = `${via}、販売手数料・振込にかかる費用・材料費・梱包発送の実費を引いて残るのは（概算） <span class="hl">${yen(mine.net)}</span>。
-        <span class="sub">制作時間を入れると、制作1時間あたりいくら残るかも出せます。</span>${caveat}${cta}`;
+        <span class="sub">制作時間を入れると、制作1時間あたりいくら残るかも出せます。</span>${caveat}${下限注}${cta}`;
       return;
     }
     const hourly = mine.net / (mins / 60);
@@ -437,12 +481,12 @@
       el.innerHTML = `${via}、いまの価格だと
         <span class="hl">制作1時間あたり ${yen(hourly)}</span>。目標の ${yen(wage)} には ${yen(wage - hourly)} 届いていません。
         <span class="sub">材料費も手数料も振込費用も、作品ごとに毎回この計算が必要です。それを自動でやって、
-        作業時間や目標時給、設定した利益分を踏まえた販売価格を試算するアプリを開発中です。</span>${caveat}${cta}`;
+        作業時間や目標時給、設定した利益分を踏まえた販売価格を試算するアプリを開発中です。</span>${caveat}${下限注}${cta}`;
     } else {
       el.className = "verdict ok";
       el.innerHTML = `${via}、販売手数料・振込にかかる費用・材料費・梱包発送の実費を引いても <span class="hl">制作1時間あたり ${yen(hourly)}</span> が残ります。
         ${wage > 0 ? `目標の ${yen(wage)} を満たせています。` : ""}
-        <span class="sub">作品が増えても、パーツの仕入れ値が変わっても、この計算を全作品に自動で反映するアプリを開発中です。</span>${caveat}${cta}`;
+        <span class="sub">作品が増えても、パーツの仕入れ値が変わっても、この計算を全作品に自動で反映するアプリを開発中です。</span>${caveat}${下限注}${cta}`;
     }
   }
   document.querySelectorAll("input, select").forEach(i => i.addEventListener("input", calc));
