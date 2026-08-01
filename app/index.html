@@ -117,7 +117,11 @@
   .list-item:last-child { border-bottom:none; }
   .list-item .name { font-size:.92rem; }
   .list-item .meta { font-size:.78rem; color:var(--muted); margin-top:1px; }
-  .list-item .val { font-size:.92rem; text-align:right; white-space:nowrap; }
+  /* 原則12d: 語は折り返してよいが、金額の途中では折らない(.nb)。
+     文字200%のとき「制作1時間あたり ¥2,574」が1行に収まらず横スクロールが出たため
+     nowrap をやめた。数字だけを nowrap で守る。 */
+  .list-item .val { font-size:.92rem; text-align:right; white-space:normal; }
+  .list-item .val .nb { white-space:nowrap; }
   /* タップ領域は最低44px四方(Apple HIG)。見た目の×は小さいまま当たり判定だけ広げる */
   .del { background:none; color:var(--muted); font-size:1.15rem; padding:0 4px;
          min-width:44px; min-height:44px; }
@@ -362,7 +366,7 @@
 <div class="phone">
 <header>
   <h1 id="hdTitle" aria-live="polite">今日のひと工夫</h1>
-  <div class="sub" id="hdSub">あなたの作品、時給いくらになっていますか?</div>
+  <div class="sub" id="hdSub">あなたの作品、制作1時間あたりいくら残っていますか?</div>
 </header>
 
 <main>
@@ -1127,7 +1131,7 @@ function analyze(w, price, chKey){
   const payout = payoutKnown ? payoutRaw : 0;
   const profit = net - directCost(w) - payout;  // 材料・送料・振込費用を引いた残り(=手間の対価)
   const afterLabor = profit - laborCost(w);// 目標時給を払った後に残る利益
-  const hourly = (+w.min>0) ? profit/(w.min/60) : 0;  // 実際の時給
+  const hourly = (+w.min>0) ? profit/(w.min/60) : 0;  // 制作1時間あたりの残る額(原則51。時給と呼ばない)
   return { fee, net, profit, afterLabor, hourly, gross, shipTop, payout, payoutKnown };
 }
 
@@ -1145,6 +1149,14 @@ function deductLabels(a, chName){
 }
 /** 原則49: 結果の金額の名前。正本＝事業原則md 原則49「UIの列名は『残る額（概算）』」 */
 const RESIDUAL_LABEL = "残る額（概算）";
+/** 原則51: a.hourly の名前。「時給」と呼ばない。
+    実体は profit（＝販売手数料・振込にかかる費用・材料費・梱包発送の実費を引いた残る額）を
+    制作時間で割った値であり、①雇用上の時給ではない ②人件費を引いた後の利益でもない
+    ③撮影・出品・梱包・発送・接客の時間を1分も含まない。
+    正本＝事業原則md 原則51。短い枠では HOURLY_SHORT を使うが、両者は同じ語幹で始めること
+    （別の名前にすると、同じ数字が画面ごとに違う概念に見える）。 */
+const HOURLY_LABEL = "制作時間1時間あたりの残る額（概算）";
+const HOURLY_SHORT = "制作1時間あたり";
 
 /** 逆算値付け: 目標時給と目標利益率を満たす販売価格を販路ごとに逆算 */
 function recommend(w, chKey){
@@ -1180,7 +1192,7 @@ const round100 = n => Math.ceil(n/100)*100;
 
 /* ===== 画面遷移 ===== */
 const TITLES = {
-  "s-home":["今日のひと工夫","あなたの作品、時給いくらになっていますか?"],
+  "s-home":["今日のひと工夫","あなたの作品、制作1時間あたりいくら残っていますか?"],
   "s-parts":["パーツ・材料","仕入れ値を変えると全作品に自動で反映されます"],
   "s-work":["作品を登録","使うパーツを選ぶだけで原価が出ます"],
   "s-price":["値付けの提案","感覚ではなく、数字で決める"],
@@ -1280,7 +1292,7 @@ function renderHome(){
       const a = analyze(w, +w.price||0, db.cfg.ch);
       const hr = (+w.price>0 && +w.min>0) ? a.hourly : null;
       const cls = hr===null ? "" : (hr >= db.cfg.wage ? "pos" : "neg");
-      const hrTxt = hr===null ? "価格未設定" : "時給 "+yen(hr);
+      const hrTxt = hr===null ? "価格未設定" : HOURLY_SHORT+' <span class="nb">'+yen(hr)+"</span>";
       return _sep + `<div class="list-item">
         <div><div class="name">${esc(w.name)}</div>
           <div class="meta">原価 ${yen(directCost(w) + laborCost(w))}（材料・送料 ${yen(directCost(w))}＋人件費 ${yen(laborCost(w))}）／ ${w.min}分</div></div>
@@ -1333,13 +1345,13 @@ function renderHome(){
   const wh = analyze(worst, +worst.price, db.cfg.ch).hourly;
   if(wh < db.cfg.wage){
     box.innerHTML = `<div class="coach warn">
-      「${esc(worst.name)}」は、いまの価格だと<b>時給 ${yen(wh)}</b>です。<br>
+      「${esc(worst.name)}」は、いまの価格だと<b>${HOURLY_SHORT} ${yen(wh)}</b>です。<br>
       目標の ${yen(db.cfg.wage)} には ${yen(db.cfg.wage-wh)} 足りていません。
       <button class="btn mini" style="margin-top:9px;background:var(--ng);color:#fff" onclick="focusWork(${worst.id})">いくらにすればいいか見る</button>
     </div>`;
   } else {
     box.innerHTML = `<div class="coach good">
-      登録中の作品はすべて目標時給 ${yen(db.cfg.wage)} を超えています。<br>
+      登録中の作品はすべて、${HOURLY_SHORT}の残る額が目標の ${yen(db.cfg.wage)} を超えています。<br>
       いまの値付けは、あなたの手間にきちんと見合っています。
     </div>`;
   }
@@ -1597,13 +1609,13 @@ function renderPrice(){
       const gap = recP - cur;
       coach = `<div class="coach warn">
         いまの ${yen(cur)} だと、${deductLabels(a, chName).join("、")}を引いたあと${RESIDUAL_LABEL}は <b>${yen(a.profit)}</b>。<br>
-        ${w.min}分かけているので、<b>時給にすると ${yen(a.hourly)}</b> です。<br><br>
+        ${w.min}分かけているので、<b>${HOURLY_LABEL}は ${yen(a.hourly)}</b> です。<br><br>
         目標の時給 ${yen(db.cfg.wage)} と上乗せ率 ${db.cfg.margin}% を満たすには
         <b>${yen(recP)}</b>（いまより ${yen(gap)} 上）が目安です。
       </div>`;
     } else {
       coach = `<div class="coach good">
-        いまの ${yen(cur)} なら、${deductLabels(a, chName).join("、")}を引いても <b>時給 ${yen(a.hourly)}</b> が残ります。
+        いまの ${yen(cur)} なら、${deductLabels(a, chName).join("、")}を引いても <b>${HOURLY_SHORT} ${yen(a.hourly)}</b> が残ります。
         目標の ${yen(db.cfg.wage)} を超えています。<b>この価格に自信を持って大丈夫です。</b><br><br>
         下限は ${yen(recP)}。<b>下げる必要はありません</b>——いまの価格は、あなたの手間に見合っています。
       </div>`;
@@ -1630,7 +1642,7 @@ function renderPrice(){
         return `<div class="step ${isRec?'rec':''}">
           <div class="lv">${isRec?"目標":(i+1)+"段目"}</div>
           <div class="txt"><span class="price">${yen(p)}</span>
-            <div class="meta" style="font-size:.78rem;color:var(--muted)">時給 ${yen(aa.hourly)} ／ いまより ${yen(aa.profit-a.profit)} 多く残る</div></div>
+            <div class="meta" style="font-size:.78rem;color:var(--muted)">${HOURLY_SHORT} ${yen(aa.hourly)} ／ いまより ${yen(aa.profit-a.profit)} 多く残る</div></div>
         </div>`;}).join("")}
     </div>`;
   }
@@ -1722,7 +1734,8 @@ function renderPrice(){
            未是正と誤検知する＝2026-07-27/07-29と同じ失敗の再発になるため）。
            列挙する項目は下の内訳表と1対1で対応させること。計算へ入れていない項目を書いてはならない。 -->
       <div class="note">この「逆算」が、このアプリの中心です。原価を記録するだけでなく、作業時間や目標利益を踏まえた販売価格を試算します。<br>
-      ※この金額は、入力した材料費・梱包発送費・作業時間・目標時給・販売手数料・振込にかかる費用・設定した利益分に基づく試算です。値付けしやすいよう<b>100円単位へ切り上げて</b>表示しており、その切り上げ分も内訳表に1行で出しています。需要、競合価格、デザイン性、希少性、ブランドの評価は含みません。最終的な販売価格は、これらも踏まえてご自身で決めてください。</div>
+      ※この金額は、入力した材料費・梱包発送費・作業時間・目標時給・販売手数料・振込にかかる費用・設定した利益分に基づく試算です。値付けしやすいよう<b>100円単位へ切り上げて</b>表示しており、その切り上げ分も内訳表に1行で出しています。需要、競合価格、デザイン性、希少性、ブランドの評価は含みません。最終的な販売価格は、これらも踏まえてご自身で決めてください。<br>
+      ※「制作時間1時間あたりの残る額（概算）」は、上の残る額を入力した制作時間だけで割った概算です。撮影・出品・梱包発送・お客様対応にかかる時間は含んでいません。雇用の時給とは異なり、税金や保険料も引かれていません。</div>
     </div>
     ${steps}
     <div class="card">
@@ -1889,7 +1902,7 @@ function obStart(){
       : `<div class="ob-row"><span class="l">振込にかかる費用</span><span class="v">未確認のため含めていません</span></div>`}
     <div class="ob-row total"><span class="l">${RESIDUAL_LABEL}</span><span class="v">${yen(a.profit)}</span></div>`;
   document.getElementById("obCap").textContent =
-    (+w.min > 0) ? `「${w.name}」に${w.min}分かけた場合、時給 ${yen(a.hourly)}` : `「${w.name}」の場合`;
+    (+w.min > 0) ? `「${w.name}」に${w.min}分かけた場合、${HOURLY_SHORT} ${yen(a.hourly)}` : `「${w.name}」の場合`;
 
   document.getElementById("onboard").hidden = false;
   document.body.style.overflow = "hidden";

@@ -155,7 +155,8 @@
 
     <!-- 列名を短くしたぶん、定義はここで言う（H-41の3C＝短縮した列名には近接した完全定義への導線が必須）。
          列挙は完全列挙にする。1つでも省くと、省いた分が販路の取り分に見える（H-41の3A） -->
-    <p class="note" style="margin-top:8px">「残る額（概算）」は、購入者が払った合計から<strong>販売手数料・振込にかかる費用・材料費・梱包発送の実費</strong>を引いた1点あたりの金額です（あなたの手間の対価はまだ含んでいません）。</p>
+    <p class="note" style="margin-top:8px">「残る額（概算）」は、購入者が払った合計から<strong>販売手数料・振込にかかる費用・材料費・梱包発送の実費</strong>を引いた1点あたりの金額です（あなたの手間の対価はまだ含んでいません）。<br>
+      ※「制作1時間あたり」は、その残る額を入力した制作時間だけで割った概算です。撮影・出品・梱包発送・お客様対応にかかる時間は含んでいません。雇用の時給とは異なり、税金や保険料も引かれていません。</p>
 
     <!-- 請求額と実費が違うときだけ出す。黙って実費だけを見せない（原則34e） -->
     <p class="note" id="shipDiff"></p>
@@ -208,7 +209,7 @@
     <ul class="pain">
       <li><strong>パーツ登録だけで原価がわかる</strong> — 仕入れ値を変えれば全作品に自動反映</li>
       <li><strong>販路ごとに残る額を一発比較</strong> — 販売手数料・振込にかかる費用・材料費・梱包発送の実費を差し引いた概算が作品ごとに自動で</li>
-      <li><strong>「いくらで売るべきか」を提案</strong> — 時給と目標利益から推奨価格を逆算</li>
+      <li><strong>「いくらで売るべきか」を提案</strong> — 目標時給と目標利益から推奨価格を逆算</li>
     </ul>
     <!-- 【2026-07-28 統括・主従を入れ替えた】17:20のGPT審査で、最初に求める行動は
          「事前登録」ではなく「利用（計算開始）」と決まった（主要指標も登録から
@@ -410,19 +411,19 @@
     if (mins <= 0) {
       el.className = "verdict ok";
       el.innerHTML = `${via}、販売手数料・振込にかかる費用・材料費・梱包発送の実費を引いて残るのは（概算） <span class="hl">${yen(mine.net)}</span>。
-        <span class="sub">制作時間を入れると、時給がいくらになるかも出せます。</span>${caveat}${cta}`;
+        <span class="sub">制作時間を入れると、制作1時間あたりいくら残るかも出せます。</span>${caveat}${cta}`;
       return;
     }
     const hourly = mine.net / (mins / 60);
     if (wage > 0 && hourly < wage) {
       el.className = "verdict low";
       el.innerHTML = `${via}、いまの価格だと
-        <span class="hl">時給 ${yen(hourly)}</span>。目標の ${yen(wage)} には ${yen(wage - hourly)} 届いていません。
+        <span class="hl">制作1時間あたり ${yen(hourly)}</span>。目標の ${yen(wage)} には ${yen(wage - hourly)} 届いていません。
         <span class="sub">材料費も手数料も振込費用も、作品ごとに毎回この計算が必要です。それを自動でやって、
         作業時間や目標時給、設定した利益分を踏まえた販売価格を試算するアプリを開発中です。</span>${caveat}${cta}`;
     } else {
       el.className = "verdict ok";
-      el.innerHTML = `${via}、販売手数料・振込にかかる費用・材料費・梱包発送の実費を引いても <span class="hl">時給 ${yen(hourly)}</span> が残ります。
+      el.innerHTML = `${via}、販売手数料・振込にかかる費用・材料費・梱包発送の実費を引いても <span class="hl">制作1時間あたり ${yen(hourly)}</span> が残ります。
         ${wage > 0 ? `目標の ${yen(wage)} を満たせています。` : ""}
         <span class="sub">作品が増えても、パーツの仕入れ値が変わっても、この計算を全作品に自動で反映するアプリを開発中です。</span>${caveat}${cta}`;
     }
