@@ -1851,8 +1851,22 @@ function renderSet(){
   if (_fa) _fa.textContent = `販売手数料は${rateAsofPhrase()}の各社公式告知等に基づく概算です。`;
 }
 function saveCfg(){
-  db.cfg.wage = +cfgWage.value||0; db.cfg.margin = +cfgMargin.value||0; db.cfg.ch = cfgCh.value;
+  /* 原則57: 入力欄が min/max で**宣言している**範囲を、保存する側でも必ず**強制する**。
+     宣言だけして強制しないと、同じ入力で実装ごとに別の価格が出る。
+     2026-08-01実測: 上乗せ率に95を入れると、web版は95%・iOS版は90%で計算していた
+     （iOS版 SettingsView.swift が min(90, max(0,·)) を掛けており、こちらは掛けていなかった）。
+     式は3実装とも同じ base0*(1+margin/100)+extra なので、**入口の一行だけで金額がずれる**。 */
+  db.cfg.wage = Math.max(0, +cfgWage.value||0);
+  db.cfg.margin = Math.min(90, Math.max(0, +cfgMargin.value||0));
+  db.cfg.ch = cfgCh.value;
   db.cfg.sales = Math.max(1, +cfgSales.value||1);
+  /* 範囲外を丸めたら、実際に計算へ使う値を欄へ戻す。**黙って別の数字で計算しない**
+     （原則55の系＝打った数字と計算に使う数字が食い違ったまま画面に残るのを防ぐ）。
+     saveCfg は onchange(確定時)からしか呼ばれないので入力中の再描画にはならない
+     ——`oninput="saveCfg` は両版とも0件で実測済み。**ここを oninput から呼ばないこと**。 */
+  if(+cfgWage.value !== db.cfg.wage) cfgWage.value = db.cfg.wage;
+  if(+cfgMargin.value !== db.cfg.margin) cfgMargin.value = db.cfg.margin;
+  if(+cfgSales.value !== db.cfg.sales) cfgSales.value = db.cfg.sales;
   save(); renderHome(); renderPrice();
   renderShipPresets(); // 販路を変えたら送料の候補も変わる(原則37)
 }
