@@ -95,6 +95,21 @@
      値が app とずれていないことは invariants_check.py 原則27a2 が機械で突き合わせる。 */
   var PAYOUT_MIN = { minne: 1000, creema: 0, base: 752, mercari: 5000 };
 
+  /* 【2026-08-01 開発部・法務部H-48】下限に届かない月に「何が起きるか」は販路で違う。
+     minne と メルカリShops は正本(fee_master)に carryover_note が在る＝繰り越される。
+     BASE は繰り越しの記載が正本に無く、payout_control が on_request で
+     「売上残高751円以下だと申請できない」＝**その月は申請そのものができない**。
+     両論併記（「繰り越されるか、申請ができません」）で書くと、BASEを選んだ人に
+     **放っておけば翌月入る**と読める。誤りの向きが利用者に有利な側なので必ず書き分ける。
+     ここが正本で、公開LP(index.html)の PAYOUT_BELOW は同じ文字列を持つ写し。
+     ずれていないことは invariants_check.py 原則53f が機械で突き合わせる。 */
+  var PAYOUT_BELOW = {
+    minne:   "次の月へ繰り越されます",
+    creema:  "",
+    base:    "その月は振込の申請ができません",
+    mercari: "次の月へ繰り越されます"
+  };
+
   /** その月の入金見込みが下限に届かないとき true（届かない月は繰り越し・申請不可になる） */
   function payoutBelowMin(key, price, shipTop, n) {
     var min = PAYOUT_MIN[key];
@@ -171,6 +186,7 @@
     grossOf: grossOf,
     shipActual: shipActual,
     PAYOUT_MIN: PAYOUT_MIN,
+    PAYOUT_BELOW: PAYOUT_BELOW,
     payoutBelowMin: payoutBelowMin,
     META: META,
     yen: function (n) { return Math.round(n).toLocaleString() + "円"; }

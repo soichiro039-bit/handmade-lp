@@ -350,6 +350,19 @@
      **PAYOUT と同じく channels 配列とは必ず別に持つ**(原則6の照合が channels を
      正規表現で抜くため、そこへ別の値を混ぜると照合が壊れる)。 */
   const PAYOUT_MIN = { minne: 1000, creema: 0, base: 752, mercari: 5000 };
+  /* 【2026-08-01 開発部・法務部H-48】下限に届かない月に「何が起きるか」は販路で違う。
+     minne と メルカリShops は正本に carryover_note が在る＝翌月/次回へ繰り越される。
+     BASE は繰り越しの記載が正本に無く、payout_control が on_request で
+     「売上残高751円以下だと申請できない」＝**その月は申請そのものができない**。
+     ここを両論併記（「繰り越されるか、申請ができません」）で書くと、BASEを選んだ人に
+     **放っておけば翌月入る**と読める。誤りの向きが利用者に有利な側なので必ず書き分ける。
+     文言は assets/fee-calc.js の payoutNote と同じ事実を指す（原則53fが機械で突き合わせる）。 */
+  const PAYOUT_BELOW = {
+    minne:   "次の月へ繰り越されます",
+    creema:  "",
+    base:    "その月は振込の申請ができません",
+    mercari: "次の月へ繰り越されます",
+  };
   /** その月の入金見込みが下限に届かないとき true。fee-calc.js の payoutBelowMin と同一の式。 */
   function payoutBelowMin(c, price, shipTop, n) {
     const min = PAYOUT_MIN[c.key];
@@ -447,8 +460,8 @@
     const bm = document.getElementById("belowmin");
     if (bm) bm.innerHTML = 下限未満.length
       ? `※ この条件（${yen(p)}・ひと月${n}点）では、` +
-        下限未満.map(c => `<strong>${c.name}は月の入金見込みが ${yen(PAYOUT_MIN[c.key])} に届きません</strong>`).join("、") +
-        `。届かない月は次の月へ繰り越されるか、振込の申請ができません。<strong>売れた月と、お金が実際に入る月がずれます。</strong>上の表の金額は、振込が行われた場合のものです。`
+        下限未満.map(c => `<strong>${c.name}は月の入金見込みが ${yen(PAYOUT_MIN[c.key])} に届かないため、${PAYOUT_BELOW[c.key]}</strong>`).join("、") +
+        `。<strong>売れた月と、お金が実際に入る月がずれます。</strong>上の表の金額は、振込が行われた場合のものです。`
       : "";
     renderVerdict(p, mins, wage, mine);
   }
@@ -467,7 +480,7 @@
     // 選んだ販路が下限に届かないときは、金額の隣で言う。表の下の注記だけだと、
     // 自分が選んだ販路の話だと気づかないまま金額を受け取ることになる(原則53)。
     const 下限注 = mine.below
-      ? `<span class="sub">※この条件では${mine.c.name}のひと月の入金見込みが ${yen(PAYOUT_MIN[mine.c.key])} に届かないため、<strong>その月は手元に来ず、次の月へ繰り越されます</strong>。売れた月と、お金が入る月がずれます。</span>` : "";
+      ? `<span class="sub">※この条件では${mine.c.name}のひと月の入金見込みが ${yen(PAYOUT_MIN[mine.c.key])} に届かないため、<strong>${PAYOUT_BELOW[mine.c.key]}</strong>。売れた月と、お金が実際に入る月がずれます。</span>` : "";
     const via = `${mine.c.name}で売った場合`;
     if (mins <= 0) {
       el.className = "verdict ok";
