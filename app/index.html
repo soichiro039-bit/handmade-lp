@@ -703,7 +703,7 @@ const RATE_ASOF = { minne:"2026-07-27", creema:"2026-07-27", base:"2026-07-27", 
    型Dが検知したいのは「監視が止まったこと」なのに、実際に測っていたのは
    「料率が改定されないこと」だった——正常な状態を異常として鳴らす向きの誤り。
    正本の checked_at は 料率マスタ/stamp_checked_at.py で押す（手書き禁止）。 */
-const CHECKED_AT = { minne:"2026-07-31", creema:"2026-07-31", base:"2026-07-31", mercari:"2026-07-31" };
+const CHECKED_AT = { minne:"2026-08-01", creema:"2026-08-01", base:"2026-08-01", mercari:"2026-08-01" };
 
 function rateAsofPhrase(){
   const a = CHANNELS.map(c=>RATE_ASOF[c.key]).filter(Boolean).sort();
