@@ -113,7 +113,7 @@
        「料率データの版」として古い版を表示していた。r46→r47 は minne PLUS の段階料率を
        正本へ記録しただけで rate / fixed_fee / payout_* は1つも変わっていない（分析部 note_r47・
        法務部が4販路とも本モジュールの値と正本 r47 を突き合わせて一致を実測）。値は据え置きで版だけ更新する。 */
-    data_version: "2026-07-31-r51",
+    data_version: "2026-08-01-r52",
     channels: {
       minne: {
         name: "minne", rate: 0.10659, fixed: 0, rateText: "10.659%",
