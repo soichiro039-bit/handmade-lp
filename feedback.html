@@ -6,7 +6,10 @@
 <meta name="robots" content="noindex">
 <title>使ってみたあとのアンケート｜高中工業</title>
 <!--
-  【2026-08-01 開発部・下書き。まだ公開していない】
+  【2026-08-01 14:26 開発部・公開済み】公開URL＝ /feedback.html
+  ※この欄に「未公開」「これから公開する」の意味の語を残さないこと。法務部が14:54に
+    完了の異議として名指しした＝**公開物が自身を未公開と名乗る**状態を作る（H系の型）。
+    状態が変わったら、同じ変更の中でこの欄を書き替える。
 
   なぜ作るか＝**関門を測る器が、どこにも無かったから**。
   社長が定めた関門は「自分の作品の原価計算を最後まで終えた人が10人」で、
@@ -32,11 +35,12 @@
   ・コピーして送る経路では、当方は「回答を作ったが送らなかった」人を数えられない
   ・自由記述が長いとメールのURLが長くなりすぎる端末がある → その時はコピーを案内する
 
-  【公開の条件】監督GPTの確認を通してから公開ツリーへ移す。
-  移すときに同じ変更の中で行うこと:
-    ①tester.html / app からの導線を張る（原則45c＝リンク切れで公開が止まる）
-    ②cloudflare_visits.py の STAGE_PATHS へ段を足す（計測が入っているのに段に無いと
-      来ても誰の目にも入らない。about.html で本日3回目の再演をしている）
+  【公開したときに満たしていた条件・3件とも実測済み】
+    ①監督GPT14:19の必須7項目 … 各設問のコメントに1対1で対応を書いてある
+    ②導線 … app/index.html L537（原則45c＝リンク切れで公開が止まる）。
+      15:0x に tester.html と apply.html へも予告を追加（企画部15:00の依頼）
+    ③cloudflare_visits.py の STAGE_PATHS へ段を追加（計測が入っているのに段に無いと
+      来ても誰の目にも入らない。about.html で本日3回目の再演をした）
 -->
 <style>
   :root{ --ink:#1f2328; --muted:#5c6672; --line:#e3e6ea; --accent:#d98324; --bg:#fff; --soft:rgba(217,131,36,.05); }
@@ -104,52 +108,56 @@
 <legend>1. ご自分の作品の材料・制作時間・販売価格を入力し、最後の結果画面を表示できましたか？</legend>
 <label class="opt"><input type="radio" name="q1" value="自分の作品を入力して、結果画面を表示できた">自分の作品を入力して、結果画面を表示できた</label>
 <label class="opt"><input type="radio" name="q1" value="自分の作品で試したが、結果画面まで進めなかった">自分の作品で試したが、結果画面まで進めなかった</label>
-<label class="opt"><input type="radio" name="q1" value="サンプルを見ただけで、自分の作品では試していない">サンプルを見ただけで、自分の作品では試していない</label>
+<label class="opt"><input type="radio" name="q1" value="自分の作品では試していない（サンプルの閲覧・未入力を含む）">自分の作品では試していない（サンプルの閲覧・未入力を含む）</label>
+<!-- 【監督GPT15:06 修正】3つ目を「サンプルを見ただけ」から広げた。旧文だと「開いたが何も入力しなかった」人の行き場が無く、どこにも当てはまらないまま完遂者側の選択肢へ流れる恐れがあった。1つ目だけを完遂者数として数え、3つ目を選んだ回答は設問3〜6の集計から除外する。 -->
 </fieldset>
 
 <!-- 指定7項目の②離脱箇所 ／ 関門②途中離脱した画面 -->
 <fieldset>
-<legend>2. 途中でやめた方は、どのあたりでしたか？</legend>
-<label class="opt"><input type="radio" name="q2" value="最後まで進んだので該当なし">最後まで進んだので該当なし</label>
+<!-- 【監督GPT15:06 修正】旧設問は「途中でやめた方は」と条件を付けながら、先頭に「該当なし」を置き、さらに「結果画面が表示される前」が他の選択肢と重複していた。設問1で「進めなかった」を選んだ人だけが答える設問だと明示し、重複する選択肢を1つへ畳んだ。「結果画面は表示されたが内容が分からず確認をやめた」は離脱ではなく到達なので、この設問から外して設問5（信用度）の理由欄で拾う。 -->
+<legend>2. 結果画面まで進めなかった方は、どのあたりで止まりましたか？</legend>
 <label class="opt"><input type="radio" name="q2" value="材料を登録するところ">材料を登録するところ</label>
 <label class="opt"><input type="radio" name="q2" value="作品に材料を割り当てるところ">作品に材料を割り当てるところ</label>
-<label class="opt"><input type="radio" name="q2" value="制作時間を入れるところ">制作時間を入れるところ</label>
-<label class="opt"><input type="radio" name="q2" value="販売価格を入れるところ">販売価格を入れるところ</label>
-<!-- 【監督GPT14:19 必須修正6】旧選択肢「結果の画面」を2つへ割った。旧のままだと、設問1「結果画面を表示できた」と設問2「結果の画面で離脱」が同時に成立し、完遂者数の集計があいまいになる。下の2つ目（表示はされたが確認をやめた）は**完遂者数では到達として数え**、分からなかったことは設問5（信用度）で別に判定する。 -->
-<label class="opt"><input type="radio" name="q2" value="結果画面が表示される前">結果画面が表示される前</label>
-<label class="opt"><input type="radio" name="q2" value="結果画面は表示されたが、内容が分からず確認をやめた">結果画面は表示されたが、内容が分からず確認をやめた</label>
+<label class="opt"><input type="radio" name="q2" value="制作時間を入力するところ">制作時間を入力するところ</label>
+<label class="opt"><input type="radio" name="q2" value="販売価格を入力するところ">販売価格を入力するところ</label>
+<label class="opt"><input type="radio" name="q2" value="計算または結果表示の操作をするところ">計算または結果表示の操作をするところ</label>
 <label class="opt"><input type="radio" name="q2" value="どこだったか覚えていない">どこだったか覚えていない</label>
-<p class="sub"><span>差し支えなければ、そこで何に困ったかを教えてください（任意）</span>
+<p class="muted" style="margin:6px 0 0">結果画面まで進んだ方と、ご自分の作品では試していない方は、<strong>この設問は空欄にしてください。</strong></p>
+<p class="sub"><span>そこで何に困ったかを教えてください（任意）</span>
 <textarea name="q2free" rows="2"></textarea></p>
 </fieldset>
 
 <!-- 指定7項目の③所要時間 ／ 関門⑤入力にかかった時間 -->
 <fieldset>
-<legend>3. だいたい、どれくらい時間がかかりましたか？</legend>
+<!-- 【監督GPT15:06 修正】旧設問は開始点と終了点が不明で、「アプリを知ってからの時間」とも読めた。区間を設問文の中で名指しし、境界の重なり（5〜10と10〜20で10分がどちらにも入る）も解消した。自己申告である点は承知のうえで、アプリ側の自動計測は同意とプライバシー設計を要するため別件とする。 -->
+<legend>3. ご自分の作品の入力を始めてから、結果画面の表示または中断まで、どれくらいかかりましたか？</legend>
 <label class="opt"><input type="radio" name="q3" value="5分未満">5分未満</label>
-<label class="opt"><input type="radio" name="q3" value="5〜10分">5〜10分</label>
-<label class="opt"><input type="radio" name="q3" value="10〜20分">10〜20分</label>
-<label class="opt"><input type="radio" name="q3" value="20〜30分">20〜30分</label>
+<label class="opt"><input type="radio" name="q3" value="5分以上10分未満">5分以上10分未満</label>
+<label class="opt"><input type="radio" name="q3" value="10分以上20分未満">10分以上20分未満</label>
+<label class="opt"><input type="radio" name="q3" value="20分以上30分未満">20分以上30分未満</label>
 <label class="opt"><input type="radio" name="q3" value="30分以上">30分以上</label>
 <label class="opt"><input type="radio" name="q3" value="覚えていない">覚えていない</label>
+<p class="muted" style="margin:6px 0 0">ご自分の作品では試していない方は、<strong>この設問は空欄にしてください。</strong></p>
 </fieldset>
 
 <!-- 指定7項目の④判断変化 ／ 関門③計算の前後で値付けの判断が変わったか -->
 <fieldset>
-<legend>4. 使う前と後で、値段のつけ方についてのお考えは変わりましたか？</legend>
+<!-- 【監督GPT15:06 修正】「お考え」は抽象的で、関門③の文言（値付けの判断が変わったか）と一致していなかった。関門の言葉へ揃える。あわせて「まだ分からない」を「まだ判断できない」へ改め、GPTの指摘どおり**「変わった」だけでは製品価値の証明にならない**ため理由の自由記述は残す。 -->
+<legend>4. この試作を使う前と後で、ご自分の作品の値付けについての判断は変わりましたか？</legend>
 <label class="opt"><input type="radio" name="q4" value="変わった">変わった</label>
 <label class="opt"><input type="radio" name="q4" value="変わらなかった">変わらなかった</label>
-<label class="opt"><input type="radio" name="q4" value="まだ分からない">まだ分からない</label>
-<p class="sub"><span>どう変わったか／変わらなかった理由（任意）</span>
+<label class="opt"><input type="radio" name="q4" value="まだ判断できない">まだ判断できない</label>
+<p class="sub"><span>変わった内容、または変わらなかった理由（任意）</span>
 <textarea name="q4free" rows="2"></textarea></p>
 </fieldset>
 
 <!-- 指定7項目の⑤信用度と理由 ／ 関門⑥結果を信用できたか -->
 <fieldset>
-<legend>5. 出てきた金額を、信用できると感じましたか？</legend>
-<label class="opt"><input type="radio" name="q5" value="信用できた">信用できた</label>
-<label class="opt"><input type="radio" name="q5" value="どちらとも言えない">どちらとも言えない</label>
-<label class="opt"><input type="radio" name="q5" value="信用できなかった">信用できなかった</label>
+<!-- 【監督GPT15:06 修正】旧文は肯定的な語を先に置く形で、確証バイアスを誘発しうる（旧文の原文はここに引用しない。grep監視が誤検知するため）。中立の問い方へ変え、選択肢も「値付けの判断に使えるかどうか」という具体的な基準に置き換えた。 -->
+<legend>5. 出てきた金額への信頼度として、もっとも近いものをお選びください。</legend>
+<label class="opt"><input type="radio" name="q5" value="値付けの判断に使える程度に信頼できる">値付けの判断に使える程度に信頼できる</label>
+<label class="opt"><input type="radio" name="q5" value="まだ判断できない">まだ判断できない</label>
+<label class="opt"><input type="radio" name="q5" value="値付けの判断に使えるほど信頼できなかった">値付けの判断に使えるほど信頼できなかった</label>
 <!-- 【監督GPT14:19】旧文「ここがいちばん知りたいところです」は自由記述への圧力になり、しかも他の自由記述と違って（任意）の表示が無かった。指定どおり削除して揃えた。 -->
 <p class="sub"><span>そう感じた理由を、差し支えない範囲で教えてください（任意）</span>
 <textarea name="q5free" rows="3"></textarea></p>
@@ -157,21 +165,31 @@
 
 <!-- 指定7項目の⑥再利用意向 ／ 関門④別の作品でも使いたいか -->
 <fieldset>
-<legend>6. ほかの作品でも使いたいと思いますか？</legend>
+<!-- 【監督GPT15:06 修正】「思いますか」を、関門④の文言（別の作品でも使いたいか）へ直接合わせた。「分からない」は「まだ分からない」へ。 -->
+<legend>6. 今後、別のご自分の作品でもこの試作を使いたいですか？</legend>
 <label class="opt"><input type="radio" name="q6" value="使いたい">使いたい</label>
-<label class="opt"><input type="radio" name="q6" value="分からない">分からない</label>
+<label class="opt"><input type="radio" name="q6" value="まだ分からない">まだ分からない</label>
 <label class="opt"><input type="radio" name="q6" value="使いたくない">使いたくない</label>
-<p class="sub"><span>そのわけ（任意）</span>
+<p class="sub"><span>その理由（任意）</span>
 <textarea name="q6free" rows="2"></textarea></p>
 </fieldset>
 
 <!-- 指定7項目の⑦連絡希望は「任意の別同意」。既定はオフ。チェックしなくても回答は同じに扱う、と明記する。 -->
 <fieldset>
-<legend>7. 今後のご連絡について（任意）</legend>
+<!-- 【監督GPT15:06 修正】「今後のご連絡」は範囲が広いので、宛先と目的を限定した。設問7は**募集や観察テストへの参加同意ではない**（GPT指定）。 -->
+<legend>7. 追加のご連絡への同意（任意）</legend>
 <label class="opt"><input type="checkbox" id="q7" name="q7">
-直したものが出来たときや、追加でおうかがいしたいことがあるときに、連絡してもよい</label>
+この回答を送ったメールアドレスまたはSNSアカウント宛に、任意でのご案内や、この回答についての追加質問を送ってよい</label>
 <p class="muted" style="margin:6px 0 0">
-チェックは<strong>任意</strong>です。<strong>チェックしなくても、上のご回答はそのまま受け取り、同じように試作の改善へ反映します。</strong>この設問だけ、あとから「やっぱり不要」とお申し付けいただけます。</p>
+チェックは<strong>任意</strong>です。<strong>チェックしなくても、上のご回答はそのまま受け取り、同じように試作の改善へ反映します。</strong>同意はあとから撤回できます。撤回をご希望の場合は <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a> へご連絡ください。</p>
+</fieldset>
+
+<!-- 【監督GPT15:06 必須】同じ人の重複回答を除けないと「10人」が10人である保証が無い。募集URLに付けたテスター番号を自動で読み、無い場合だけ手入力できるようにした。設問ではなく集計用の欄として扱い、番号の無い回答は感想として受け取るが関門の10人には数えない。あわせて利用経路とビルドをURLから受け取る（回答者の手間は増やさない）。 -->
+<fieldset>
+<legend>集計用（お手数ですが、そのままで結構です）</legend>
+<p class="sub"><span>テスター番号（ご案内に記載がある場合のみ。無ければ空欄で構いません）</span>
+<input type="text" id="tid" name="tid" style="width:100%;max-width:220px;padding:8px;border:1px solid var(--line);border-radius:6px" placeholder="例: T-7K4P"></p>
+<p class="muted" style="margin:6px 0 0">ご利用の版（Web／iOS）は、この画面を開いたリンクから自動で記録されます。<strong>ご入力は不要です。</strong>分からない場合は空欄のままお進みください。</p>
 </fieldset>
 
 </form>
@@ -183,7 +201,7 @@
 <ul>
   <!-- 【監督GPT14:19 必須修正4】旧文はメールアドレスにしか触れていなかった。SNSのメッセージで送れば、送信元のアカウント名・IDが当方に届く。「コピー経路なら何も届かない」と読める書き方は事実に反していた。メール経路でアドレスが届くこと自体は避けられないので、
        **届くことと、追加連絡へ使う同意とを分ける**形にした（指定どおり）。 -->
-  <li><strong>取得する情報</strong>: 上でお答えいただいた内容です。メールで送信した場合は、送信元のメールアドレスなどのメール情報も当方に届きます。SNSのメッセージで送信した場合は、そのSNS上のアカウント名・アカウントIDなど、送信元を識別できる情報が当方に届く場合があります。お名前・住所・電話番号を回答文に記入する必要はありません。</li>
+  <li><strong>取得する情報</strong>: 上でお答えいただいた内容です。メールで送信した場合は、送信元のメールアドレスなどのメール情報も当方に届きます。SNSのメッセージで送信した場合は、そのSNS上のアカウント名・アカウントIDなど、送信元を識別できる情報が当方に届く場合があります。お名前・住所・電話番号を回答文に記入する必要はありません。<strong>また、重複回答を除くためのテスター番号と、ご利用の版・ビルドの記録が回答文に含まれます</strong>（この画面を開いたリンクから読み取ったもので、お名前や連絡先ではありません）。</li>
   <li><strong>設問7に同意していない場合</strong>、送信に伴ってメールアドレスやSNSアカウント情報が届いても、回答の受領確認、削除依頼への対応その他必要な対応を除き、<strong>追加のご連絡には使用しません。</strong></li>
   <li><strong>利用目的</strong>: <strong>この試作を直すためだけ</strong>に使います。広告や営業には使わず、法令にもとづく場合を除き、第三者へ提供しません。</li>
   <li><strong>保存期限</strong>: 取得日から<strong>90日以内に削除</strong>します。</li>
@@ -249,16 +267,38 @@
     return s;
   }
 
+  // 【監督GPT15:06 必須修正A/B】重複回答の排除と、どの版・どのビルドへの評価かの記録。
+  // 回答者に設問を増やさず、募集URL・アプリ側のリンクに付いたクエリから受け取る。
+  // 例: feedback.html?t=T-7K4P&src=ios&build=11
+  // 値が無い場合は「未指定」と書く。**空欄を勝手に既定値へ落とさない**（既定値が異常だと
+  // 分からなくなる、というルートCLAUDE.mdの落とし穴4と同じ理由）。
+  function q(name){
+    try {
+      var v = new URLSearchParams(location.search).get(name);
+      if (!v) return "";
+      // 記録用の文字列なので、長さと文字種を絞って取り込む（任意の文字列を回答文へ通さない）
+      return String(v).slice(0, 40).replace(/[^0-9A-Za-z._\-]/g, "");
+    } catch (e) { return ""; }
+  }
+  var TID = document.getElementById("tid");
+  (function prefillTester(){
+    var t = q("t");
+    if (t && TID && !TID.value) { TID.value = t; }
+  })();
+
   function build(){
     var t = "";
     t += "試作の感想（フォーム版 2026-08-01）\n";
     t += "--------------------------------\n";
-    t += line("1. 最後まで進めたか", pick("q1"));
-    t += line("2. 途中でやめた場所", pick("q2"), "困ったこと", free("q2free"));
-    t += line("3. かかった時間", pick("q3"));
-    t += line("4. 値段の考えが変わったか", pick("q4"), "どう変わったか", free("q4free"));
-    t += line("5. 金額を信用できたか", pick("q5"), "理由", free("q5free"));
-    t += line("6. ほかの作品でも使いたいか", pick("q6"), "わけ", free("q6free"));
+    t += "テスター番号: " + ((TID && TID.value.trim()) ? TID.value.trim() : "未指定") + "\n";
+    t += "利用した版: " + (q("src") || "未指定") + "　ビルド: " + (q("build") || "未指定") + "\n";
+    t += "--------------------------------\n";
+    t += line("1. 自分の作品で結果画面まで進めたか", pick("q1"));
+    t += line("2. 進めなかった場合、止まった場所", pick("q2"), "困ったこと", free("q2free"));
+    t += line("3. 入力開始から結果表示・中断までの時間", pick("q3"));
+    t += line("4. 値付けの判断が変わったか", pick("q4"), "変わった内容・変わらなかった理由", free("q4free"));
+    t += line("5. 出てきた金額への信頼度", pick("q5"), "理由", free("q5free"));
+    t += line("6. 別の作品でも使いたいか", pick("q6"), "理由", free("q6free"));
     // 【監督GPT14:19 必須修正3】未チェックを「希望しない」と書いてはならない。
     // 未チェックは積極的な拒否ではなく、**追加連絡への同意が無い状態**である。
     // 「希望しない」と記録すると、こちらが受け取った側で拒否の意思表示として扱われ、
