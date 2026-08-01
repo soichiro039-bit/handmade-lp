@@ -276,8 +276,14 @@
   /* 【2026-07-28 開発部】高さ17pxで、Apple HIG / WCAG 2.5.8 の44pxを大きく下回っていた。
      新設した原則12h(押せるもの全般を測る)が検出。inline のままでは高さを与えられないため
      inline-block にして当たり判定だけ広げる。見た目の文字サイズは変えない。 */
-  .ask-here a { color:var(--muted); display:inline-block; min-height:44px;
-                line-height:44px; padding:0 10px; }
+  /* 【2026-08-01 開発部】44px ちょうどに合わせていたため、12hが**断続的に**落ちていた
+     （報告値は "A:44px"＝小数第2位まで丸めて44。実体は 43.995〜44 の範囲）。
+     同じファイルを続けて2回測ると、1回目は全項目PASS・2回目だけFAILになる。
+     基準ちょうどに置くと、サブピクセルの丸めで合否が回ごとに変わる＝
+     **検査が悪いのでも実装が悪いのでもなく、境界に置いたことが悪い。**
+     基準を緩めず、対象を境界から離す（見た目の文字サイズは変えない）。 */
+  .ask-here a { color:var(--muted); display:inline-block; min-height:46px;
+                line-height:46px; padding:0 10px; }
   /* メールアドレスは途中で改行できない1語なので、文字200%だと横スクロールを作る
      （原則12d。実際に検査が15pxのはみ出しを検出した）。ここだけ折り返しを許す */
   #legalCard { overflow-wrap:anywhere; }
@@ -1047,16 +1053,29 @@ const PAYOUT_TIMING = {
     minYen:5000, expiryText:"売上金に有効期限はありません",
     fastText:"" }
 };
+/** ひと月の振込見込み額（販路から自分の口座へ入る見込みの月合計）。
+    【2026-08-01 開発部・原則2】下限の判定も、画面に出す数字も、必ずこの1本から出す。
+
+    是正前は2本あった。判定側(payoutBelowMin)は gross＝価格＋(送料別の)送料 を
+    端数処理つきの channelFee で引いていたのに、警告文へ埋め込む数字だけが
+    **別のインライン式**（送料を足さない・端数処理をしない生の率）で書かれていた。
+    出荷中の app/index.html をそのまま読み込んで実測すると、minne・月1点で
+      送料込み: 判定135円／表示134円（差0.99円）
+      送料別250円: 判定358円／表示134円（**差224円**）
+    **どの金額も「間違った計算」ではない。2本あったことが間違い**なので、
+    値どうしを突き合わせる検査（原則6・21e・27）では原理的に検出できない。 */
+function payoutMonthly(chKey, price, shipTop){
+  const n = Math.max(1, +db.cfg.sales||1);
+  const gross = Math.max(0, price) + (+shipTop||0);   // 送料別でも購入者が払った送料は入金される
+  return Math.max(0, gross - channelFee(chKey, gross)) * n;
+}
 /** 選んでいる販路で、ひと月の振込見込み額が下限に届くか。
     数字は必ず計算から出す(画面に固定値を書かない=設定や価格を変えてもズレない)。
     届かない場合だけ true を返す。 */
 function payoutBelowMin(chKey, price, shipTop){
   const t = PAYOUT_TIMING[chKey];
   if(!t || !t.minYen) return false;
-  const n = Math.max(1, +db.cfg.sales||1);
-  const gross = Math.max(0, price) + (+shipTop||0);
-  const monthly = Math.max(0, gross - channelFee(chKey, gross)) * n;
-  return price > 0 && monthly < t.minYen;
+  return price > 0 && payoutMonthly(chKey, price, shipTop) < t.minYen;
 }
 /** 1点あたりが負担する振込費用。振込は月1回・月に db.cfg.sales 点売る前提。
     費用が未確認の販路は null を返す(推測値を入れて比較させない)。 */
@@ -1064,9 +1083,7 @@ function payoutPerItem(chKey, price, shipTop){
   const p = PAYOUT[chKey];
   if(!p || !p.fee) return null;
   const n = Math.max(1, +db.cfg.sales||1);
-  const gross = Math.max(0, price) + (+shipTop||0);
-  const monthly = Math.max(0, gross - channelFee(chKey, gross)) * n; // 月の振込見込み額
-  return p.fee(monthly) / n;
+  return p.fee(payoutMonthly(chKey, price, shipTop)) / n;   // 段の境目は月の見込み額で決まる
 }
 
 /* ===== 保存 ===== */
@@ -1307,7 +1324,8 @@ function renderHome(){
           <div class="meta">原価 ${yen(directCost(w) + laborCost(w))}（材料・送料 ${yen(directCost(w))}＋人件費 ${yen(laborCost(w))}）／ ${w.min}分</div></div>
         <div class="val"><span class="${cls}">${hrTxt}</span>
           <div class="meta">${w.price?yen(+w.price):"—"}</div>
-          <button class="dup" aria-label="${esc(w.name)}をもとに新しく作る" onclick="dupWork(${w.id})">複製</button></div>
+          <button class="dup" aria-label="${esc(w.name)}をもとに新しく作る" onclick="dupWork(${w.id})">複製</button>
+          <button class="del" aria-label="${esc(w.name)}を削除" onclick="delWork(${w.id})">×</button></div>
       </div>`;
     }).join("");
   }
@@ -1412,6 +1430,20 @@ function delPart(id){
   if(used.length && !confirm(used.length+"件の作品で使われています。削除するとその作品の原価が下がります。よろしいですか?")) return;
   db.parts = db.parts.filter(p=>p.id!==id);
   db.works.forEach(w=> w.recipe = w.recipe.filter(r=>r.pid!==id));
+  save(); renderAll();
+}
+
+/* 【2026-08-01 社長が実機で検出】作品の削除。
+   パーツには delPart が在ったのに、作品側は削除の経路が1つも無かった
+   （実測 delWork/deleteWork/removeWork とも0件。陽性対照 delPart は在る）。
+   一度作った作品を消せず溜まる状態だった。
+   焦点(focusId)が消えた作品を指していても renderPrice が db.works[0] へ退避し、
+   0件になれば「先に作品を登録してください」で止まるので、後始末はここだけで足りる。 */
+function delWork(id){
+  const w = db.works.find(x=>x.id===id); if(!w) return;
+  if(!confirm("「"+w.name+"」を削除します。元に戻せません。よろしいですか?")) return;
+  db.works = db.works.filter(x=>x.id!==id);
+  if(focusId === id) setFocus(db.works.length ? db.works[0].id : null);
   save(); renderAll();
 }
 
@@ -1681,7 +1713,7 @@ function renderPrice(){
       <div class="pay-row"><span class="l">少額のとき</span><span class="v">${esc(pt.minText)}</span></div>
       <div class="pay-row"><span class="l">預かり期限</span><span class="v">${esc(pt.expiryText)}</span></div>
       ${pt.fastText ? `<div class="pay-row"><span class="l">早く受け取る</span><span class="v">${esc(pt.fastText)}</span></div>` : ""}
-      ${below ? `<div class="pay-flag">この作品を ${yen(cur||recP)} で月に${monthlyN}点売った場合、${chName}のひと月の振込見込みは <b>${yen(Math.max(0,(cur||recP) - (CHANNELS.find(c=>c.key===db.cfg.ch)||CHANNELS[0]).fee(cur||recP)) * monthlyN)}</b> です。上の「少額のとき」の条件に当てはまるため、<b>その月は手元に来ない可能性があります</b>。売れた月と、お金が入る月がずれます。</div>` : ""}
+      ${below ? `<div class="pay-flag">この作品を ${yen(cur||recP)} で月に${monthlyN}点売った場合、${chName}のひと月の振込見込みは <b>${yen(payoutMonthly(db.cfg.ch, cur||recP, shipOnTop(w)))}</b> です${shipOnTop(w) > 0 ? "（送料別なので、購入者が別に払う送料も入金に含めた額です）" : ""}。上の「少額のとき」の条件に当てはまるため、<b>その月は手元に来ない可能性があります</b>。売れた月と、お金が入る月がずれます。</div>` : ""}
       <div class="note">材料の仕入れは先、入金は後です。<b>いくら残るかと同じくらい、いつ来るかが資金繰りを左右します。</b><br>
       出典: ${esc(chName)}公式ヘルプ（2026年7月26日取得）。条件は改定される場合があります。最新は公式サイトをご確認ください。入金日は申請日・金融機関・休日により前後するため、上の日数は目安であり受取日を保証するものではありません。</div>
     </div>`;
@@ -1716,7 +1748,10 @@ function renderPrice(){
         ${db.works.map(x=>`<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}</option>`).join("")}
       </select>
       <label for="curPrice">いまつけている価格(円)</label>
-      <input id="curPrice" type="number" value="${cur||""}" placeholder="未設定" min="0" oninput="setPrice(${w.id},this.value)">
+      <!-- 【2026-08-01】type="number" ではなく text + inputmode。理由は setPrice のコメント参照
+           （number は selectionStart/setSelectionRange を使えず、カーソル位置を戻せない）。
+           inputmode="numeric" なので、スマートフォンでは従来どおり数字キーボードが出る。 -->
+      <input id="curPrice" type="text" inputmode="numeric" pattern="[0-9]*" value="${cur||""}" placeholder="未設定" oninput="setPrice(${w.id},this.value)">
     </div>
     ${coach}
     <div class="card">
@@ -1781,7 +1816,26 @@ function renderPrice(){
 }
 function setPrice(id,v){
   const w = db.works.find(x=>x.id===id); if(!w) return;
-  w.price = +v||0; save(); renderPrice(); renderHome();
+  /* 【2026-08-01 社長が実機で検出】renderPrice は body.innerHTML を丸ごと差し替えるため、
+     入力欄そのものが作り直される。focus とカーソル位置が失われ、1文字打つたびに
+     入力が中断していた（「1500」と打ち切れない）。作り直したあとに復元する。
+
+     【同日・実ブラウザで通して分かったこと】復元を「末尾へ戻す」だけでは直らなかった。
+     input type="number" は selectionStart を返さず setSelectionRange も例外になるため、
+     カーソルは毎回 先頭 に戻り、"1500" と打つと "0510" になっていた（Playwrightで再現）。
+     文字列の走査では絶対に出ない種類の欠陥で、実際に打ってみて初めて出た。
+     そこで入力欄を text + inputmode="numeric" にして、位置をそのまま持ち帰る形にした。 */
+  const before = document.getElementById("curPrice");
+  let pos = null;
+  try{ pos = before ? before.selectionStart : null; }catch(_){ pos = null; }
+  w.price = Math.max(0, +v||0); save(); renderPrice(); renderHome();
+  const el = document.getElementById("curPrice");
+  if(el){
+    el.value = v;   // 生の文字列を戻す。入力途中の "15" や先頭の "0" を +v||0 が潰すため
+    el.focus();
+    const at = (pos === null || pos > el.value.length) ? el.value.length : pos;
+    try{ el.setSelectionRange(at, at); }catch(_){}
+  }
 }
 
 function renderSet(){
