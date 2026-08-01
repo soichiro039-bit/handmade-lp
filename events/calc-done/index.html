@@ -5,24 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>計測用ページ｜ハンドメイド原価計算</title>
-<!--
-  【2026-07-29 開発部】関門の②「計算を最後まで終えた人」を数えるためだけのページ。
-  統括07:10依頼「②計算の最後まで行った人を1つ記録する仕組み」への実装。
 
-  なぜページを1枚増やすのか:
-    Cloudflare Web Analytics(無料枠)には任意のイベントを送る機能が無い。記録できるのは
-    「どのパスが読み込まれたか」だけ。したがって**完了専用のパスを1つ作り、完了した瞬間に
-    そのパスを読み込ませる**のが、新しいサービスを増やさずに数えられる唯一の道。
-    /app/ から見えない iframe で読み込む。利用者の画面は何も変わらない。
-
-  送るもの・送らないもの:
-    - 送るのは「このパスが読み込まれた」という事実だけ。**クエリを一切付けない**
-      （付けると金額や作品名を載せる余地が生まれる。載せない、ではなく載せられない形にする）
-    - 作品名・金額・制作時間は1バイトも出ない（原則8・原則11・原則24）
-
-  計測OFF(?noanalytics=1)を踏んだ端末では、ここでもビーコンを読み込まない。
-  **後から足した通信は、既存のオプトアウトに自動では従わない**ので、同じ判定をここにも置く（原則29）。
--->
 <style>
   body{margin:0;padding:24px;font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
        color:#4a4340;background:#fbf8f5;font-size:15px;line-height:1.8}
