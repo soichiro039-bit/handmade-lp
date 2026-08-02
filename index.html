@@ -25,7 +25,7 @@
   h2 { font-size: 1.1rem; color: var(--main); margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 10px; }
   label { display: block; font-size: .85rem; color: var(--muted); margin-top: 12px; }
   /* 入力欄の高さは44px以上を確保する(指で押せる最小サイズ。iOS HIG / WCAG 2.2 SC2.5.8)。
-     2026-07-26 デザイン部の実測で40pxだったため min-height で下限を固定した。 */
+      の実測で40pxだったため min-height で下限を固定した。 */
   input[type=number], select { width: 100%; min-height: 44px; padding: 11px 10px; font-size: max(1rem, 16px);
     border: 1px solid #ddd0c5; border-radius: 8px; margin-top: 4px; background: #fff; color: var(--text); }
   table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: .92rem; }
@@ -54,15 +54,15 @@
   .verdict .hl { font-size: 1.25rem; font-weight: bold; }
   .verdict .sub { display: block; margin-top: 8px; font-size: .85rem; color: var(--text); }
   .cta.soft { background: #fff; color: var(--accent); border: 2px solid var(--accent); font-size: .95rem; padding: 12px; }
-  /* 根拠へ渡す導線（2026-07-29 デザイン部）。CTAにはしない——このページの主行動は
+  /* 根拠へ渡す導線。CTAにはしない——このページの主行動は
      「まず計算してみる」で、勝ち色のボタンを3つ目に増やすと主行動が薄まる。
      .note(12px)の中へ素の<a>で埋めるのも採らない: 12pxの行内リンクはタップ領域が
-     44pxに届かず、55歳以上の新規流入層(minne n=912・44%がスキルゼロ)を切り捨てる。
+     44pxに届かず、55歳以上の新規流入層(minne ・44%がスキルゼロ)を切り捨てる。
      よって「静かだが確実に押せる」= 下線つき・14px相当・高さ44pxの独立ブロックにする。 */
   .srclink { display: inline-flex; align-items: center; min-height: 44px; margin-top: 10px;
              font-size: .88rem; line-height: 1.6; color: var(--main); text-decoration: underline;
              text-underline-offset: 3px; }
-  /* 料率の鮮度切れを知らせる帯（原則28・型D／2026-07-29 開発部がLPへ移植）。
+  /* 料率の鮮度切れを知らせる帯（型D／ がLPへ移植）。
      公開版アプリ・比較ページ・プロトタイプと同じ見た目にする——同じ状態を4つの見え方で出さない */
   .rate-stale { background:#fff7ed; border-left:5px solid #d98324; color:var(--text);
                 padding:12px 13px; border-radius:9px; margin-bottom:12px; line-height:1.6; font-size:.88rem; }
@@ -207,8 +207,8 @@
 </footer>
 
 <script>
-  // 手数料率(2026-07-23時点の概算)。改定時はここを更新し、上の取得日表記も更新すること。
-  // 【原則6・災害級】この配列の数値はプロトタイプの CHANNELS と1円もずれてはならない
+  // 手数料率(時点の概算)。改定時はここを更新し、上の取得日表記も更新すること。
+  // この配列の数値はプロトタイプの CHANNELS と1円もずれてはならない
   // (invariants_check.py が公開中LPを取得して照合する)。振込費用の数値をここへ混ぜないこと。
   const channels = [
     { key: "minne",   name: "minne",        fee: t => t * 0.10659 },
@@ -217,15 +217,15 @@
     { key: "mercari", name: "メルカリShops", fee: t => t * 0.10 }
   ];
 
-  /* ===== 手数料の端数処理(原則21) =====
+  /* ===== 手数料の端数処理 =====
      販路ごとに丸め方が違う。1円ずつの差だが、正しさが我々の差別化なので合わせる。
      ここが無かった間、LPだけが丸めずに計算しており、Creemaで**LPの方が手取りを1円多く**
-     見せていた(2026-07-28 統括が両方の実コードを576通り突き合わせて検出)。
+     見せていた( が両方の実コードを576通り突き合わせて検出)。
      金額は小さいが向きが悪い——作家の手取りを多く見せる側の誤差は作ってはならない。
-     値の正本: 07_開発移行/料率マスタ/fee_master_v0.json (data_version 2026-08-01-r53)
+     値の正本: 07_開発移行/料率マスタ/fee_master_v0.json (data_version -r53)
      アプリ側 app/index.html の FEE_ROUND と同一。
      channels配列とは必ず別に持つ——channelsはプロトタイプのCHANNELSと1円もずれてはならず
-     (原則6)、そこへ丸め関数を混ぜると照合が壊れるため。 */
+     、そこへ丸め関数を混ぜると照合が壊れるため。 */
   const FEE_ROUND = { minne: Math.floor, creema: Math.ceil, base: Math.round, mercari: Math.floor };
   /** 販路手数料(丸め込み)。基数は「購入者が払う合計」。 */
   function channelFee(c, base) {
@@ -233,7 +233,7 @@
     return base > 0 ? r(c.fee(base)) : 0;
   }
 
-  /* ===== 振込にかかる費用(原則10) =====
+  /* ===== 振込にかかる費用 =====
      販売手数料だけで販路を比べると順位が逆転する。BASEは販売手数料の率が低いが、
      振込1回ごとに250円、振込額2万円未満だとさらに事務手数料500円が乗る。
      月に数点売る作家=本命ターゲットはまさに2万円未満に該当するため、
@@ -244,13 +244,13 @@
     minne:   { fee: () => 220,                                  note: ""  },
     creema:  { fee: amt => amt >= 30000 ? 275 : 200,            note: ""  },
     base:    { fee: amt => 250 + (amt < 20000 ? 500 : 0),       note: ""  },
-    // 2026-07-28 統括: 未確認から確定へ。分析部がShops公式ヘルプの原本へ到達し
+    // 未確認から確定へ。がShops公式ヘルプの原本へ到達し
     // 200円/回・下限5,000円を確認したため、比較へ戻した(アプリ側のPAYOUTと同値)。
     mercari: { fee: () => 200,                                  note: ""  }
   };
   /** 1点あたりが負担する振込費用。振込は月1回・ひと月に n 点売る前提。
       費用が未確認の販路は null を返す(ゼロとして並べると不当に有利に見えるため)。
-      基数は「購入者が払う合計(gross)」——送料別なら送料も入金されるため(原則21)。
+      基数は「購入者が払う合計(gross)」——送料別なら送料も入金されるため。
       アプリ側 app/index.html の payoutPerItem と同一の式。 */
   function payoutPerItem(c, price, shipTop, n) {
     const p = PAYOUT[c.key];
@@ -261,23 +261,23 @@
     return p.fee(monthly) / n;
   }
 
-  /* 【2026-08-01 開発部・原則15/53】ひと月の入金見込みが下限に届かない月は、
+  /* ひと月の入金見込みが下限に届かない月は、
      その月は手元に来ない(繰り越し・振込申請不可)。
      値は assets/fee-calc.js の PAYOUT_MIN、app/index.html の PAYOUT_TIMING[].minYen、
      正本 fee_master_v0.json の min_payout_jpy と同じ(BASEだけは正本に無く、
      「売上残高751円以下では振込申請ができない」help.thebase.in 由来)。
-     4者がずれていないことは invariants_check.py 原則27a2 が機械で突き合わせる。
+     4者がずれていないことは invariants_check.py 2 が機械で突き合わせる。
      Creema は下限の定めが無いため 0(＝この判定を行わない)。
-     **PAYOUT と同じく channels 配列とは必ず別に持つ**(原則6の照合が channels を
+     **PAYOUT と同じく channels 配列とは必ず別に持つ**(の照合が channels を
      正規表現で抜くため、そこへ別の値を混ぜると照合が壊れる)。 */
   const PAYOUT_MIN = { minne: 1000, creema: 0, base: 752, mercari: 5000 };
-  /* 【2026-08-01 開発部・法務部H-48】下限に届かない月に「何が起きるか」は販路で違う。
+  /* 下限に届かない月に「何が起きるか」は販路で違う。
      minne と メルカリShops は正本に carryover_note が在る＝翌月/次回へ繰り越される。
      BASE は繰り越しの記載が正本に無く、payout_control が on_request で
      「売上残高751円以下だと申請できない」＝**その月は申請そのものができない**。
      ここを両論併記（「繰り越されるか、申請ができません」）で書くと、BASEを選んだ人に
      **放っておけば翌月入る**と読める。誤りの向きが利用者に有利な側なので必ず書き分ける。
-     文言は assets/fee-calc.js の payoutNote と同じ事実を指す（原則53fが機械で突き合わせる）。 */
+     文言は assets/fee-calc.js の payoutNote と同じ事実を指す（が機械で突き合わせる）。 */
   const PAYOUT_BELOW = {
     minne:   "次の月へ繰り越されます",
     creema:  "",
@@ -294,7 +294,7 @@
     return price > 0 && monthly < min;
   }
   const yen = n => Math.round(n).toLocaleString() + "円";
-  /* 【2026-07-29 開発部・原則34/36】作家が実際に払う発送の実費(送料＋箱・梱包材)。
+  /* 作家が実際に払う発送の実費(送料＋箱・梱包材)。
      app/index.html の shipActual(w) と同じ規則を、同じ分岐のまま置く:
      ・送料別のときだけ「そのうち、あなたが実際に払う額」を使う
      ・空欄は「請求額と同じ」であって0円ではない。負・非数も0でなく請求額へ倒す
@@ -308,7 +308,7 @@
     return +ship || 0;
   }
   /* 実費の欄は送料別のときだけ意味を持つ。あわせて上の欄の見出しも切り替える
-     ——同じ欄が、送料別では「購入者へ請求する額」に変わるため(原則34) */
+     ——同じ欄が、送料別では「購入者へ請求する額」に変わるため */
   function syncShipCostRow(mode) {
     const sep = mode === "sep";
     const row = document.getElementById("shipCostRow");
@@ -325,19 +325,19 @@
     const wage = +document.getElementById("wage").value || 0;
     const n = Math.max(1, +document.getElementById("sales").value || 1);
     const key = document.getElementById("ch").value;
-    // 送料別なら、購入者は作品価格とは別に送料を払う＝手数料の基数に乗る(原則21)。
+    // 送料別なら、購入者は作品価格とは別に送料を払う＝手数料の基数に乗る。
     // 送料込みなら送料は既に価格の中にあるので0(二重に足さない)。app側 shipOnTop と同じ。
     const mode = document.getElementById("shipMode").value;
     syncShipCostRow(mode);
     const shipTop = mode === "sep" ? s : 0;
     const gross = p + shipTop;                 // 購入者が払う合計＝手数料の基数
     // 原価に乗るのは「作家が実際に払う額」。手数料の基数は「購入者へ請求した額」のまま。
-    // 一緒に動かすと販路への支払いを実際より少なく見せる＝手取りを多く見せる(原則34)。
+    // 一緒に動かすと販路への支払いを実際より少なく見せる＝手取りを多く見せる。
     // 空欄を +value で0に丸めないよう、生の文字列のまま渡す
     const sAct = shipActual(s, document.getElementById("shipCost").value, mode);
     const diffEl = document.getElementById("shipDiff");
-    // 実費と請求額が違うときは、黙って実費だけを見せず両方と差額を出す(原則34e)。
-    // 差額を「手元に残る」と言い切らない——請求した送料にも販売手数料がかかる(原則34i)
+    // 実費と請求額が違うときは、黙って実費だけを見せず両方と差額を出す。
+    // 差額を「手元に残る」と言い切らない——請求した送料にも販売手数料がかかる
     // 【2026-07-29 実値を読んで自検出】符号で文を分ける。1本の文にすると
     // 実費が請求額を上回る場合に「差額 -70円」と出て、上乗せ分がある側の説明が付く。
     // 実費が多い側は上乗せではなく**自腹**であり、向きが逆の説明になる
@@ -352,7 +352,7 @@
     for (const c of channels) {
       const fee = channelFee(c, gross);
       const payout = payoutPerItem(c, p, shipTop, n);
-      // 振込費用が未確認の販路は、確認済みの販路と同じ土俵に並べない(原則10)。
+      // 振込費用が未確認の販路は、確認済みの販路と同じ土俵に並べない。
       // 手取りだけ出すと「振込費用ゼロの販路」に見えてしまうため、行ごと伏せる。
       if (payout === null) {
         tbody.insertAdjacentHTML("beforeend",
@@ -366,7 +366,7 @@
       // app側 analyze() の profit と同じ式: (gross - fee) - (材料 + 実費) - 振込費用。
       const net = gross - fee - m - sAct - payout;
       // ひと月の入金見込みが下限に届かない条件では、その月は実際には手元へ来ない。
-      // 金額だけ出すと「入金される額」に見えるため、必ず印を付けて別に説明する(原則15/53)。
+      // 金額だけ出すと「入金される額」に見えるため、必ず印を付けて別に説明する(53)。
       const below = payoutBelowMin(c, p, shipTop, n);
       if (below) 下限未満.push(c);
       const 印 = below ? ` <span class="flag">※</span>` : "";
@@ -376,7 +376,7 @@
         `<td class="net">${yen(net)}${印}</td></tr>`);
       if (c.key === key) mine = { c, fee, payout, net, below };
     }
-    // 印だけ付けて説明しないと、何の印か分からないまま金額だけが信じられる(原則53)。
+    // 印だけ付けて説明しないと、何の印か分からないまま金額だけが信じられる。
     // 販路名と下限額を必ず書く——「一部の販路では」では自分に当てはまるか判断できない。
     const bm = document.getElementById("belowmin");
     if (bm) bm.innerHTML = 下限未満.length
@@ -393,13 +393,13 @@
     const el = document.getElementById("verdict");
     if (price <= 0 || !mine) { el.className = "verdict"; el.innerHTML = ""; return; }
     // 販路をまたぐ最大値(旧bestNet)は使わない。ユーザーが選んだ1つの販路だけで計算する。
-    // 最大値を「最も手取りが多くなる販路なら」と見せるのは、実質の推奨に読めるため(景表法D5・原則10)。
+    // 最大値を「最も手取りが多くなる販路なら」と見せるのは、実質の推奨に読めるため(景表法D5・)。
     const cta = `<a class="cta soft" href="${FORM}" target="_blank" rel="noopener">この計算を自動でやるアプリの先行案内を受け取る(無料)</a>`;
     // 振込費用が未確認の販路を選んだ場合は、その分が引かれていないことを必ず添える。
     const caveat = mine.payout === null
       ? `<span class="sub">※${mine.name || mine.c.name}は振込にかかる費用が確認できていないため、その分は差し引けていません。実際に残る額はこれより少なくなります。</span>` : "";
     // 選んだ販路が下限に届かないときは、金額の隣で言う。表の下の注記だけだと、
-    // 自分が選んだ販路の話だと気づかないまま金額を受け取ることになる(原則53)。
+    // 自分が選んだ販路の話だと気づかないまま金額を受け取ることになる。
     const 下限注 = mine.below
       ? `<span class="sub">※この条件では${mine.c.name}のひと月の入金見込みが ${yen(PAYOUT_MIN[mine.c.key])} に届かないため、<strong>${PAYOUT_BELOW[mine.c.key]}</strong>。売れた月と、お金が実際に入る月がずれます。</span>` : "";
     const via = `${mine.c.name}で売った場合`;
@@ -428,13 +428,13 @@
   // select は端末によって input イベントを出さないことがあるため change でも拾う
   document.getElementById("shipMode").addEventListener("change", calc);
 
-  /* 【2026-07-28 デザイン部】確認日は直書きしていたが、正本(fee_master r47)と4日ずれていた。
+  /* 確認日は直書きしていたが、正本(fee_master r47)と4日ずれていた。
      金額を突き合わせる検査はすべて通っていた——数字は正しく、説明だけが誤っていたため。
-     channels 配列とは別に持つ（原則6の照合が channels を正規表現で抜くため、日付を混ぜない）。 */
+     channels 配列とは別に持つ（の照合が channels を正規表現で抜くため、日付を混ぜない）。 */
   const RATE_ASOF = { minne:"2026-07-27", creema:"2026-07-27", base:"2026-07-27", mercari:"2026-07-27" };
 
-  /* 【2026-07-29 開発部】確認日には意味の違う2つがあり、混ぜてはならない（公開版アプリと同じ）。
-       RATE_ASOF  = その料率の値を最後に取得・改定した日 → 上の脚注「◯月◯日時点」だけに使う
+  /* 確認日には意味の違う2つがあり、混ぜてはならない（公開版アプリと同じ）。
+       RATE_ASOF = その料率の値を最後に取得・改定した日 → 上の脚注「◯月◯日時点」だけに使う
        CHECKED_AT = 変更が無かったことを含めて最後に確認できた日 → 下の帯（型D）の起算日だけに使う
      rate_asof を帯の起算にすると、改定が無い限り値が動かないので**監視が止まっても帯が出ず、
      逆に監視が健全でも閾値を過ぎた瞬間に4販路同時で出て二度と消えない**（正常を異常として鳴らす）。
@@ -443,7 +443,7 @@
   const CHECKED_AT = { minne:"2026-08-01", creema:"2026-08-01", base:"2026-08-01", mercari:"2026-08-01" };
 
   function renderRateAsofNote(){
-    /* 【2026-07-29 開発部・実値を条件別に読んで自検出】以前は filter(Boolean) で
+    /* 以前は filter(Boolean) で
        読めない販路を捨てていた。捨てると、日付が壊れた販路だけが脚注から消えて
        **残りの日付だけで「◯月◯日時点」と言い切る**ことになる（比較ページの脚注で踏んだのと同じ穴）。
        読めない販路が1つでもあれば、その名前を明記する。 */
@@ -462,8 +462,8 @@
   }
   renderRateAsofNote();
 
-  /* ===== 料率が古くなったことを知らせる（原則28・型D／2026-07-29 開発部がLPへ移植） =====
-     統括15:07の判定「帯は3本そろえる」に対し、実測ではLPだけが CHECKED_AT すら持っていなかった。
+  /* ===== 料率が古くなったことを知らせる（型D／ がLPへ移植） =====
+     の判定「帯は3本そろえる」に対し、実測ではLPだけが CHECKED_AT すら持っていなかった。
      このLPも公開版アプリと同じ計算で4販路の手取りを出し、脚注で「◯月◯日時点」と名乗る。
      料率の更新が止まれば、その名乗りは静かに嘘へ変わるのに画面は何も変わらない——
      **正常に静かなのか、壊れて静かなのかが区別できない**。危険は app とまったく同じ。 */
@@ -479,7 +479,7 @@
   }
   /** 閾値を超えた販路だけを返す。読めない販路は落とさず出す——除外すると、日付が壊れた販路だけが
       帯から消えて**最も新鮮に見える**。now を引数に取るのは、検査が任意の日付で実物を描かせて
-      測れるようにするため（原則23）。 */
+      測れるようにするため。 */
   function rateStaleList(now){
     const t = now || new Date();
     return channels.map(c => ({ name:c.name, checked:CHECKED_AT[c.key],
@@ -510,7 +510,7 @@
       aged.length   ? `この間に${nm(aged)}が手数料を改定していても、このページはまだ取り込めていません。` : "",
       unread.length ? `${nm(unread)}は確認した日そのものが記録されていないため、いつの時点の値なのか確かめられません。` : "",
       `表示している金額は目安としてご覧いただき、値付けを決める前に${nm(st)}の公式サイトで現在の手数料をご確認ください。`,
-      // 【日付が何の日付かを名乗る／2026-07-29 デザイン部】帯が出ている間、意味の違う日付が
+      // 帯が出ている間、意味の違う日付が
       //   同じページに並ぶ（「◯月◯日時点」＝値そのものの日付 ／ 下の「◯月◯日に確認」＝
       //   変更が無いかを確かめられた日）。名乗らせないと、読み手には食い違いにしか見えない。
       `なお、下に挙げた日付は料率の値そのものの日付ではなく、変更が無いかを最後に確かめられた日です。`
@@ -522,7 +522,7 @@
         : `${escT(x.name)}: ${escT(w(x.checked))}に確認（${x.days}日前）`).join("／") +
       `</span></div></div>`;
   }
-  // 検査（原則23）が任意の日付・任意の状態で実物を描かせて測れるように外へ出す
+  // 検査が任意の日付・任意の状態で実物を描かせて測れるように外へ出す
   window.__renderRateStale = renderRateStale;
   window.__renderRateAsofNote = renderRateAsofNote;   // 脚注も同じ条件で描き直せるようにする
   window.__rateStaleDays = RATE_STALE_DAYS;

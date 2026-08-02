@@ -28,17 +28,17 @@
   p { font-size: .92rem; }
   label { display: block; font-size: .85rem; color: var(--muted); margin-top: 12px; }
   /* 入力欄は16px以上・タップ領域44px以上（iOS HIG / WCAG 2.5.8）。
-     16pxを割るとiOSがタップ時に画面を勝手に拡大する（原則12f） */
+     16pxを割るとiOSがタップ時に画面を勝手に拡大する */
   input[type=number], select { width: 100%; min-height: 44px; padding: 11px 10px; font-size: max(1rem, 16px);
     border: 1px solid #ddd0c5; border-radius: 8px; margin-top: 4px; background: #fff; color: var(--text); }
   .row2 { display: flex; gap: 10px; }
   .row2 > label { flex: 1; min-width: 0; }
-  /* 表は必ずこの箱の中でだけ横に動かす。ページ本体を横スクロールさせない（原則12c） */
+  /* 表は必ずこの箱の中でだけ横に動かす。ページ本体を横スクロールさせない */
   .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 14px; }
   table { width: 100%; border-collapse: collapse; font-size: .92rem; }
-  /* 【2026-07-28 開発部・実機で見て自検出】th も nowrap にしていたため、見出しの文字数が
+  /* th も nowrap にしていたため、見出しの文字数が
      そのまま列幅になり、390pxの実機で**一番大事な「手元に残る額」の列が画面の外**へ出ていた。
-     原則27f(ページ本体が横スクロールしない)はPASSしていた——横に動くのは表の中だけなので
+     (ページ本体が横スクロールしない)はPASSしていた——横に動くのは表の中だけなので
      検査は正しく通り、その上で答えが見えていなかった。見出しは折り返してよい。
      金額のセルだけは nowrap を残す(「1,587」と「円」が別行になると読めないため)。 */
   th { padding: 8px 5px; text-align: right; border-bottom: 1px solid #eee3d8; white-space: normal; }
@@ -48,10 +48,10 @@
   .net { font-weight: bold; color: var(--ok); }
   .minus { color: #b0533f; }
   .thsub { font-size: .72rem; }
-  /* 【2026-07-28 デザイン部】比較表のセルの中に料率を出すための行。
+  /* 比較表のセルの中に料率を出すための行。
      td は nowrap（「1,587」と「円」が割れるのを防ぐため）だが、この行だけは
      normal に戻す。BASEの「6.6% ＋ 40円」を1行に伸ばすと、320pxで
-     一番大事な「手元に残る額」の列を押し出してしまう（原則27g）。
+     一番大事な「手元に残る額」の列を押し出してしまう。
      折り返しは許して、幅は増やさない。 */
   .ratesub { display: block; font-size: .7rem; color: var(--muted); font-weight: normal;
              white-space: normal; margin-top: 2px; }
@@ -64,14 +64,14 @@
   .srcbox dd { color: var(--muted); margin-left: 0; }
   ul { margin: 8px 0 0 1.2em; font-size: .9rem; }
   li { margin: 6px 0; }
-  /* 押せるものはすべて44px以上（原則12h）。リンクも対象 */
+  /* 押せるものはすべて44px以上。リンクも対象 */
   .cta { display: block; width: 100%; min-height: 44px; text-align: center; background: var(--accent); color: #fff;
          padding: 13px 14px; border-radius: 999px; font-size: 1rem; text-decoration: none; margin-top: 16px; }
   .cta.soft { background: #fff; color: var(--accent); border: 2px solid var(--accent); font-size: .95rem; }
   footer { font-size: .75rem; color: var(--muted); padding: 24px 16px 48px; text-align: center; }
   footer a { color: var(--muted); display: inline-block; min-height: 44px; line-height: 44px; }
   .back { display: inline-block; min-height: 44px; line-height: 44px; font-size: .85rem; color: var(--main); }
-  /* 【2026-08-01 統括】運営者からの関連情報。監督GPTの指定「ツール本体と視覚的に分離する／
+  /* 運営者からの関連情報。の指定「ツール本体と視覚的に分離する／
      バナー・強調色を使わない」に従い、背景色も枠線も付けず、区切り線1本と抑えた文字色だけで分ける。
      .card（白いカード）を使うと、このページの計算結果と同じ重みで見えてしまうので使わない。 */
   .relinfo { border-top: 1px solid #e2dbd2; margin-top: 28px; padding-top: 16px; }
@@ -83,7 +83,7 @@
     th, td { padding: 7px 4px; }
   }
   /* 320px(現行で最も狭い実機)では、上の詰めでも答えの列が9pxはみ出していた。
-     原則27gの検査が実測で拾ったので、この幅だけさらに詰める。
+     の検査が実測で拾ったので、この幅だけさらに詰める。
      カードの左右余白も削る——余白より、答えが見えることを優先する。 */
   @media (max-width: 340px) {
     .card { padding: 16px 12px; }
@@ -91,8 +91,8 @@
     th, td { padding: 6px 2px; }
     .thsub { font-size: .66rem; }
   }
-  /* 料率の改定を知らせる帯（原則25・型C／2026-07-31 開発部が比較ページへ移植）。
-     07-31 19:22に情報調査部から異議が出た。型Cは app にしか入っておらず、
+  /* 料率の改定を知らせる帯（型C／ が比較ページへ移植）。
+     07-31 にから異議が出た。型Cは app にしか入っておらず、
      公開物は3本あるのに次の改定で app の利用者しか知らされない状態だった。
      このページは「4販路の手取りを比べて販路を決める」ページなので、料率が変わったことの
      影響は app と同じかそれ以上に大きい（比較の順位そのものが動く）。
@@ -104,11 +104,11 @@
                  padding:12px 13px; border-radius:9px; margin-bottom:12px; line-height:1.6; font-size:.88rem; }
   .rate-notice .rn-body { color:var(--muted); font-size:.83rem; margin-top:5px; }
   .rate-notice .rn-when { display:block; margin-top:4px; font-size:.78rem; }
-  /* 44px を明示的に確保する(原則12h)。このページには .btn.mini が無いので素の button に効かせる */
+  /* 44px を明示的に確保する。このページには .btn.mini が無いので素の button に効かせる */
   .rate-notice .rn-btn { min-height:44px; padding:0 16px; border-radius:8px; cursor:pointer;
                          margin-top:10px; border:1px solid #d8c8bd;
                          background:#fff; color:var(--text); font-size:.85rem; }
-  /* 料率の鮮度切れを知らせる帯（原則28・型D／2026-07-29 開発部が比較ページへ移植）。
+  /* 料率の鮮度切れを知らせる帯（型D／ が比較ページへ移植）。
      app/index.html・プロトタイプと同じ見た目にする——同じ状態を3つの見え方で出さない */
   .rate-stale { background:#fff7ed; border-left:5px solid #d98324; color:var(--text);
                 padding:12px 13px; border-radius:9px; margin-bottom:12px; line-height:1.6; font-size:.88rem; }
@@ -268,13 +268,13 @@
       price: g("price"), material: g("material"), ship: g("ship"),
       sales: Math.max(1, g("sales")),
       mode: document.getElementById("shipMode").value,
-      // 空欄を 0 に丸めない。空欄は「請求額と同じ」であって0円ではない（原則34）。
+      // 空欄を 0 に丸めない。空欄は「請求額と同じ」であって0円ではない。
       // g() を通すと "" が 0 になり、実費が消えて手取りを多く見せてしまう
       shipCost: document.getElementById("shipCost").value
     };
   }
 
-  /** 「そのうち、あなたが実際に払う額」の欄は送料別のときだけ意味を持つ（原則34/36）。
+  /** 「そのうち、あなたが実際に払う額」の欄は送料別のときだけ意味を持つ（36）。
       送料込みでは請求という概念が無く、上の欄がそのまま実費なので出さない。
       あわせて上の欄の見出しも切り替える——同じ欄が、送料別では「購入者へ請求する額」に変わる。 */
   function syncShipCostRow(v) {
@@ -285,16 +285,16 @@
     if (lbl) { lbl.textContent = sep ? "購入者へ請求する送料(円)" : "梱包・発送の実費(円)"; }
   }
 
-  /* 1点あたりの内訳。app/index.html の analyze() と同じ定義:
+  /* 1点あたりの内訳。app/index.html の analyze と同じ定義:
      購入者が払う合計 −(販路手数料 ＋ 材料費 ＋ 梱包発送の実費 ＋ 振込費用)。
-     費用が未確認の販路は payout=null を返し、確認済みの販路と同じ土俵に並べない（原則10c）。 */
+     費用が未確認の販路は payout=null を返し、確認済みの販路と同じ土俵に並べない。 */
   function row(key, v) {
     var gross = F.grossOf(v.price, v.ship, v.mode);
     var shipTop = gross - Math.max(0, v.price);
     var fee = F.channelFee(key, gross);
     var payout = F.payoutPerItem(key, v.price, shipTop, v.sales);
     // 原価に乗るのは「作家が実際に払う額」、手数料の基数は「購入者へ請求した額」のまま。
-    // 一緒に動かすと販路への支払いを実際より少なく見せる＝手取りを多く見せる（原則34）
+    // 一緒に動かすと販路への支払いを実際より少なく見せる＝手取りを多く見せる
     var actual = F.shipActual(v.ship, v.shipCost, v.mode);
     if (payout === null) { return { fee: fee, payout: null, deposit: null, net: null, below: false }; }
     return {
@@ -302,13 +302,13 @@
       deposit: gross - fee - payout,                          // 入金額（原価を引く前）
       net: gross - fee - payout - v.material - actual,        // 手元に残る額
       // ひと月の入金見込みが下限に届かない条件では、その月は実際には手元へ来ない。
-      // 金額だけ出すと「入金される額」に見えるため、必ず印を付けて別に説明する（原則15）
+      // 金額だけ出すと「入金される額」に見えるため、必ず印を付けて別に説明する
       below: F.payoutBelowMin(key, v.price, shipTop, v.sales)
     };
   }
 
-  /* 【2026-07-28 デザイン部・実測で自検出】料率(%)は、このページの中で
-     「他の誰も正しくやっていない」唯一の差別化（情報調査部 #84: 料率を出さない競合が2本、
+  /* 料率(%)は、このページの中で
+     「他の誰も正しくやっていない」唯一の差別化（ #84: 料率を出さない競合が2本、
      出す5本は全て誤りを持つ）。ところが実測すると、料率が画面に初めて現れるのは
      **スクロール37〜38%地点・2.6〜4.7画面目**で、しかも本命の表ではなくBASEの決済方法の注記だった。
      答え（比較表）は1画面目にあるのに、そこに料率が1つも無い。
@@ -341,14 +341,14 @@
       ? "※ この条件（" + yen(v.price) + "・ひと月" + v.sales + "点）では、" +
         下限未満.map(function (c) {
           // 下限に届かない月に何が起きるかは販路で違う。両論併記にすると、BASEを選んだ人に
-          // 「放っておけば翌月入る」と読める（法務部H-48）。販路ごとに正しい側だけを出す
+          // 「放っておけば翌月入る」と読める（H-48）。販路ごとに正しい側だけを出す
           return "<strong>" + c.name + "は月の入金見込みが " + yen(F.PAYOUT_MIN[c.key]) +
                  " に届かないため、" + F.PAYOUT_BELOW[c.key] + "</strong>";
         }).join("、") +
         "。<strong>売れた月と、お金が実際に入る月がずれます。</strong>上の表の金額は、振込が行われた場合のものです。"
       : "";
-    // 実費と請求額が違うときは、黙って実費だけを見せず**両方と差額**を出す（原則34e）。
-    // 差額を「手元に残る」と言い切らない——請求した送料にも販売手数料がかかる（原則34i）
+    // 実費と請求額が違うときは、黙って実費だけを見せず**両方と差額**を出す。
+    // 差額を「手元に残る」と言い切らない——請求した送料にも販売手数料がかかる
     var actual = F.shipActual(v.ship, v.shipCost, v.mode);
     // 【2026-07-29 実値を読んで自検出】符号で文を分ける。1本の文にすると
     // 実費が請求額を上回る場合に「差額 -70円」と出て、上乗せ分がある側の説明が付く。
@@ -387,7 +387,7 @@
     }).join("");
   }
 
-  /* 計算式・出典は META から描画する。ページ本文に数字や日付を直書きしない（原則6/18b・原則7b） */
+  /* 計算式・出典は META から描画する。ページ本文に数字や日付を直書きしない（18b・） */
   function renderStatic() {
     var m = F.META.channels;
     document.querySelector("#formula tbody").innerHTML = F.channels.map(function (c) {
@@ -407,7 +407,7 @@
 
     document.getElementById("sources").innerHTML = F.channels.map(function (c) {
       var d = m[c.key];
-      /* 【2026-07-29 開発部・情報調査部15:29の要対応2】asof を「最終確認」と書いていた。
+      /* asof を「最終確認」と書いていた。
          asof は"その率の値を最後に取得・改定した日"であって、"最後に確認した日"ではない。
          改定が無い限り asof は永久に動かないので、監視が毎日回っていても最終確認日だけが
          古いまま表示され続ける（＝事実誤認）。最後に確認した日は checked が持っている。
@@ -424,12 +424,12 @@
     /* 冒頭にも確認日を出す。差別化の中身は「率を出していること」ではなく
        「**その率がいつの値か言えること**」で、競合7本はどちらも満たしていない。
        日付は必ず META から描く——静的に書くと、データが止まっても文言だけが新しいままになる
-       （企画部R58が『いつでも最新』を禁じたのと同じ壊れ方）。 */
+       （が『いつでも最新』を禁じたのと同じ壊れ方）。 */
     document.getElementById("heroasof").textContent =
       "料率は各社公式ヘルプの " + asof + " 時点の値です。";
     /* 最終確認日は checked から取る（asof ではない。上の #sources のコメントを参照）。
        いちばん古い販路を出す——4販路のうち1つでも古ければ、このページの答えは古い。
-       【2026-07-29 開発部・実値を条件別に読んで自検出】確認日が読めない販路を filter で
+       確認日が読めない販路を filter で
        捨てると、その販路が最も新鮮な扱いになり、脚注だけが「最終確認日 ◯◯」と
        言い切ってしまう（帯は正しく「読み取れません」と出しているのに、脚注が上書きする）。
        帯で踏んだのと同じ穴が脚注に残っていた。読めない販路が1つでもあれば数を明記する。 */
@@ -447,8 +447,8 @@
       "（率と振込にかかる費用は4販路とも各社の公式ヘルプ・公式告知で確認）／ 料率データの版: " + F.META.data_version;
   }
 
-  /* ===== 料率が古くなったことを知らせる（原則28・型D）=====
-     2026-07-29 開発部が app/index.html から移植。統括15:07の判定「帯は3本そろえる」に従う。
+  /* ===== 料率が古くなったことを知らせる（型D）=====
+      が app/index.html から移植。の判定「帯は3本そろえる」に従う。
      このページも app と同じ計算で金額を出すので、古い料率で値付けさせる危険はまったく同じ。
      起算日は checked（＝最後に確認できた日）であって asof ではない。asof は改定が無い限り
      動かないため、正常に監視できている状態を異常として鳴らす向きの誤りになる。 */
@@ -469,7 +469,7 @@
     return Math.floor((n - a) / 86400000);
   }
   /** 閾値を超えた販路だけを返す。now を引数に取るのは、検査が任意の日付で実物を描かせて
-      測れるようにするため（原則23）。確認日が読めない販路は落とさず出す——除外すると
+      測れるようにするため。確認日が読めない販路は落とさず出す——除外すると
       日付が壊れた販路だけが帯から消えて最も新鮮に見える。 */
   function rateStaleList(now) {
     var t = now || new Date();
@@ -482,10 +482,10 @@
   function renderRateStale(now) {
     var box = document.getElementById("rateStale");
     if (!box) { return; }
-    /* 【2026-07-29 開発部・破壊テストで自検出】この関数の呼び出しを丸ごと消しても検査が
-       通ってしまった。検査が window.__renderRateStale() を自分で呼んでいたため、
+    /* この関数の呼び出しを丸ごと消しても検査が
+       通ってしまった。検査が window.__renderRateStale を自分で呼んでいたため、
        関数は測れていても「ページが読み込み時に呼んでいるか」＝配線を一度も見ていなかった。
-       原則23と同じ型（部品は見ているのに画面を通していない）。
+       と同じ型（部品は見ているのに画面を通していない）。
        閾値の内側では帯が空になり、「呼ばれて空」と「一度も呼ばれていない」が見分けられないので、
        呼ばれた事実そのものを印として残す。 */
     box.setAttribute("data-rendered", "1");
@@ -512,9 +512,9 @@
       aged.length   ? "この間に" + nm(aged) + "が手数料を改定していても、このページはまだ取り込めていません。" : "",
       unread.length ? nm(unread) + "は確認した日そのものが記録されていないため、いつの時点の値なのか確かめられません。" : "",
       "表示している金額は目安としてご覧いただき、値付けを決める前に" + nm(st) + "の公式サイトで現在の手数料をご確認ください。",
-      /* 【日付が何の日付かを名乗る／2026-07-29 デザイン部】このページは最も混同が起きやすい。
-         実測で3種類の日付が同一画面に同居し(2026-07-27／2026-07-29／2025-11-27)、しかも
-         上部の「料率は各社公式ヘルプの 2026-07-27 時点の値です」はISO表記、帯は和暦風表記で
+      /* このページは最も混同が起きやすい。
+         実測で3種類の日付が同一画面に同居し、しかも
+         上部の「料率は各社公式ヘルプの 時点の値です」はISO表記、帯は和暦風表記で
          書式まで割れている。脚注の「料率の値の時点: ◯ ／ 最終確認日: ◯」だけが正しく
          名乗れていたので、その言い方を帯にもそろえる。 */
       "なお、下に挙げた日付は料率の値そのものの日付ではなく、変更が無いかを最後に確かめられた日です。"
@@ -527,8 +527,8 @@
           : escText(x.name) + ": " + escText(w(x.checked)) + "に確認（" + x.days + "日前）";
       }).join("／") + "</span></div></div>";
   }
-  /* ===== 料率が変わったことを知らせる（原則25・型C）=====
-     2026-07-31 開発部が app/index.html から移植。情報調査部19:22の異議「入ったのは app 1本だけ。
+  /* ===== 料率が変わったことを知らせる（型C）=====
+      が app/index.html から移植。の異議「入ったのは app 1本だけ。
      公開版は3本ある」に対する是正。app と同じく「値の直後に取得時点を出す」(型A)ではなく
      「変わったときに知らせる」を採る——利用者は毎回の日付を見たいのではなく、
      **前提が変わった瞬間に気づきたい**。
@@ -536,7 +536,7 @@
      このページ特有の事情: app は db.cfg に持たせているが、ここには db が無いので
      localStorage を直接使う。保存できない環境（プライベートモード等）では
      **何も出さない**——見たかどうかを覚えられないのに「更新しました」と出すと、
-     開くたびに毎回立ちはだかる。初回無音と同じ理由（原則9）。 */
+     開くたびに毎回立ちはだかる。初回無音と同じ理由。 */
   var RATE_SEEN_KEY = "meipla_rate_seen";   // 値は {販路key: その端末が最後に見た asof} のJSON
 
   function readRateSeen() {
@@ -555,7 +555,7 @@
     catch (e) { return false; }
   }
   /** この端末が最後に見た時点。初回は黙って記録するだけで、何も知らせない。
-      見たことのない相手へ「更新しました」と出すのは事実に反する（原則25b と同じ） */
+      見たことのない相手へ「更新しました」と出すのは事実に反する（ と同じ） */
   function seedRateSeen() {
     if (!readRateSeen()) { writeRateSeen(); }
   }
@@ -579,15 +579,15 @@
     var box = document.getElementById("rateNotice");
     if (!box) { return; }
     /* 型Dと同じ理由で、呼ばれた事実そのものを印として残す。閉じている状態では帯が空になり、
-       「呼ばれて空」と「一度も呼ばれていない」が見分けられないため（原則23）。 */
+       「呼ばれて空」と「一度も呼ばれていない」が見分けられないため。 */
     box.setAttribute("data-rendered", "1");
     seedRateSeen();
     var ch = rateChanges();
     if (!ch.length) { box.innerHTML = ""; return; }
     var names = ch.map(function (c) { return escText(c.name); }).join("・");
     /* 【文言の注意】「手数料が上がった／下がった」とは書かない。
-         ①持っているのは"確認した時点"であって改定の方向ではない（原則17）
-         ②下がったと書けば値下げの示唆に読まれうる（原則1）
+         ①持っているのは"確認した時点"であって改定の方向ではない
+         ②下がったと書けば値下げの示唆に読まれうる
        促すのは「確認」だけで、価格をどちらへ動かすかは書かない。
        【このページ固有】app は「保存してある価格」を持っているが、ここは持っていない。
        だから app の文面をそのまま写さず、このページで実際に変わるもの＝**販路ごとの
@@ -605,7 +605,7 @@
     if (b) { b.addEventListener("click", ackRateNotice); }
   }
 
-  /* 検査（原則23）が任意の日付・任意の状態で実物を描かせて測れるように外へ出す。
+  /* 検査が任意の日付・任意の状態で実物を描かせて測れるように外へ出す。
      脚注（#asof・#sources）も renderStatic を通してしか作らないので一緒に出す——
      帯だけ描き直して脚注を古いままにすると、実際には矛盾していても検査は通ってしまう。 */
   window.__renderRateStale = renderRateStale;
