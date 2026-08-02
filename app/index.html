@@ -1126,31 +1126,37 @@ function recommend(w, chKey){
   // 提案どおりの価格で売っても目標に届かないことがあった。
   // 実測(05_検証/repro_payout_tier.py)＝Creemaで再判定漏れ6点・目標未達5点、
   // 最悪は本来29,900円で出すべきところを33,700円と出し、残額が目標を71円下回った。
-  // 是正＝**実際に画面へ出す価格そのもの**で費用を確定させ、変わらなくなるまで解き直す。
-  // 2つの段を行き来して収束しない場合は費用の高い側を採る(価格が上がる向き＝
-  // 目標を下回らない側。安く出して未達になるより、高く出して余る方が害が小さい)。
+  // ずれは2方向に出ていた——①提案どおりに売っても目標に届かない ②必要より高い価格を出す。
+  // 是正の考え方＝**方程式を1回で当てにいかない。**
+  // 画面に出す100円単位の価格を候補として作り、**実際の費用で目標に届く中で最も安い額**を選ぶ。
+  // 判定は analyze()——利用者が実際に画面で見る計算そのものを使う(別の式で判定しない。
+  // 判定用と表示用に式が2本あると、どちらも単独では正しいまま食い違う)。
   //
-  // 【返す price は丸めない】画面へ出すときの100円切り上げは呼び出し側が行う。
-  // 丸めをこの関数の中へ移すと、送料別のとき「作品価格」の側を丸めることになり、
-  // 購入者が払う合計が送料込みの場合と最大99円ずれる（自動検査が実際に検出した）。
-  // 段の再判定と、丸めをどこで行うかは別の問題である。
-  let payout = 0, s = solve(0);
-  const seen = [0];
-  for(let i=0; i<8; i++){
-    const shown = round100(Math.max(0, s.gross - shipTop));   // 実際に画面へ出す価格
-    const next = payoutPerItem(chKey, shown, shipTop) || 0;
-    if(next === payout) break;                                 // 収束
-    if(seen.indexOf(next) >= 0){                               // 段を行き来している
-      payout = Math.max.apply(null, seen.concat([next]));
-      s = solve(payout);
-      break;
-    }
-    seen.push(next);
-    payout = next;
-    s = solve(payout);
+  // 【返す価格は100円単位。呼び出し側の切り上げと二重にならない】
+  // 呼び出し側は round100(rec.price) を通してから表示する。ここが返すのは既に100円単位なので
+  // その切り上げは値を動かさない。**丸めの基準は「作品価格」のまま**であり、購入者が払う
+  // 合計の側を丸める形には変えていない(送料設定で作品価格が動く・地域別送料で基準が
+  // 一意に決まらない、という理由で不採用と判断した)。
+  //
+  // 【2026-08-02 18:2x の差し戻しの是正】18:03に、丸めを関数の外へ戻す目的で
+  // この探索ごと消してしまい、①12件(最大0.92円)②416件(最大500円)が公開版へ戻っていた
+  // (64,000組合せの独立実測。05_検証/推奨価格_目標到達検査.js)。
+  // 丸めをどこで行うかと、届くかを確かめることは**別の問題**であり、束ねて戻したのが誤り。
+  const need = base0 * (+db.cfg.margin||0)/100;                // 原価と人件費の上に残したい額
+  const reaches = p => analyze(w, p, chKey).afterLabor >= need - 0.5;  // 1円未満の丸め差は許容
+  let shown = round100(Math.max(0, solve(0).gross - shipTop));
+  for(let i=0; i<8; i++){                                      // 段を織り込んで、まず高さを合わせる
+    const cand = round100(Math.max(0,
+      solve(payoutPerItem(chKey, shown, shipTop) || 0).gross - shipTop));
+    if(cand <= shown) break;
+    shown = cand;
   }
-  return { price:Math.max(0, s.gross - shipTop), base:base0 + payout,
-           target:s.target, payout, shipTop };
+  let guard = 0;
+  while(!reaches(shown) && guard++ < 1000) shown += 100;        // それでも届かなければ上げる
+  while(shown > 100 && reaches(shown - 100)) shown -= 100;      // 届く範囲でいちばん安い価格
+  const payout = payoutPerItem(chKey, shown, shipTop) || 0;
+  return { price:shown, base:base0 + payout,
+           target:base0 * (1 + (+db.cfg.margin||0)/100) + payout, payout, shipTop };
 }
 const round10 = n => Math.ceil(n/10)*10;
 const round100 = n => Math.ceil(n/100)*100;
