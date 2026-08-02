@@ -1053,7 +1053,7 @@ function laborCost(w){ return (+w.min||0)/60 * (+db.cfg.wage||0); }
 
 /** ある販売価格での、その販路の手取りと利益 */
 function analyze(w, price, chKey){
-  const shipTop = shipOnTop(w);            // 送料別なら購入者が別に払う送料(原則21)
+  const shipTop = shipOnTop(w);            // 送料別なら購入者が別に払う送料
   const gross = (price>0 ? price : 0) + shipTop; // 購入者が払う合計＝手数料の基数
   const fee = channelFee(chKey, gross);
   const net = gross - fee;                 // 販路手数料を引いた入金額(送料別なら送料も入金される)
@@ -1068,7 +1068,7 @@ function analyze(w, price, chKey){
   const payout = payoutKnown ? payoutRaw : 0;
   const profit = net - directCost(w) - payout;  // 材料・送料・振込費用を引いた残り(=手間の対価)
   const afterLabor = profit - laborCost(w);// 目標時給を払った後に残る利益
-  const hourly = (+w.min>0) ? profit/(w.min/60) : 0;  // 制作1時間あたりの残る額(原則51。時給と呼ばない)
+  const hourly = (+w.min>0) ? profit/(w.min/60) : 0;  // 制作1時間あたりの残る額(時給と呼ばない)
   return { fee, net, profit, afterLabor, hourly, gross, shipTop, payout, payoutKnown };
 }
 
@@ -1502,7 +1502,7 @@ function saveWork(){
     shipCost: (wShipMode.value === "sep" && wShipCost.value !== "") ? (+wShipCost.value||0) : null });
   setFocus(newId); editRecipe=[]; wName.value=""; wPrice.value=""; wShipCost.value="";
   wShipMode.dataset.touched = "";
-  justSavedId = newId;   // 保存できた事実と、次にどこへ行くかを s-home で出す（原則41e）
+  justSavedId = newId;   // 保存できた事実と、次にどこへ行くかを s-home で出す
   renderAll(); go('s-home');
 }
 
@@ -1767,7 +1767,7 @@ function saveCfg(){
   if(+cfgMargin.value !== db.cfg.margin) cfgMargin.value = db.cfg.margin;
   if(+cfgSales.value !== db.cfg.sales) cfgSales.value = db.cfg.sales;
   save(); renderHome(); renderPrice();
-  renderShipPresets(); // 販路を変えたら送料の候補も変わる(原則37)
+  renderShipPresets(); // 販路を変えたら送料の候補も変わる
 }
 
 function esc(s){ return String(s).replace(/[&<>"]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
@@ -1926,7 +1926,7 @@ function obFinish(skipped){
   go("s-home");
 }
 
-seedRateSeen();   // 描画より前に置く。初回は記録するだけで帯は出ない(原則25・型C)
+seedRateSeen();   // 描画より前に置く。初回は記録するだけで帯は出ない
 renderAll();
 if(obNeeded()) obStart();
 </script>
