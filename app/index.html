@@ -333,6 +333,17 @@
      ボタンだけを下端に貼ると、画面の真ん中に大きな空白が1か所できて未完成に見える
      (実測: 背の高い端末で約350pxの空白が1か所に固まっていた) */
   .ob-foot { margin-top:auto; }
+  /* 主ボタンは「詰めて入れる」のをやめ、画面の下端へ貼り付ける。
+     高さの引き算で収めると、本文を1文足すたびに背の低い端末で画面外へ落ちる
+     (375x667で実測 scrollHeight 774px・はみ出し107px。初期表示で押せるのが
+     「スキップ」だけになり、いちばん見せたい実演の出口が隠れていた)。
+     位置で保証すれば、本文を良くしても壊れない。本文はこの下へスクロールして読める。 */
+  .ob-foot {
+    position:sticky; bottom:0; background:var(--soft);
+    padding:10px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+    box-shadow:0 -10px 16px -10px rgba(61,50,41,.22);
+  }
+  .ob-foot .btn { margin-top:0; }
   .ob-step > .ob-eyebrow { margin-top:auto; }
   .ob-dots { display:flex; gap:7px; justify-content:center; margin-top:16px; }
   .ob-dots i { width:7px; height:7px; border-radius:50%; background:var(--line); }
@@ -497,6 +508,11 @@
     
     <p style="font-size:.88rem;color:var(--muted)">すべてこの端末の中だけに保存されています。アカウント登録は不要で、<b>入力した内容をどこかのサーバーへ送信することはありません</b>。</p>
     <button class="btn sub" onclick="resetAll()">サンプルデータに戻す</button>
+  </div>
+  <div class="card">
+    <h2>はじめの説明</h2>
+    <p style="font-size:.88rem;color:var(--muted)">最初に出た「手元にいくら残ると思いますか?」の画面を、いつでも開き直せます。目標の時給と販路を選び直しても、登録した作品は消えません。</p>
+    <button class="btn sub" data-role="ob-replay" onclick="obReplay()">はじめの説明をもう一度見る</button>
   </div>
   <div class="card">
     <h2>手数料率について</h2>
@@ -1883,6 +1899,18 @@ function obPick(kind, v){
 function obGo(n){
   document.querySelectorAll(".ob-step").forEach(s => s.hidden = (+s.dataset.ob !== n));
   document.getElementById("onboard").scrollTop = 0;
+}
+/** 設定から、はじめの説明を開き直す。
+    一度スキップした人が二度と見られない状態を避けるための入口。
+    obStart() は毎回 db から作り直すので再入できるが、**表示中の枚数は戻らない**
+    (2枚目まで進んだ人は2枚目が開く)ので、必ず1枚目へ戻してから開く。 */
+function obReplay(){
+  if(!db.works.length){
+    alert("はじめの説明は、登録した作品の数字を使ってご説明します。先に作品を1つ登録するか、上の「サンプルデータに戻す」を押してから、もう一度お試しください。");
+    return;
+  }
+  obGo(1);
+  obStart();
 }
 /** skipped=true なら設定を変えずに閉じる(既定値のまま本体へ入れる) */
 function obFinish(skipped){
