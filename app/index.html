@@ -1498,10 +1498,14 @@ function saveWork(){
   // 自分の作品を登録した直後に値付けを開いてもサンプルの答えが出る（の通し実行で実測）
   const newId = db.seq++;
   db.works.push({ id:newId, name, recipe:JSON.parse(JSON.stringify(editRecipe)),
-    min:+wMin.value||0, ship:+wShip.value||0, price:+wPrice.value||0,
+    // 4欄とも min="0" を宣言しているが、type=number の min は検証にしか使われないので
+    // マイナスの値も打ててしまう。保存側でも下限を強制する。
+    // 実害は内訳表で出る: 送料別で ship が負だと「購入者が別に払う送料」の行が隠れるのに
+    // 差し引きだけは残るため、画面に見えている行を足しても表示額にならない。
+    min:Math.max(0,+wMin.value||0), ship:Math.max(0,+wShip.value||0), price:Math.max(0,+wPrice.value||0),
     shipMode: wShipMode.value === "sep" ? "sep" : "in",
     // 空欄は「請求額と同じ」であって0円ではない。0へ丸めると実費0＝手取りを多く見せる方向へ誤る
-    shipCost: (wShipMode.value === "sep" && wShipCost.value !== "") ? (+wShipCost.value||0) : null });
+    shipCost: (wShipMode.value === "sep" && wShipCost.value !== "") ? Math.max(0,+wShipCost.value||0) : null });
   setFocus(newId); editRecipe=[]; wName.value=""; wPrice.value=""; wShipCost.value="";
   wShipMode.dataset.touched = "";
   justSavedId = newId;   // 保存できた事実と、次にどこへ行くかを s-home で出す
