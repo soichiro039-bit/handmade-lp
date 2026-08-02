@@ -211,5 +211,32 @@
 
 
 <script src="analytics.js" defer></script>
+<script>
+// ご案内のリンクに付いていた番号を、そのまま次のページへ引き継ぎます。
+// （付いていなければ何も足しません。こちらで勝手に番号を作ることはありません）
+(function () {
+  try {
+    var q = new URLSearchParams(location.search);
+    var KEEP = ["t", "src", "build"];
+    function pass(selector, defaults) {
+      var a = document.querySelector(selector);
+      if (!a) { return; }
+      var u = new URL(a.getAttribute("href"), location.href);
+      KEEP.forEach(function (k) {
+        var v = q.get(k);
+        if (v) { u.searchParams.set(k, v); }
+      });
+      if (defaults) {
+        Object.keys(defaults).forEach(function (k) {
+          if (!u.searchParams.get(k)) { u.searchParams.set(k, defaults[k]); }
+        });
+      }
+      a.setAttribute("href", u.pathname + u.search);
+    }
+    pass('a[href="feedback.html"]');
+    pass('a[href="app/"]', { src: "web" });
+  } catch (e) { /* 引き継げなくても、リンクはそのまま使えます */ }
+})();
+</script>
 </body>
 </html>

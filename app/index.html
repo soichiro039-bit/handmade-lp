@@ -1937,5 +1937,24 @@ renderAll();
 if(obNeeded()) obStart();
 </script>
 
+<script>
+// ご案内のリンクに付いていた番号を、感想フォームへ引き継ぎます。
+// （付いていなければ何も足しません。こちらで勝手に番号を作ることはありません）
+(function () {
+  try {
+    var q = new URLSearchParams(location.search);
+    var a = document.querySelector('a[href="../feedback.html"]');
+    if (!a) { return; }
+    var u = new URL(a.getAttribute("href"), location.href);
+    ["t", "src", "build"].forEach(function (k) {
+      var v = q.get(k);
+      if (v) { u.searchParams.set(k, v); }
+    });
+    if (!u.searchParams.get("src")) { u.searchParams.set("src", "web"); }
+    a.setAttribute("href", u.pathname + u.search);
+  } catch (e) { /* 引き継げなくても、リンクはそのまま使えます */ }
+})();
+</script>
+
 </body>
 </html>
