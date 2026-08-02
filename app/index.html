@@ -1452,16 +1452,16 @@ function applyShipPreset(){
     : (typeof it.box === "number" ? `　専用BOX代 ${yen(it.box)} を足した額です。` : "");
   note.innerHTML = `${esc(it.label)} ${yen(+it.fee||0)} を${where}へ入れました。${boxMsg}<br>${esc(p.head)}。実際のサイズ・重さで差額が出た場合は出品者の負担になります。金額は直せます。<br>${shipSourceNote(db.cfg.ch)}`;
 }
-/* 原則16a3(2026-08-02): はじめから値が入っている数値欄は、
+/* はじめから値が入っている数値欄は、
    タップした最初の1回で全選択し、そのまま打ち直せる状態にする。
 
-   なぜ要るか: 原則16aは「打ち直しをさせない」ために前回値を差し出す。だが違うときは
+   なぜ要るか: 前回の値をあらかじめ入れておくのは、打ち直しをさせないため。だが違うときは
    打ち直す。そこが壊れていた。実測(3幅 375/390/430 × Chromium 149・WebKit 26.5、
    1文字0.17秒あけて打鍵)では、30 が入った制作時間をタップして 40 と打つと 3040、
    250 の梱包・発送に 180 と打つと 250180、目標の時給は 1000→1200 のつもりが
    10001200 が残った。混ざった値は Math.max(0,+v||0) を素通りするので
    どこにも警告が出ず、推奨価格が 404,200円 のまま結果画面に出る。
-   原則16aの検査は「値が入っているか」しか見ていないため、この間ずっと全項目PASSだった。
+   自動の点検は「値が入っているか」しか見ていなかったため、この間ずっと素通りしていた。
 
    なぜ click か: onfocus では WebKit がタップ後にキャレットを置き直して選択を消す
    (実測 chromium=40 / webkit=3040)。setTimeout(...,0) は打鍵と競合して両エンジンで
@@ -1504,7 +1504,7 @@ function dupWork(id){
   wShipMode.value = w.shipMode === "sep" ? "sep" : "in"; wShipMode.dataset.touched = "1";
   wShipCost.value = (w.shipCost === null || w.shipCost === undefined) ? "" : w.shipCost;
   syncShipCostRow();
-  armRetype(wMin, wShip, wPrice, wShipCost);   // 原則16a3。複製は写した値を打ち直す前提の機能
+  armRetype(wMin, wShip, wPrice, wShipCost);   // 複製は写した値を打ち直す前提の機能
   go('s-work');
   wName.value = w.name + " のコピー";
   document.getElementById("wAgain").textContent =
@@ -1788,7 +1788,7 @@ function renderPrice(){
       販売手数料と振込にかかる費用は出典が別のため、確認した日が違います。いずれも概算であり、実際に手元へ残る額を保証するものではありません。</div></details></div>
     </div>
     ${payCard}`;
-  /* 原則16a3。値付け画面は開いた瞬間に「いまつけている価格」が入っており、
+  /* 値付け画面は開いた瞬間に「いまつけている価格」が入っており、
      そこを打ち直すことが利用者の主目的なので、最初のタップで全選択にする。
      実測(修正前・3幅×2エンジン): 2800 の欄に 3200 と打つと 28003200 が残った。
      ただし setPrice() は1文字打つたびにこの画面を描き直す＝ここが毎回走るので、
@@ -1816,7 +1816,7 @@ function setPrice(id,v){
     el.focus();
     const at = (pos === null || pos > el.value.length) ? el.value.length : pos;
     try{ el.setSelectionRange(at, at); }catch(_){}
-    /* 原則16a3の解除。ここへ来るのは「利用者が今この欄を打っている最中」だけなので、
+    /* 全選択の解除。ここへ来るのは「利用者が今この欄を打っている最中」だけなので、
        再描画で入り直した武装を外す。外さないと、打っている途中に位置を直そうと
        タップした瞬間に全選択になり、次の1文字で打ちかけの値が消える。 */
     el.dataset.autofill = "";
@@ -1826,7 +1826,7 @@ function setPrice(id,v){
 function renderSet(){
   cfgWage.value = db.cfg.wage; cfgMargin.value = db.cfg.margin;
   cfgSales.value = Math.max(1, +db.cfg.sales||1);
-  /* 原則16a3。ここは全画面の計算の入口で、時給が 1000→10001200 に化けると
+  /* ここは全画面の計算の入口で、時給が 1000→10001200 に化けると
      すべての結果が壊れる。既定値が最初から入っている以上、必ず armRetype を通す */
   armRetype(cfgWage, cfgMargin, cfgSales);
   cfgCh.innerHTML = CHANNELS.map(c=>`<option value="${c.key}" ${c.key===db.cfg.ch?"selected":""}>${c.name}</option>`).join("");
