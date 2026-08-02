@@ -110,12 +110,14 @@
      nowrap をやめた。数字だけを nowrap で守る。 */
   .list-item .val { font-size:.92rem; text-align:right; white-space:normal; }
   .list-item .val .nb { white-space:nowrap; }
-  /* タップ領域は最低44px四方(Apple HIG)。見た目の×は小さいまま当たり判定だけ広げる */
+  /* タップ領域は最低44px四方(Apple HIG)。見た目の×は小さいまま当たり判定だけ広げる。
+     46pxにしてあるのは基準から離すため——44px丁度だと実測が43.99xへ丸まり、
+     同じファイルを続けて測ると通ったり落ちたりする(基準は緩めない。対象を離す) */
   .del { background:none; color:var(--muted); font-size:1.15rem; padding:0 4px;
-         min-width:44px; min-height:44px; }
-  /* 複製ボタン。同じ44px四方を確保する(×と並ぶため見た目だけ小さくする) */
+         min-width:46px; min-height:46px; }
+  /* 複製ボタン。×と同じ当たり判定を確保する(並ぶため見た目だけ小さくする) */
   .dup { background:none; color:var(--main); font-size:.76rem; padding:0 4px;
-         min-width:44px; min-height:44px; text-decoration:underline; }
+         min-width:46px; min-height:46px; text-decoration:underline; }
 
   /* 探す窓。件数が増えてから出す(最初から出すと空の窓が不安を与える) */
   .find { position:relative; margin-bottom:6px; }
@@ -1060,7 +1062,7 @@ function analyze(w, price, chKey){
   // 振込費用もここで引く。
   // 是正前は profit が振込費用を引いておらず、一方で推奨価格(recommend)は引いていたため、
   // **同じ画面の中で「手元に残る」の前提が食い違っていた**（GPTの実物審査で検出）。
-  // は「手取りの既定表示は振込費用込みにする」と定めており、これはその違反だった。
+  // 「手取りの既定表示は振込費用込みにする」という決まりに反していた。
   // 未確認の販路(メルカリShops)は null が返る。**推測で埋めない**ため0として扱い、
   // payoutKnown=false を返して画面側が「含めていない」と但し書きできるようにする。
   const payoutRaw = payoutPerItem(chKey, (price>0 ? price : 0), shipTop);
@@ -1104,7 +1106,7 @@ function recommend(w, chKey){
   // BASE:    fee = price*r + 40     → price(1-r) = target + 40
   // 振込費用(extra)は実費として「回収する」だけで、利益率を上乗せしない。
   // 上乗せすると手数料の高い販路ほど手取りが増え、比較表でその販路が有利に見えてしまう
-  // (違反。、が自分の初版で作り込んで実測で気づいた)。
+  // (これは上の決まりに反する。初版で作り込んでいたのを実測で気づいた)。
   // 解くのは「購入者が払う合計(gross)」。送料別なら 作品価格 = gross - 送料 になる。
   // 端数処理は入れずに解く——1円未満のために方程式を反復させる意味がなく、表示価格は
   // 最後に100円単位へ丸めるため吸収される。画面に出す手数料は端数処理済みの値を使う。
