@@ -209,7 +209,7 @@
 <script>
   // 手数料率(時点の概算)。改定時はここを更新し、上の取得日表記も更新すること。
   // この配列の数値はプロトタイプの CHANNELS と1円もずれてはならない
-  // (invariants_check.py が公開中LPを取得して照合する)。振込費用の数値をここへ混ぜないこと。
+  // (検査が公開中LPを取得して照合する)。振込費用の数値をここへ混ぜないこと。
   const channels = [
     { key: "minne",   name: "minne",        fee: t => t * 0.10659 },
     { key: "creema",  name: "Creema",       fee: t => t * 0.1067 },
@@ -266,7 +266,7 @@
      値は assets/fee-calc.js の PAYOUT_MIN、app/index.html の PAYOUT_TIMING[].minYen、
      正本 fee_master_v0.json の min_payout_jpy と同じ(BASEだけは正本に無く、
      「売上残高751円以下では振込申請ができない」help.thebase.in 由来)。
-     4者がずれていないことは invariants_check.py 2 が機械で突き合わせる。
+     4者がずれていないことは検査が機械で突き合わせる。
      Creema は下限の定めが無いため 0(＝この判定を行わない)。
      **PAYOUT と同じく channels 配列とは必ず別に持つ**(の照合が channels を
      正規表現で抜くため、そこへ別の値を混ぜると照合が壊れる)。 */
@@ -467,7 +467,7 @@
      このLPも公開版アプリと同じ計算で4販路の手取りを出し、脚注で「◯月◯日時点」と名乗る。
      料率の更新が止まれば、その名乗りは静かに嘘へ変わるのに画面は何も変わらない——
      **正常に静かなのか、壊れて静かなのかが区別できない**。危険は app とまったく同じ。 */
-  const RATE_STALE_DAYS = 7;   // app/index.html・比較ページの同名定数と同じ値。ずれは invariants_check が突き合わせる
+  const RATE_STALE_DAYS = 7;   // app/index.html・比較ページの同名定数と同じ値。ずれは検査が突き合わせる
   const escT = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   /** 確認日から今日までの日数。UTCの日単位で引く（時刻・タイムゾーンで1日ずれるのを避ける）。
       読めない値は null を返し「0日」に丸めない——読めないことを新しさとして扱ってはならない。 */
