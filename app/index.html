@@ -131,12 +131,9 @@
   .again { display:flex; flex-wrap:wrap; gap:7px; margin:-2px 0 10px; }
 
   .empty { text-align:center; color:var(--muted); font-size:.86rem; padding:22px 8px; }
-  /* 【2026-08-03 デザイン部・原則69】空状態は「見出し・説明・出口」の3つで組む。
-     一次情報 Apple ContentUnavailableView(iOS17+) の Overview が、空になる場面として
-     "a list without items" を明示し、構成を "a label and some additional content such as
-     a description or a call to action" と定めている。公式の例そのものが
-     Label("No Mail") + description "New mails you receive will appear here." で、
-     **命令ではなく「ここに何が現れるか」を書いている**。 */
+  /* 空状態は「見出し・説明・出口」の3つで組む。
+     Apple の ContentUnavailableView(iOS17+) が同じ構成を採っており、
+     命令文ではなく「ここに何が現れるか」を書く形にそろえている。 */
   .empty-h { display:block; font-size:.95rem; color:var(--main); font-weight:bold; margin-bottom:5px; }
   .empty-d { display:block; }
   .empty .btn { margin-top:14px; }
@@ -1328,17 +1325,8 @@ const FIND_MIN = 4;
 function findQuery(id){ const el=document.getElementById(id); return el ? el.value.trim().toLowerCase() : ""; }
 function matchName(name, q){ return !q || String(name).toLowerCase().includes(q); }
 
-/* 【2026-08-03 デザイン部・原則69】空状態の共通の形。
-   きっかけ(実測 2026-08-03・375/390/430の3幅、プロトタイプと公開版の両方とも同じ):
-     ・値付けタブの空案内…同じ画面に見えている押せるものは意見箱リンク1つだけで、
-       **案内が名指しした行き先へ行く出口が0件**
-     ・作品登録タブのパーツ選択の空案内…375pxでは押せるものが**0件**。
-       390/430で見えるのは作品の保存ボタン＝案内が求めている操作とは別物
-   どちらも命令だけを置き、行き先も、そこで何が起きるかも言っていなかった。
-   (旧文言はここへ写さない。写すと、次に旧文言を走査した人が実在と誤判定する。
-    知りたい場合は git 履歴を参照)
-   iOS版は同じ場面で既に見出し+説明を持っている(PriceSuggestView の
-   ContentUnavailableView)。**片方だけ直っていた状態を、こちらへ揃える。**
+/* 空状態の共通の形。案内文だけを置くと、案内が名指しした行き先へ行く手段が
+   画面上に無いことがある(375px幅では特に起きやすい)ため、見出し・説明・出口を必ず組にする。
    出口は data-role="empty-exit" で掴む(文言で掴むと、文言を良くした瞬間に検査が落ちる)。 */
 function emptyState(見出し, 説明, 出口){
   /* 出口の重さは場面で決める。sub=true は「そのフォーム自身の主ボタンと張り合わせない」意味。
