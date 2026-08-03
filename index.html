@@ -315,7 +315,6 @@
     const lbl = document.getElementById("shipLbl");
     if (lbl) lbl.textContent = sep ? "購入者へ請求する送料(円)" : "梱包・発送の実費(円)";
   }
-  const FORM = "https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform";
   function calc() {
     const p = +document.getElementById("price").value || 0;
     const m = +document.getElementById("material").value || 0;
