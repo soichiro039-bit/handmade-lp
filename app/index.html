@@ -657,8 +657,19 @@ const RATE_SOURCES = {
              url:"https://help.minne.com/hc/ja/articles/4406260070675",
              cond:"minne PLUS（有料プラン）に入っていない方の料率です。minne PLUSの方は料率が異なります（公式は最大10.45%まで優遇と記載）。",
              /* @public-doc 公式ヘルプの中で記載が分かれている。伏せずに書く。
-                どちらが今の条件かは公式の記載だけでは決められないので、そう書く。 */
-             diff:"minne公式ヘルプには、この率と異なる記載のページもあります（「作品を販売するのにお金はかかりますか？」は10.89%と記載）。当アプリは、販売手数料を主題にしたページを含む4ページが一致して示す10.659%で計算しています。どちらが現在の条件かは公式の記載だけでは確かめられないため、値付けの前にご自身の管理画面でもご確認ください。" },
+                どちらが今の条件かは公式の記載だけでは決められないので、そう書く。
+                **記事の数や更新日の新旧は、ここに書かない。**
+                多い方・新しい方が現在の条件だという証拠にはならないうえ、
+                書けば「古い方は無効だろう」と読み手を誘導してしまう。
+                画面に出すのは、一致していないという事実と、読んだ人が取れる行動だけ。 */
+             diff:"minne公式ヘルプ内で、販売手数料率の記載が一致していません。当アプリは10.659%で計算していますが、別の公式記事には、minne PLUS非会員10.89%・PLUS会員10.56%（いずれも税込）との記載があります。適用される料率をminne公式で確認してからご利用ください。確認日：2026年8月3日",
+             diffUrl:"https://help.minne.com/hc/ja/articles/4402120738579",
+             diffUrlLabel:"10.89%・10.56%を記載した公式ページ",
+             /* @public-doc 出典欄は開かないと読めない。**残る額を多く見せうる話を、
+                折りたたみの中だけに置いてはならない。**
+                非PLUS会員についての注意だと分かる形にする——PLUS会員側は10.56%で
+                向きが違うので、「全員について多く見せる」と一般化してはいけない。 */
+             resultWarn:"この結果はminneの販売手数料を10.659%として計算しています。公式ヘルプには、minne PLUS非会員について10.89%との異なる記載もあります。10.89%が適用される場合、表示している残る額は実際より多くなります。" },
   creema:  { name:"Creema公式「成約手数料改定のお知らせ」",
              url:"https://www.creema.jp/news/1480/detail",
              cond:"「作品・素材」（日本サイト）の料率です。", diff:"" },
@@ -683,6 +694,10 @@ function renderRateSources(){
       + `出典: <a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`
       + (s.cond ? `<br>${esc(s.cond)}` : "")
       + (s.diff ? `<br>${esc(s.diff)}` : "")
+      /* 分かれている側の出典もリンクで出す。文章で「別のページがある」とだけ言われても、
+         読んだ人はそのページへ辿り着けない＝出典を出していないのと変わらない。
+         diff が空なら消える（正本の1か所を空にすれば、この行ごと出なくなる）。 */
+      + (s.diff && s.diffUrl ? `<br><a href="${esc(s.diffUrl)}" target="_blank" rel="noopener">${esc(s.diffUrlLabel||"異なる記載のページ")}</a>` : "")
       + `</p>`;
   }).join("");
   const ds = CHANNELS.map(c=>CHECKED_AT[c.key]).filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v||""))).sort();
@@ -692,6 +707,15 @@ function renderRateSources(){
     + (ds.length ? esc(w(ds[0])) : "記録がありません")
     + (読めない.length ? `（${esc(読めない.join("・"))}は確認した日が記録されていません）` : "")
     + `</p>`;
+}
+
+/* @public-doc 計算結果の横に出した注意から、出典（設定タブの折りたたみの中）まで連れて行く。
+   ページ内アンカーでは足りない——出典は別タブ(s-set)の <details> の中に在るので、
+   タブを切り替えて開くところまでやらないと、押しても何も起きない画面になる。 */
+function openRateSrc(){
+  go("s-set");
+  const d = document.getElementById("rateSrcBox");
+  if(d){ d.open = true; d.scrollIntoView({block:"center"}); }
 }
 
 function rateAsofPhrase(){
@@ -1825,6 +1849,7 @@ function renderPrice(){
         ${rowRoundUp!==0 ? `<tr><td>${rowRoundUp>0?"100円単位への切り上げ":"端数の調整"}</td><td>${rowRoundUp<0?"-":""}${yen(Math.abs(rowRoundUp))}</td></tr>` : ""}
         <tr><td><b>${above?"下限ライン":"推奨価格"}</b></td><td><b>${yen(recP)}</b></td></tr>
       </tbody></table>
+      ${(RATE_SOURCES[db.cfg.ch]||{}).resultWarn ? `<div class="note" role="status" style="border-left:3px solid var(--warn,#c47f00);padding-left:10px"><b>手数料率に関する注意</b><br>${esc(RATE_SOURCES[db.cfg.ch].resultWarn)}<br><button type="button" class="chip" onclick="openRateSrc()">出典と公式ページを見る</button></div>` : ""}
       <div class="note">この「逆算」が、このアプリの中心です。原価を記録するだけでなく、作業時間や目標利益を踏まえた販売価格を試算します。<br>
       ※この金額は、入力した材料費・梱包発送費・作業時間・目標時給・販売手数料・振込にかかる費用・設定した利益分に基づく試算です。値付けしやすいよう<b>100円単位へ切り上げて</b>表示しており、その切り上げ分も内訳表に1行で出しています。需要、競合価格、デザイン性、希少性、ブランドの評価は含みません。最終的な販売価格は、これらも踏まえてご自身で決めてください。<br>
       ※「制作時間1時間あたりの残る額（概算）」は、上の残る額を入力した制作時間だけで割った概算です。撮影・出品・梱包発送・お客様対応にかかる時間は含んでいません。雇用の時給とは異なり、税金や保険料も引かれていません。</div>
