@@ -527,6 +527,10 @@
   <div class="card">
     <h2>手数料率について</h2>
     <table><thead><tr><th>販路</th><th>販売手数料</th><th>振込にかかる費用</th></tr></thead><tbody id="feeTable"></tbody></table>
+    <details id="rateSrcBox">
+      <summary style="padding:.7rem 0;cursor:pointer;font-size:.9rem">この率をどこから取ったか（出典・確認した日）</summary>
+      <div id="rateSrcList" class="note"></div>
+    </details>
     <div class="note"><span id="feeAsofNote"></span>手数料は改定される場合があります。最新は各公式サイトをご確認ください。計算結果は概算であり、実際に手元へ残る額を保証するものではありません。決済オプション等は含みません。<br>
 
     メルカリShopsの振込は1回200円で、販売利益が5,000円未満の月は次回へ繰り越されます（申請の手続きはなく自動）。振込までの日数は公式ヘルプに明記が見つかっていないため、日数は出していません。<br>
@@ -641,6 +645,54 @@ const RATE_ASOF = { minne:"2026-07-27", creema:"2026-07-27", base:"2026-07-27", 
    「料率が改定されないこと」だった——正常な状態を異常として鳴らす向きの誤り。
    正本の checked_at は 料率マスタ/stamp_checked_at.py で押す（手書き禁止）。 */
 const CHECKED_AT = { minne:"2026-08-01", creema:"2026-08-01", base:"2026-08-01", mercari:"2026-08-01" };
+
+/* @public-doc 販売手数料の出典。この画面は率と日付だけを出しており、
+   「その率をどこから取ったか」を出していなかった。日付だけを名乗るのは、
+   出典を確かめたい人にとっては何も言っていないのと同じになる。
+   同じ画面の送料プリセットは既に SHIP_SOURCES で出典を出しているので、その形にそろえる。
+   値そのものの正本は 料率マスタ の fee_master であり、ここは表示用の写しなので、
+   ずれたら公開前の検査で止まる。 */
+const RATE_SOURCES = {
+  minne:   { name:"minne公式ヘルプ「販売手数料について」",
+             url:"https://help.minne.com/hc/ja/articles/4406260070675",
+             cond:"minne PLUS（有料プラン）に入っていない方の料率です。minne PLUSの方は料率が異なります（公式は最大10.45%まで優遇と記載）。",
+             /* @public-doc 公式ヘルプの中で記載が分かれている。伏せずに書く。
+                どちらが今の条件かは公式の記載だけでは決められないので、そう書く。 */
+             diff:"minne公式ヘルプには、この率と異なる記載のページもあります（「作品を販売するのにお金はかかりますか？」は10.89%と記載）。当アプリは、販売手数料を主題にしたページを含む4ページが一致して示す10.659%で計算しています。どちらが現在の条件かは公式の記載だけでは確かめられないため、値付けの前にご自身の管理画面でもご確認ください。" },
+  creema:  { name:"Creema公式「成約手数料改定のお知らせ」",
+             url:"https://www.creema.jp/news/1480/detail",
+             cond:"「作品・素材」（日本サイト）の料率です。", diff:"" },
+  base:    { name:"BASE公式ヘルプ「スタンダードプランとはなんですか」",
+             url:"https://help.thebase.in/hc/ja/articles/5701758066585",
+             cond:"決済手数料3.6%＋40円と、サービス利用料3%を合わせた値です。購入者がAmazon Pay・PayPal・PayPayを選んだ場合は7.6%＋40円になります。", diff:"" },
+  mercari: { name:"メルカリShops公式ヘルプ「メルカリShopsの手数料」",
+             url:"https://support.mercari-shops.com/hc/ja/articles/900005534186",
+             cond:"", diff:"" }
+};
+
+/* @public-doc 出典欄を描く。日付は新しく持たず CHECKED_AT から取る——
+   同じ画面に意味の違う「確認日」が2つ並ぶと、どちらの話か読めなくなるため。 */
+function renderRateSources(){
+  const box = document.getElementById("rateSrcList");
+  if(!box) return;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  box.innerHTML = CHANNELS.map(c=>{
+    const s = RATE_SOURCES[c.key];
+    if(!s) return `<p>${esc(c.name)}：出典を記録できていないため、この率の由来を確かめられません。</p>`;
+    return `<p><b>${esc(c.name)} ${esc(FEE_LABEL[c.key]||"")}</b><br>`
+      + `出典: <a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`
+      + (s.cond ? `<br>${esc(s.cond)}` : "")
+      + (s.diff ? `<br>${esc(s.diff)}` : "")
+      + `</p>`;
+  }).join("");
+  const ds = CHANNELS.map(c=>CHECKED_AT[c.key]).filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v||""))).sort();
+  const 読めない = CHANNELS.filter(c=>!/^\d{4}-\d{2}-\d{2}$/.test(String(CHECKED_AT[c.key]||""))).map(c=>c.name);
+  const w = s => s.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_,y,m,d)=>`${y}年${+m}月${+d}日`);
+  box.innerHTML += `<p>上記の公式ページの内容を最後に確認できた日: `
+    + (ds.length ? esc(w(ds[0])) : "記録がありません")
+    + (読めない.length ? `（${esc(読めない.join("・"))}は確認した日が記録されていません）` : "")
+    + `</p>`;
+}
 
 function rateAsofPhrase(){
   const a = CHANNELS.map(c=>RATE_ASOF[c.key]).filter(Boolean).sort();
@@ -1852,6 +1904,7 @@ function renderSet(){
   }).join("");
   const _fa = document.getElementById("feeAsofNote");
   if (_fa) _fa.textContent = `販売手数料は${rateAsofPhrase()}の各社公式告知等に基づく概算です。`;
+  renderRateSources();
 }
 function saveCfg(){
   /* 入力欄が min/max で**宣言している**範囲を、保存する側でも必ず**強制する**。
