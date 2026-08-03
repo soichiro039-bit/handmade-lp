@@ -416,7 +416,7 @@
     <p style="font-size:.88rem;color:var(--muted)">パーツの仕入れ値を1か所変更すると、そのパーツを使っている<b>作品の原価と販売価格の目安</b>がまとめて再計算されます。</p>
     <button class="btn sub" onclick="go('s-parts')">パーツの単価を見る</button>
   </div>
-  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
+  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったこと（ご意見箱・ただいま受付停止中）</a></p>
 </section>
 
 
@@ -448,7 +448,7 @@
     <div class="again" id="pAgain"></div>
     <button class="btn" onclick="addPart()">パーツを追加</button>
   </div>
-  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
+  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったこと（ご意見箱・ただいま受付停止中）</a></p>
 </section>
 
 
@@ -483,13 +483,13 @@
     <input type="number" id="wPrice" placeholder="2800" min="0">
     <button class="btn" onclick="saveWork()">この作品を保存する</button>
   </div>
-  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
+  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったこと（ご意見箱・ただいま受付停止中）</a></p>
 </section>
 
 
 <section class="screen" id="s-price" role="tabpanel" aria-label="値付け">
   <div id="priceBody"></div>
-  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったことを伝える</a></p>
+  <p class="ask-here"><a href="#" onclick="goFeedback();return false;">この画面で分かりにくかったこと（ご意見箱・ただいま受付停止中）</a></p>
 </section>
 
 
@@ -513,10 +513,11 @@
   </div>
   
   <div class="card" id="feedbackCard">
-    <h2>ご意見箱</h2>
-    <p style="font-size:.88rem;color:var(--muted)">使ってみて<strong>困ったこと・欲しい機能・分かりにくかったところ</strong>を教えてください。開発中なので、いただいた声から順に直していきます。</p>
+    <h2>ご意見箱（ただいま受付を停止しています）</h2>
+    <p><strong>ただいま、新しいご意見の受付を一時停止しています。</strong></p>
+    <p style="font-size:.88rem;color:var(--muted)">使ってみて<strong>困ったこと・欲しい機能・分かりにくかったところ</strong>をうかがう窓口ですが、受付を再開するまで送信できません。再開したら、この場所でお知らせします。</p>
 
-    <a class="btn" href="../feedback.html" style="display:block;text-align:center;text-decoration:none">使ってみた感想を送る（メールアドレスの入力は不要です）</a>
+    <span class="btn" aria-disabled="true" style="display:block;text-align:center;text-decoration:none;opacity:.5;cursor:not-allowed">使ってみた感想を送る（受付停止中）</span>
     <div class="note" id="feedback"><strong>現在、新規の受付は停止しています。保存期間と削除条件は、受付を再開する前に確定し、このページで明示します。すでに取得した情報には、取得時にご案内した条件を適用します。</strong></div>
   </div>
   <div class="card">
@@ -1899,11 +1900,11 @@ function renderPrice(){
           return `<tr><td>${c.name}</td><td>${yen(rp)}</td><td>${yen(po)}</td></tr>`;
         }).join("")}</tbody>
       </table>
-      <div class="note"><b>どの販路でも手元に同じだけ残るように価格を逆算しています</b>ので、違いは「必要な価格」に出ます。<b>販売手数料だけでなく振込にかかる費用も含めています。</b>販売手数料だけで比べると結果が変わります——たとえばBASEは販売手数料の率が低い一方、振込1回ごとに250円、振込額が2万円未満だとさらに500円かかります。<br>
+      <div class="note"><b>どの販路でも手元に同じだけ残るように価格を逆算しています。</b>販路ごとに販売手数料と振込にかかる費用が違うので、必要な価格も変わります。<b>ただし表示は100円単位へ切り上げているため、費用の差が小さいと必要な価格が同じ額に見えることがあります。</b>そのときは右の「うち振込費用」で差を確かめてください。<b>販売手数料だけでなく振込にかかる費用も含めています。</b>販売手数料だけで比べると結果が変わります——たとえばBASEは販売手数料の率が低い一方、振込1回ごとに250円、振込額が2万円未満だとさらに500円かかります。<br>
       
       振込にかかる費用は、月1回の振込を前提に1点あたりへ割った額です。販売手数料は${rateAsofPhrase()}、振込にかかる費用は${payoutAsofPhrase()}の各社公式告知に基づく概算です。
       <details style="margin-top:.45rem"><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer">計算の前提を見る</summary>
-      <div style="padding:.15rem 0 .2rem">ひと月に${Math.max(1,+db.cfg.sales||1)}点売れるものとして計算しています（設定タブで変えられます）。同じだけ手元に残すために必要な価格は、販路によって変わります。<br>
+      <div style="padding:.15rem 0 .2rem">ひと月に${Math.max(1,+db.cfg.sales||1)}点売れるものとして計算しています（設定タブで変えられます）。同じだけ手元に残すために必要な価格は、販路によって変わります（100円単位への切り上げで同じ額に見えることがあります）。<br>
       販売手数料と振込にかかる費用は出典が別のため、確認した日が違います。いずれも概算であり、実際に手元へ残る額を保証するものではありません。</div></details></div>
     </div>
     ${payCard}`;
