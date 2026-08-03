@@ -131,6 +131,17 @@
   .again { display:flex; flex-wrap:wrap; gap:7px; margin:-2px 0 10px; }
 
   .empty { text-align:center; color:var(--muted); font-size:.86rem; padding:22px 8px; }
+  /* 【2026-08-03 デザイン部・原則69】空状態は「見出し・説明・出口」の3つで組む。
+     一次情報 Apple ContentUnavailableView(iOS17+) の Overview が、空になる場面として
+     "a list without items" を明示し、構成を "a label and some additional content such as
+     a description or a call to action" と定めている。公式の例そのものが
+     Label("No Mail") + description "New mails you receive will appear here." で、
+     **命令ではなく「ここに何が現れるか」を書いている**。 */
+  .empty-h { display:block; font-size:.95rem; color:var(--main); font-weight:bold; margin-bottom:5px; }
+  .empty-d { display:block; }
+  .empty .btn { margin-top:14px; }
+  /* wChips は flex なので、案内は1行を占有させる(しないと出口ボタンが幅なりに潰れる) */
+  .chips .empty { flex:1 1 100%; }
   /* 自分の作品とサンプルの境目。
      サンプルを消さずに「ここからは例です」と名乗る（と同じ考え方＝
      並んでいるものが何なのかを、読み手に推測させない）。 */
@@ -1317,6 +1328,29 @@ const FIND_MIN = 4;
 function findQuery(id){ const el=document.getElementById(id); return el ? el.value.trim().toLowerCase() : ""; }
 function matchName(name, q){ return !q || String(name).toLowerCase().includes(q); }
 
+/* 【2026-08-03 デザイン部・原則69】空状態の共通の形。
+   きっかけ(実測 2026-08-03・375/390/430の3幅、プロトタイプと公開版の両方とも同じ):
+     ・値付けタブの空案内…同じ画面に見えている押せるものは意見箱リンク1つだけで、
+       **案内が名指しした行き先へ行く出口が0件**
+     ・作品登録タブのパーツ選択の空案内…375pxでは押せるものが**0件**。
+       390/430で見えるのは作品の保存ボタン＝案内が求めている操作とは別物
+   どちらも命令だけを置き、行き先も、そこで何が起きるかも言っていなかった。
+   (旧文言はここへ写さない。写すと、次に旧文言を走査した人が実在と誤判定する。
+    知りたい場合は git 履歴を参照)
+   iOS版は同じ場面で既に見出し+説明を持っている(PriceSuggestView の
+   ContentUnavailableView)。**片方だけ直っていた状態を、こちらへ揃える。**
+   出口は data-role="empty-exit" で掴む(文言で掴むと、文言を良くした瞬間に検査が落ちる)。 */
+function emptyState(見出し, 説明, 出口){
+  /* 出口の重さは場面で決める。sub=true は「そのフォーム自身の主ボタンと張り合わせない」意味。
+     実測(2026-08-03): 作品登録の途中に主ボタンで出口を置いたら、保存ボタンと
+     背景色 rgb(176,96,68) が完全に一致し、同じ幅・同じ形で画面に2つ並んだ。
+     押せば終わるものが2つに見える。画面まるごとが空の場面(値付け)は主のままでよい。 */
+  const b = 出口
+    ? `<button class="btn${出口.sub ? ' sub' : ''}" data-role="empty-exit" data-goto="${出口.to}" onclick="go('${出口.to}')">${出口.label}</button>`
+    : "";
+  return `<div class="empty"><b class="empty-h">${見出し}</b><span class="empty-d">${説明}</span>${b}</div>`;
+}
+
 function renderHome(){
   const el = document.getElementById("workList");
   document.getElementById("sampleTag").hidden = !isSampleWorks();
@@ -1334,7 +1368,8 @@ function renderHome(){
   const shown = db.works.filter(w=>matchName(w.name, q))
                         .sort((a,b)=>(isOwnWork(b)?1:0)-(isOwnWork(a)?1:0));
   const 自分の件数 = shown.filter(isOwnWork).length;
-  if(!db.works.length){ el.innerHTML = '<div class="empty">まだ作品がありません。<br>下のボタンから登録してみましょう。</div>'; }
+  if(!db.works.length){ el.innerHTML = emptyState('まだ作品がありません',
+      '登録すると、ここに作品と1つあたりの利益が並びます。下のボタンから始められます。'); }
   else if(!shown.length){ el.innerHTML = '<div class="empty">「'+esc(q)+'」に当てはまる作品はありません。</div>'; }
   else {
     el.innerHTML = shown.map((w,_i)=>{
@@ -1417,7 +1452,9 @@ function renderParts(){
   const q = findQuery("partSearch");
   document.getElementById("partFind").hidden = (db.parts.length < FIND_MIN && !q);
   renderPartAgain();
-  if(!db.parts.length){ el.innerHTML='<div class="empty">パーツがありません</div>'; return; }
+  if(!db.parts.length){ el.innerHTML = emptyState('まだパーツがありません',
+      '登録すると、ここに材料と1個あたりの単価が並びます。仕入れ値を変えると、'
+      + 'その材料を使う作品の原価にまとめて反映されます。'); return; }
   const shown = db.parts.filter(p=>matchName(p.name, q));
   if(!shown.length){ el.innerHTML = '<div class="empty">「'+esc(q)+'」に当てはまるパーツはありません。</div>'; return; }
   el.innerHTML = shown.map(p=>{
@@ -1466,7 +1503,7 @@ function delPart(id){
    （実測 delWork/deleteWork/removeWork とも0件。陽性対照 delPart は在る）。
    一度作った作品を消せず溜まる状態だった。
    焦点(focusId)が消えた作品を指していても renderPrice が db.works[0] へ退避し、
-   0件になれば「先に作品を登録してください」で止まるので、後始末はここだけで足りる。 */
+   0件になれば値付けタブは空状態の案内で止まるので、後始末はここだけで足りる。 */
 function delWork(id){
   const w = db.works.find(x=>x.id===id); if(!w) return;
   if(!confirm("「"+w.name+"」を削除します。元に戻せません。よろしいですか?")) return;
@@ -1495,7 +1532,9 @@ function renderWorkForm(){
     // 「/個」は目で読む記号なので、読み上げ側は「1個あたり◯円」と言い切る
     const 読み = 重複 ? `${p.name} 1${pu(p)}あたり${単価}円` : p.name;
     return `<button class="chip ${on?'on':''}" aria-pressed="${on}" aria-label="${esc(読み)}" onclick="toggleChip(${p.id})">${esc(p.name)}${添え}</button>`;
-  }).join("") || '<div class="empty">先にパーツを登録してください</div>';
+  }).join("") || emptyState('まだパーツがありません',
+      '先に材料を1つ登録すると、あとは使うパーツを選ぶだけで原価が出ます。',
+      {to:'s-parts', label:'パーツを登録する', sub:true});
   offerLastWork();
   renderRecipe();
 }
@@ -1706,7 +1745,9 @@ function isOwnWork(w){
 
 function renderPrice(){
   const body = document.getElementById("priceBody");
-  if(!db.works.length){ body.innerHTML='<div class="card"><div class="empty">先に作品を登録してください</div></div>'; return; }
+  if(!db.works.length){ body.innerHTML = '<div class="card">' + emptyState('まだ作品がありません',
+      '作品を1つ登録すると、いくらで売ればよいかを逆算します。',
+      {to:'s-work', label:'作品を登録する'}) + '</div>'; return; }
   const w = db.works.find(x=>x.id===focusId) || db.works[0];
   // フォールバックで拾った時もdbへ書き戻す。書かないと開き直すたびに同じ迷子が起きる
   if(focusId !== w.id || db.focusId !== w.id) setFocus(w.id);
