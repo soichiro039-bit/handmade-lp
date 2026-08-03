@@ -180,8 +180,7 @@
     <a class="cta" id="tryapp" href="./app/">まず計算してみる(登録不要・お試し版)</a>
     <p class="note" style="margin-top:8px">開発中のため作りかけの部分があります。入力した内容は<strong>お使いの端末の中だけに保存</strong>され、こちらへは送られません。</p>
     
-    <a class="cta soft" id="register" href="https://docs.google.com/forms/d/e/1FAIpQLSe8UATr6j53swS8KkvY_Zjes7z-v2Hirac4mzGfSKRVTAuT0A/viewform" target="_blank" rel="noopener">リリースを待たずに先行案内を受け取る(無料)</a>
-    <p class="note" style="margin-top:8px">登録には、メールアドレスのほかに<strong>選択式の質問3問へのご回答が必須</strong>です（30秒ほど・開発の参考にさせていただきます）。ご意見の自由記述は最後の任意欄です。</p>
+    <p class="note" id="register" style="margin-top:8px"><strong>現在、新規の受付は停止しています。保存期間と削除条件は、受付を再開する前に確定し、このページで明示します。すでに取得した情報には、取得時にご案内した条件を適用します。</strong></p>
     <ul class="after">
       <li>登録は<strong>メールアドレスと選択式の質問だけ</strong>。1分ほどで終わります</li>
       <li>リリースしたら<strong>いちばん最初にご案内</strong>します</li>
@@ -394,7 +393,7 @@
     if (price <= 0 || !mine) { el.className = "verdict"; el.innerHTML = ""; return; }
     // 販路をまたぐ最大値(旧bestNet)は使わない。ユーザーが選んだ1つの販路だけで計算する。
     // 最大値を「最も手取りが多くなる販路なら」と見せるのは、実質の推奨に読めるため(景表法D5・)。
-    const cta = `<a class="cta soft" href="${FORM}" target="_blank" rel="noopener">この計算を自動でやるアプリの先行案内を受け取る(無料)</a>`;
+    const cta = `<p class="note"><strong>現在、新規の受付は停止しています。保存期間と削除条件は、受付を再開する前に確定し、このページで明示します。すでに取得した情報には、取得時にご案内した条件を適用します。</strong></p>`;
     // 振込費用が未確認の販路を選んだ場合は、その分が引かれていないことを必ず添える。
     const caveat = mine.payout === null
       ? `<span class="sub">※${mine.name || mine.c.name}は振込にかかる費用が確認できていないため、その分は差し引けていません。実際に残る額はこれより少なくなります。</span>` : "";
