@@ -282,6 +282,16 @@
   .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:7px; }
   .chip { font-size:.84rem; padding:10px 14px; min-height:44px; border-radius:99px; background:var(--soft); color:var(--main); border:1px solid transparent; }
   .chip.on { background:var(--main); color:#fff; }
+  /* 同名のパーツを見分けるための単価。色はチップの文字色をそのまま継ぐ
+     (薄くすると .chip.on の白地・地色の両方で contrast を測り直す必要が出る)。
+     12.48px＝本アプリの文字下限11pxを上回る */
+  .chip-tell { font-size:.78rem; margin-left:6px; opacity:.85; }
+
+  /* 連絡先への44px以上の入口。用途が「根拠へ渡す」ではないので .srclink とは分ける
+     (mailto には飛び先の見出しが無く、同じ扱いにできないため)。 */
+  .actlink { display:inline-flex; align-items:center; min-height:44px; margin-top:10px;
+             font-size:.88rem; line-height:1.6; color:var(--main);
+             text-decoration:underline; text-underline-offset:3px; }
   .tag-sample { font-size:.72rem; font-weight:normal; background:var(--soft); color:var(--muted); padding:2px 8px; border-radius:99px; }
 
   /* ===== はじめての1分(オンボーディング) =====
@@ -416,7 +426,7 @@
   <div class="card">
     <h2>新しいパーツを追加</h2>
     <label for="pName">パーツ名</label>
-    <input type="text" id="pName" placeholder="例: 天然石ビーズ 6mm">
+    <input type="text" id="pName" placeholder="例: レジン液 25g">
     <div class="row">
       <div><label for="pTotal">仕入れ総額(円)</label><input type="number" id="pTotal" placeholder="1400" min="0"></div>
       <div><label for="pQty">仕入れた量</label>
@@ -441,7 +451,7 @@
   <div class="card">
     <h2>作品を登録</h2>
     <label for="wName">作品名</label>
-    <input type="text" id="wName" placeholder="例: 天然石のピアス">
+    <input type="text" id="wName" placeholder="例: くるみボタンのブローチ">
     <label id="wChipsLbl">使うパーツ(タップで選択・数量は後で調整)</label>
     <div class="chips" id="wChips" role="group" aria-labelledby="wChipsLbl"></div>
     <div id="wRecipe" style="margin-top:12px"></div>
@@ -539,7 +549,8 @@
     
     <p style="font-size:.88rem;color:var(--muted)"><a href="https://soichiro039-bit.github.io/handmade-lp/privacy.html">プライバシーポリシー(全文)</a></p>
     <p style="font-size:.88rem;color:var(--muted)">運営者: 高中工業 ／ 連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></p>
-    
+    <a class="actlink" data-role="contact-mail" href="mailto:soichiro039@gmail.com">運営者へメールを送る（先行案内の登録停止・削除の依頼もこの宛先です）</a>
+
     <a class="btn sub" id="backToLp" href="https://soichiro039-bit.github.io/handmade-lp/" style="display:block;text-align:center;text-decoration:none">このアプリの紹介ページへ戻る</a>
   </div>
 </section>
@@ -1394,9 +1405,23 @@ function delWork(id){
 let editRecipe = [];
 function renderWorkForm(){
   editRecipe = editRecipe.length ? editRecipe : [];
+  /* 同じ名前のパーツが2つ以上あると、チップは名前しか出さないので**どちらを押している
+     のか分からない**。パーツ一覧(renderParts)は単価を並べて出しているので見分けが
+     つくが、実際に選ぶ場所はこちらで、こちらだけが見分ける手がかりを持っていなかった。
+     ——単価が違えば材料費が変わるので、取り違えは**答えの金額を静かにずらす**。
+     重複した名前のときだけ単価を添える(全部に添えると幅を食い、狭い端末で折り返す)。
+     単位は pu(p) から取る。公開版のパーツは g/ml/cm/枚 も持つので「個」に固定しない。 */
+  const 名前の数 = {};
+  db.parts.forEach(p=>{ 名前の数[p.name] = (名前の数[p.name]||0) + 1; });
   wChips.innerHTML = db.parts.map(p=>{
     const on = editRecipe.some(r=>r.pid===p.id);
-    return `<button class="chip ${on?'on':''}" aria-pressed="${on}" onclick="toggleChip(${p.id})">${esc(p.name)}</button>`;
+    const 重複 = 名前の数[p.name] > 1;
+    const 単価 = unitPrice(p).toFixed(1);
+    const 添え = 重複 ? `<span class="chip-tell">${esc(単価)}円/${esc(pu(p))}</span>` : "";
+    // 読み上げは名前と単価をひと続きにする(視覚の並記だけでは音声で区別できない)。
+    // 「/個」は目で読む記号なので、読み上げ側は「1個あたり◯円」と言い切る
+    const 読み = 重複 ? `${p.name} 1${pu(p)}あたり${単価}円` : p.name;
+    return `<button class="chip ${on?'on':''}" aria-pressed="${on}" aria-label="${esc(読み)}" onclick="toggleChip(${p.id})">${esc(p.name)}${添え}</button>`;
   }).join("") || '<div class="empty">先にパーツを登録してください</div>';
   offerLastWork();
   renderRecipe();
@@ -1613,8 +1638,19 @@ let justSavedId = null;
    残っている」として落ちる。実際に1回落ちた。注釈は要点だけを書き、原文は引かない。）
    便益は無く費用だけが残るので外した。案Cで戻すときは受け側のページも作り直すこと
    （版管理の履歴に残してあるので、消えたのではなく取り出せる）。 */
+/* 以前は**名前だけ**で同一性を決めていた。
+   「天然石のピアス」は実在しうる作品名で、しかも入力例がその名前をそのまま勧めていたため、
+   **自分で登録した作品がサンプル扱いになり、自分の作品を先に出す並べ替えが無効になった**。
+   入力例は衝突しないものへ直したが、それは案内された経路を塞いだだけで、
+   **例に頼らず自分でその名前を付けた人には効かない**ので、判定側も名前だけに頼らない形にする。
+   サンプルと見なすのは id と名前の**両方**が一致するものだけ。
+   db.seq は 5 から始まり増える一方で、load/resetAll は SAMPLE を deep copy して
+   id 1,2 を保つため、利用者が登録した作品の id がサンプルの id と重なることはない
+   （id を外から与える経路＝取り込み・復元は存在しない）。
+   保存済みデータの作り直しは要らない——サンプルは id ごと保存されているので、
+   古い保存データでも従来どおりサンプルと判定される。 */
 function isOwnWork(w){
-  return !isSampleWorks() && !SAMPLE.works.some(s => s.name === (w && w.name));
+  return !isSampleWorks() && !SAMPLE.works.some(s => s.id === (w && w.id) && s.name === (w && w.name));
 }
 
 function renderPrice(){
@@ -1732,7 +1768,11 @@ function renderPrice(){
     <div class="card">
       <h2>作品を選ぶ</h2>
       <select aria-label="値付けを見る作品を選ぶ" onchange="setFocus(+this.value);renderPrice()">
-        ${db.works.map(x=>`<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}</option>`).join("")}
+        ${(()=>{ const n={}; db.works.forEach(x=>n[x.name]=(n[x.name]||0)+1);
+          return db.works.map(x=>{
+            const 添え = n[x.name] > 1 ? `（${+x.price>0 ? yen(+x.price) : "価格未設定"}・${x.min}分）` : "";
+            return `<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}${esc(添え)}</option>`;
+          }).join(""); })()}
       </select>
       <label for="curPrice">いまつけている価格(円)</label>
       
