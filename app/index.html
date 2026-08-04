@@ -1819,7 +1819,7 @@ function renderPrice(){
     }
   } else {
     coach = `<div class="coach info">
-      この作品にはまだ価格がついていません。下の推奨価格を目安に決めてみてください。
+      この作品にはまだ価格がついていません。下は入力条件から計算した試算額です。販売価格を決める際の参考にしてください。
     </div>`;
   }
 
@@ -1913,7 +1913,7 @@ function renderPrice(){
     </div>
     ${coach}
     <div class="card">
-      <h2>${above ? "この価格を下回らないで" : "値付けの試算結果"}</h2>
+      <h2>${above ? "この金額未満では、入力した目標に届かない試算です" : "値付けの試算結果"}</h2>
       <div class="hero-num">
         <div class="n" ${above?'style="color:var(--muted);font-size:1.9rem"':""}>${yen(recP)}</div>
         <div class="u">${above ? `${chName}での下限ライン（いまは ${yen(cur)}／余裕あり）` : `${chName}で販売する場合`}</div>
@@ -1929,7 +1929,7 @@ function renderPrice(){
         <tr><td>${chName}の手数料</td><td>${yen(rowFee)}</td></tr>
         ${rowShipTop>0 ? `<tr><td>購入者が別に払う送料（作品価格からは差し引きます）</td><td>-${yen(rowShipTop)}</td></tr>` : ""}
         ${rowRoundUp!==0 ? `<tr><td>${rowRoundUp>0?"100円単位への切り上げ":"端数の調整"}</td><td>${rowRoundUp<0?"-":""}${yen(Math.abs(rowRoundUp))}</td></tr>` : ""}
-        <tr><td><b>${above?"下限ライン":"推奨価格"}</b></td><td><b>${yen(recP)}</b></td></tr>
+        <tr><td><b>${above?"下限ライン":"目標条件からの試算額"}</b></td><td><b>${yen(recP)}</b></td></tr>
       </tbody></table>
       ${(RATE_SOURCES[db.cfg.ch]||{}).resultWarn ? `<div class="note" role="status" style="border-left:3px solid var(--warn,#c47f00);padding-left:10px"><b>手数料率に関する注意</b><br>${esc(RATE_SOURCES[db.cfg.ch].resultWarn)}<br><button type="button" class="chip" onclick="openRateSrc()">出典と公式ページを見る</button></div>` : ""}
       <div class="note">この「逆算」が、このアプリの中心です。原価を記録するだけでなく、作業時間や目標利益を踏まえた販売価格を試算します。<br>
