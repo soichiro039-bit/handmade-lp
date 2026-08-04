@@ -82,6 +82,13 @@
          padding:13px; border-radius:99px; font-size:.95rem; font-weight:bold; margin-top:14px; }
   .btn.sub { background:var(--soft); color:var(--main); }
   .btn.mini { width:auto; padding:10px 16px; font-size:.84rem; margin:0; }
+  /* 絞り込みを解く「戻す」系の出口だけに使う軽い見え方。
+     きっかけ(実測 375x667): 検索0件の出口と、その画面自身のCTA「＋ 作品を登録する」が、
+     背景・文字色・太さ・高さまで完全に一致し、同じ形の丸い塊が縦に2つ並んだ。
+     戻す操作は、その画面で一番やってほしいことではない。同じ重さで置いてはならない。
+     色は変えず面だけ抜く＝文字色は据え置きなので読みやすさは落ちない。 */
+  .btn.quiet { background:transparent; color:var(--main);
+    border:1.5px solid var(--soft); font-weight:600; }
 
   /* 文字を大きくした端末や幅320pxの端末でも、横スクロールを強いない。
      WCAG 2.2 達成基準1.4.10「幅320CSSピクセルで二方向スクロールを強いないこと」。
@@ -1327,15 +1334,52 @@ function matchName(name, q){ return !q || String(name).toLowerCase().includes(q)
 /* 空状態の共通の形。案内文だけを置くと、案内が名指しした行き先へ行く手段が
    画面上に無いことがある(375px幅では特に起きやすい)ため、見出し・説明・出口を必ず組にする。
    出口は data-role="empty-exit" で掴む(文言で掴むと、文言を良くした瞬間に検査が落ちる)。 */
-function emptyState(見出し, 説明, 出口){
+function emptyState(見出し, 説明, 出口, src){
   /* 出口の重さは場面で決める。sub=true は「そのフォーム自身の主ボタンと張り合わせない」意味。
      実測(2026-08-03): 作品登録の途中に主ボタンで出口を置いたら、保存ボタンと
      背景色 rgb(176,96,68) が完全に一致し、同じ幅・同じ形で画面に2つ並んだ。
      押せば終わるものが2つに見える。画面まるごとが空の場面(値付け)は主のままでよい。 */
+  /* 出口は2種類ある。別画面へ渡すもの(to)と、今いる画面の状態を戻すもの(clear)。
+     検索0件は後者——行き先は変わらず、変えるのは「絞り込みが掛かっている」という状態の方。
+     clear 側に data-goto を付けない（付けると「押したら別画面へ着く」ことを
+     求められてしまい、正しい実装の方が弾かれる）。掴み手 data-role は両方に付ける。 */
   const b = 出口
-    ? `<button class="btn${出口.sub ? ' sub' : ''}" data-role="empty-exit" data-goto="${出口.to}" onclick="go('${出口.to}')">${出口.label}</button>`
+    ? (出口.clear
+        ? `<button class="btn quiet" data-role="empty-exit" onclick="clearFind('${出口.clear}')">${出口.label}</button>`
+        : `<button class="btn${出口.sub ? ' sub' : ''}" data-role="empty-exit" data-goto="${出口.to}" onclick="go('${出口.to}')">${出口.label}</button>`)
     : "";
-  return `<div class="empty"><b class="empty-h">${見出し}</b><span class="empty-d">${説明}</span>${b}</div>`;
+  /* data-empty-src = この空状態を作った場所の名札。検査が「ファイルの中に在る作り手の数」と
+     「探針が実際に到達した作り手の数」を突き合わせるために要る。
+     名札の無い空状態を足すと未測定として扱われる＝足した人が必ず気づく。 */
+  return `<div class="empty" data-empty-src="${src}"><b class="empty-h">${見出し}</b><span class="empty-d">${説明}</span>${b}</div>`;
+}
+
+/* 検索0件からの復帰。NN/g guideline 2「Offer starting points for moving forward」。
+   検索欄は打った語を保持したままなので、消す手段が空状態の側に無いと、
+   利用者に残る道は「自分で欄を選んで消す」だけになる。行き止まりを作らないための出口。
+   欄を消したあと input を発火させて、その画面自身の再描画に任せる（画面ごとに分岐しない）。 */
+function clearFind(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.value = "";
+  el.dispatchEvent(new Event("input"));
+  el.focus();
+}
+
+/* 検索0件の知らせを、下端のタブバーに隠れたままにしない。
+   NN/g guideline 1「Clearly explain that there are no matching results」は
+   **見落とされないこと**まで含む(小さい軽い文字が読み飛ばされるのはアイトラッキングの実測)。
+   タブバーは position:fixed なので、window の中に在っても隠れる——
+   実測(2026-08-04 375x667): 出口ボタンの下端612 に対しタブバー上端593 で19px がタブの裏。
+   文字数を削って逃げると、次に一言足した人が同じ穴へ落ちる(実測で残り3pxまで詰まった)ので、
+   位置で解く。**隠れている時だけ**寄せる(毎打鍵で動かすと打っている最中に画面が跳ねる)。 */
+function 空状態を見せる(親){
+  const e = 親 && 親.querySelector('.empty[data-empty-src$="-find0"]');
+  if(!e) return;
+  const nav = document.querySelector('nav[role="tablist"]');
+  const 下限 = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+  const r = e.getBoundingClientRect();
+  if(r.bottom > 下限 || r.top < 0) e.scrollIntoView({block:"center", behavior:"auto"});
 }
 
 function renderHome(){
@@ -1356,8 +1400,13 @@ function renderHome(){
                         .sort((a,b)=>(isOwnWork(b)?1:0)-(isOwnWork(a)?1:0));
   const 自分の件数 = shown.filter(isOwnWork).length;
   if(!db.works.length){ el.innerHTML = emptyState('まだ作品がありません',
-      '登録すると、ここに作品と1つあたりの利益が並びます。下のボタンから始められます。'); }
-  else if(!shown.length){ el.innerHTML = '<div class="empty">「'+esc(q)+'」に当てはまる作品はありません。</div>'; }
+      '登録すると、ここに作品と1つあたりの利益が並びます。下のボタンから始められます。',
+      null, 'home-empty'); }
+  else if(!shown.length){ el.innerHTML = emptyState(
+      '「'+esc(q)+'」に当てはまる作品はありません',
+      '作品名の一部だけでも探せます。文字を減らすと見つかることがあります。',
+      {clear:'workSearch', label:'絞り込みをやめて全部を見る'}, 'home-find0');
+    空状態を見せる(el); }
   else {
     el.innerHTML = shown.map((w,_i)=>{
       /* 自分の作品が1件でもある時だけ、サンプルの手前に境目を出す。
@@ -1441,9 +1490,14 @@ function renderParts(){
   renderPartAgain();
   if(!db.parts.length){ el.innerHTML = emptyState('まだパーツがありません',
       '登録すると、ここに材料と1個あたりの単価が並びます。仕入れ値を変えると、'
-      + 'その材料を使う作品の原価にまとめて反映されます。'); return; }
+      + 'その材料を使う作品の原価にまとめて反映されます。',
+      null, 'parts-empty'); return; }
   const shown = db.parts.filter(p=>matchName(p.name, q));
-  if(!shown.length){ el.innerHTML = '<div class="empty">「'+esc(q)+'」に当てはまるパーツはありません。</div>'; return; }
+  if(!shown.length){ el.innerHTML = emptyState(
+      '「'+esc(q)+'」に当てはまるパーツはありません',
+      'パーツ名の一部だけでも探せます。文字を減らすと見つかることがあります。',
+      {clear:'partSearch', label:'絞り込みをやめて全部を見る'}, 'parts-find0');
+    空状態を見せる(el); return; }
   el.innerHTML = shown.map(p=>{
     const used = db.works.filter(w=>w.recipe.some(r=>r.pid===p.id)).length;
     return `<div class="list-item">
@@ -1521,7 +1575,7 @@ function renderWorkForm(){
     return `<button class="chip ${on?'on':''}" aria-pressed="${on}" aria-label="${esc(読み)}" onclick="toggleChip(${p.id})">${esc(p.name)}${添え}</button>`;
   }).join("") || emptyState('まだパーツがありません',
       '先に材料を1つ登録すると、あとは使うパーツを選ぶだけで原価が出ます。',
-      {to:'s-parts', label:'パーツを登録する', sub:true});
+      {to:'s-parts', label:'パーツを登録する', sub:true}, 'workchip-empty');
   offerLastWork();
   renderRecipe();
 }
@@ -1734,7 +1788,7 @@ function renderPrice(){
   const body = document.getElementById("priceBody");
   if(!db.works.length){ body.innerHTML = '<div class="card">' + emptyState('まだ作品がありません',
       '作品を1つ登録すると、いくらで売ればよいかを逆算します。',
-      {to:'s-work', label:'作品を登録する'}) + '</div>'; return; }
+      {to:'s-work', label:'作品を登録する'}, 'price-empty') + '</div>'; return; }
   const w = db.works.find(x=>x.id===focusId) || db.works[0];
   // フォールバックで拾った時もdbへ書き戻す。書かないと開き直すたびに同じ迷子が起きる
   if(focusId !== w.id || db.focusId !== w.id) setFocus(w.id);
