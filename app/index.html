@@ -233,9 +233,9 @@
      「1,800円」が画面からはみ出して読めなくなるのを防ぐ(通常時の見た目は2.3remのまま) */
   .hero-num .n { font-size:min(2.3rem, 12vw); font-weight:bold; line-height:1.1; }
   .hero-num .u { font-size:.78rem; color:var(--muted); }
-  /* 金額のすぐ下に置く一文（原則73）。指示語「この金額」の指す先を先に読ませるための位置。
-     muted にしない＝法務が要求した「命令ではなく条件付きの試算である」という枠組みを
-     薄い字へ落とすと、直した意味が薄くなる。 */
+  /* 金額のすぐ下に置く一文。「この金額」という指し方をするので、指す先の金額を先に
+     読ませるための位置。muted にしない＝「命令ではなく条件付きの試算である」と
+     伝えるための一文なので、薄い字へ落とすと伝わらなくなる。 */
   .hero-say { text-align:center; font-size:.88rem; line-height:1.6; margin:4px 0 0; }
 
   .step { display:flex; gap:10px; align-items:center; padding:11px 12px; border-radius:12px; background:var(--soft); margin-top:9px; }
@@ -1917,13 +1917,6 @@ function renderPrice(){
     </div>
     ${coach}
     <div class="card">
-      <!-- 【2026-08-04 デザイン部・原則73】法務部H-72の文言はそのまま。**置き場所だけ**を変えた。
-           「この金額」は指示語で、指す先はこのカードの金額。見出しはカードの先頭なので、
-           読み上げ順の実測で **指示語(位置0) が 金額(位置1) より先** だった＝順に読む人には、
-           聞いた時点で「この金額」が何も指していない。既存の「文脈はリンクより前に置く」と同じ型。
-           陽性対照＝above=false の同じ語は金額より後(位置23)に在り、道具は両方向を検出できている。
-           **短くしたのではない**。WCAG 2.4.6 の全文は「見出しは長くなくてよい」と言うだけで
-           短さを要求していない。直したのは長さではなく順序。 -->
       <h2>${above ? "下限ラインの試算結果" : "値付けの試算結果"}</h2>
       <div class="hero-num">
         <div class="n" ${above?'style="color:var(--muted);font-size:1.9rem"':""}>${yen(recP)}</div>
