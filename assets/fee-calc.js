@@ -116,7 +116,7 @@
   var META = {
     /* 版だけを更新するときも、この data_version を必ず一緒に動かすこと。
        料率マスタが進んだのにここが古いままだと、画面が古い版を「料率データの版」として表示する。 */
-    data_version: "2026-08-01-r53",
+    data_version: "2026-08-05-r56",
     channels: {
       minne: {
         name: "minne", rate: 0.10659, fixed: 0, rateText: "10.659%",

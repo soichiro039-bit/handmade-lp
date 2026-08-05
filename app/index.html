@@ -250,9 +250,9 @@
   .pay-lead { display:flex; align-items:baseline; gap:.4rem; flex-wrap:wrap; padding:.15rem 0 .5rem; }
   .pay-lead .n { font-size:min(1.9rem, 10vw); font-weight:bold; line-height:1.15; color:var(--main); }
   .pay-lead .u { font-size:.82rem; color:var(--muted); }
-  .pay-row { display:flex; gap:.7rem; padding:.6rem 0; border-top:1px solid var(--line); font-size:.86rem; line-height:1.6; }
+  .pay-row { display:flex; flex-wrap:wrap; gap:.7rem; padding:.6rem 0; border-top:1px solid var(--line); font-size:.86rem; line-height:1.6; }
   .pay-row .l { flex:0 0 5.6rem; color:var(--muted); }
-  .pay-row .v { flex:1; min-width:0; }
+  .pay-row .v { flex:1 1 11rem; min-width:0; overflow-wrap:anywhere; }  /* 文字200%で .l が5.6remを固定で取り、値の欄が58pxまで潰れて1行2文字×43行になっていた(2026-08-06 実測)。折り返して欄を返す。overflow-wrap は分割点の無い長語(ハイフン無しURL等)への保険=これが無いと同条件で396pxはみ出す(対照実測) */
   /* 繰越・失効の注意。色だけで意味を示さないため、必ず文章でも書く */
   .pay-flag { background:#fdf1ee; border-left:4px solid var(--ng); border-radius:.5rem;
               padding:.7rem .8rem; margin-top:.7rem; font-size:.86rem; line-height:1.7; }
@@ -841,7 +841,7 @@ function renderRateStale(now){
    別に払う)で出品している作家は、作品価格ではなく「作品価格＋送料」に手数料がかかる。
    送料込みなら送料は既に価格の中にあるので基数は価格そのもの——1つの式で両方を表せる。
    端数の扱いも販路ごとに違う。1円ずつの差だが、正しさが我々の差別化なので合わせる。
-   値の正本: 07_開発移行/料率マスタ/fee_master_v0.json (data_version 2026-08-01-r53)
+   値の正本: 07_開発移行/料率マスタ/fee_master_v0.json (data_version 2026-08-05-r56)
    CHANNELS配列とは別に持つ——CHANNELSはLPのchannels配列と1円もずれてはならず、
    そこへ数値や関数を混ぜると照合が壊れるため。
    Creemaだけは公式が丸め方向を明記していない。切り上げ(＝手数料を多めに見る)を採る。
@@ -1045,7 +1045,7 @@ const PAYOUT_TIMING = {
     originText:"発送完了メールを送信した日（受注日ではありません）。7月に受注して8月に発送完了メールを送ると、振込は9月末になります",
     cycleText:"発送完了メールを送信した日が売上確定日。その月ぶんを締めて、翌月末23:59までに振込",
     minText:"売上が1,000円未満の月は、翌月へ繰り越されます",
-    minYen:1000, expiryText:"繰り越されるだけで、失効しません",
+    minYen:1000, expiryText:"退会しなければ失効しません（5か月経過すれば1,000円未満でも振り込まれます）。ただし販売者登録を抹消・退会すると、留保中のぶんは受け取れなくなります（minne利用規約 第16条）",
     fastText:"" },
   creema: {
     control:"on_request", controlText:"必要です（振込申請）",
@@ -1076,7 +1076,7 @@ const PAYOUT_TIMING = {
     leadText:"未確認", leadNote:"振込までの日数は公式ヘルプに明記が見つかっていません",
     cycleText:"月1回または月2回から選べます（申請という手続きはありません）",
     minText:"販売利益が5,000円未満の月は、次回へ繰り越されます",
-    minYen:5000, expiryText:"売上金に有効期限はありません",
+    minYen:5000, expiryText:"販売利益に有効期限はありません（加盟店規約に失効の定めなし）",
     fastText:"" }
 };
 /** ひと月の振込見込み額（販路から自分の口座へ入る見込みの月合計）。
