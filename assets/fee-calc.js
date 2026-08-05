@@ -116,7 +116,7 @@
   var META = {
     /* 版だけを更新するときも、この data_version を必ず一緒に動かすこと。
        料率マスタが進んだのにここが古いままだと、画面が古い版を「料率データの版」として表示する。 */
-    data_version: "2026-08-05-r56",
+    data_version: "2026-08-06-r57",
     channels: {
       minne: {
         name: "minne", rate: 0.10659, fixed: 0, rateText: "10.659%",
@@ -144,8 +144,11 @@
         name: "BASE", rate: 0.066, fixed: 40, rateText: "6.6% ＋ 40円",
         asof: "2026-07-27", checked: "2026-08-05", rateConf: "primary",
         rateSrc: "help.thebase.in 記事5701758066585",
-        taxBaseConf: "unconfirmed",
-        taxBaseText: "送料を含む前提で計算（公式に明記が見つかっていません）",
+        taxBaseConf: "primary",
+        taxBaseText: "1注文ごとの合計金額（送料をふくむ）",
+        /* 四捨五入が公式に明記されているのは「かんたん決済手数料」の側だけで、
+           サービス利用料の丸め方向は公式に記載が無い。ここでは合算(6.6%＋40円)を
+           1回四捨五入している＝明記の範囲を超えるので「公式に明記」とは名乗らない。 */
         roundText: "四捨五入",
         payoutText: "250円／回（振込申請額2万円未満はさらに500円）", payoutConf: "primary",
         payoutSrc: "help.thebase.in 記事206341302",
@@ -155,9 +158,9 @@
         name: "メルカリShops", rate: 0.10, fixed: 0, rateText: "10%",
         asof: "2026-07-27", checked: "2026-08-05", rateConf: "primary",
         rateSrc: "support.mercari-shops.com 記事900005534186・900006449763",
-        taxBaseConf: "unconfirmed",
-        taxBaseText: "送料を含む前提で計算（公式に明記が見つかっていません）",
-        roundText: "切り捨て",
+        taxBaseConf: "primary",
+        taxBaseText: "送料別なら商品価格＋送料／送料込みなら商品価格のみ",
+        roundText: "切り捨て（公式に明記）",
         payoutText: "200円／回", payoutConf: "primary",
         payoutSrc: "support.mercari-shops.com 記事900006450663・60017559998361",
         payoutNote: "販売利益5,000円未満の月は次回へ繰り越されます"
