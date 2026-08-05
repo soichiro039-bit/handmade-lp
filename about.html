@@ -29,6 +29,15 @@
   footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);
          color:var(--muted);font-size:.88rem}
   a{color:var(--accent)}
+  /* 「関連するページ」の一覧。項目がリンクだけで成り立つ行を44ptへそろえる。
+     .srclink は使わない——あれは出典・根拠へ渡す導線の形で font-size:.88rem を含むため、
+     16pxの本文サイズを14.08pxへ縮めてしまう。対象に55歳以上を含むので字は縮めず、
+     当たり判定の高さだけを上げる(SC2.5.8はSpacing例外が成立しており違反ではない)。 */
+     構造セレクタ(:only-child)では駄目だった——テキスト節点を数えないので
+     「お問い合わせ: <a>…</a>」まで一致し、Inline例外が成立している行内リンクを
+     太らせて文を壊す(実測 21.0px→44.0px)。当てる先は明示のクラスで名指しする。 */
+  .pagelist li{margin:0}
+  a.taplink{display:inline-flex;align-items:center;min-height:44px}
 </style>
 </head>
 <body>
@@ -154,10 +163,10 @@ DMでご連絡を差し上げた方には、<strong>下の「A. お話を伺う�
 </ul>
 
 <h2>関連するページ</h2>
-<ul>
-  <li><a href="./app/">アプリのWeb版（実際に試せます）</a></li>
-  <li><a href="./">アプリの紹介ページ</a></li>
-  <li><a href="./privacy.html">プライバシーポリシー</a></li>
+<ul class="pagelist">
+  <li><a class="taplink" href="./app/">アプリのWeb版（実際に試せます）</a></li>
+  <li><a class="taplink" href="./">アプリの紹介ページ</a></li>
+  <li><a class="taplink" href="./privacy.html">プライバシーポリシー</a></li>
   <li><a href="https://www.instagram.com/handmade_genka/">Instagram（このアプリの開発アカウント。DMでご連絡を差し上げているのもこのアカウントです）</a></li>
   <li>お問い合わせ: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></li>
 </ul>

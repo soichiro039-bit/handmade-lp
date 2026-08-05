@@ -26,6 +26,13 @@
   a { color: var(--main); }
   .back { display: block; text-align: center; margin-top: 20px; font-size: .95rem; }
   footer { text-align: center; color: var(--muted); font-size: .82rem; padding: 24px 16px 8px; }
+  /* 単独段落のリンク。形はデザインシステムの .srclink に固定(2026-07-29決定)。
+     SC2.5.8はSpacing例外が成立しており違反ではないが、対象に55歳以上を含むため
+     Apple HIGの44ptへそろえる。footerの.82remより大きくなる(13.1px→14.08px) */
+  .srclink { display: inline-flex; align-items: center; min-height: 44px;
+             font-size: .88rem; line-height: 1.6; color: var(--main);
+             text-decoration: underline; text-underline-offset: 3px; }
+  footer p:has(> .srclink:only-child) { margin: 0; }
 </style>
 </head>
 <body>
@@ -172,7 +179,7 @@
 
 <footer>
   <p>運営者: 高中工業 / 連絡先: soichiro039@gmail.com</p>
-  <p><a href="about.html">運営者と、この調査について</a></p>
+  <p><a class="srclink" href="about.html">運営者と、この調査について</a></p>
   <p>© 2026</p>
 </footer>
 
