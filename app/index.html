@@ -303,6 +303,15 @@
      12.48px＝本アプリの文字下限11pxを上回る */
   .chip-tell { font-size:.78rem; margin-left:6px; opacity:.85; }
 
+  /* 根拠・運営者へ渡す導線。段落を単独で占めるリンクに使う。
+     実測 2026-08-05: この形にする前は高さ18px・中心間22.59px で、
+     WCAG2.2 SC2.5.8(AA)の24pxに375/390/430の3幅とも届いていなかった。
+     文中ではないので Inline 例外は使えず、中心間が24px未満なので Spacing 例外も成立しない。
+     文字数を削って逃げず、寸法で解くこと。min-height は Apple HIG に合わせて44px。 */
+  .srclink { display:inline-flex; align-items:center; min-height:44px; margin-top:10px;
+             font-size:.88rem; line-height:1.6; color:var(--main);
+             text-decoration:underline; text-underline-offset:3px; }
+
   /* 連絡先への44px以上の入口。用途が「根拠へ渡す」ではないので .srclink とは分ける
      (mailto には飛び先の見出しが無く、同じ扱いにできないため)。 */
   .actlink { display:inline-flex; align-items:center; min-height:44px; margin-top:10px;
@@ -566,8 +575,8 @@
     <p style="font-size:.88rem;color:var(--muted)"><b>ご意見箱・先行案内の登録でお預かりする情報</b>／<strong>現在、ご意見箱と先行案内の登録はどちらも受付を停止しており、このアプリから外部フォームへ送る導線はありません。</strong>過去に外部フォームでメールアドレスをお送りいただいた方の情報は、本アプリのリリース案内および開発アンケートのご依頼にのみ使用し、第三者への提供・目的外利用は行いません。登録停止・削除のご希望は下記の連絡先までご連絡ください。</p>
     <p style="font-size:.88rem;color:var(--muted)"><b>計算結果について</b>／表示される金額は公開されている手数料率に基づく概算であり、実際に手元へ残る額を保証するものではありません。</p>
     
-    <p style="font-size:.88rem;color:var(--muted)"><a href="https://soichiro039-bit.github.io/handmade-lp/privacy.html">プライバシーポリシー(全文)</a></p>
-    <p style="font-size:.88rem;color:var(--muted)"><a href="https://soichiro039-bit.github.io/handmade-lp/about.html">運営者と、この調査について</a></p>
+    <p style="margin:0"><a class="srclink" href="https://soichiro039-bit.github.io/handmade-lp/privacy.html">プライバシーポリシー(全文)</a></p>
+    <p style="margin:0"><a class="srclink" href="https://soichiro039-bit.github.io/handmade-lp/about.html">運営者と、この調査について</a></p>
     <p style="font-size:.88rem;color:var(--muted)">運営者: 高中工業 ／ 連絡先: <a href="mailto:soichiro039@gmail.com">soichiro039@gmail.com</a></p>
     <a class="actlink" data-role="contact-mail" href="mailto:soichiro039@gmail.com">運営者へメールを送る（先行案内の登録停止・削除の依頼もこの宛先です）</a>
 

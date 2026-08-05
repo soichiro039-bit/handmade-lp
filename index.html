@@ -73,6 +73,15 @@
     th, td { padding: 7px 3px; }
   }
   footer { font-size: .75rem; color: var(--muted); padding: 24px 16px 48px; text-align: center; }
+  /* 根拠・運営者へ渡す導線。段落を単独で占めるリンクに使う。
+     実測 2026-08-05: この形にする前はフッタの単独段落リンク3本が高さ16px・中心間20.39px で、
+     WCAG2.2 SC2.5.8(AA)の24pxに届いていなかった。文中ではないので Inline 例外は使えず、
+     中心間24px未満なので Spacing 例外も不成立。430x932では3本とも不合格・375x667では1本不合格・
+     390x844だけ合格だったので、1幅だけで見ると素通りする。必ず3幅で測ること。 */
+  footer .srclink { display: inline-flex; align-items: center; min-height: 44px; margin-top: 10px;
+             font-size: .88rem; line-height: 1.6; color: var(--main);
+             text-decoration: underline; text-underline-offset: 3px; }
+  footer p:has(> .srclink:only-child) { margin: 0; }
 </style>
 </head>
 <body>
@@ -196,11 +205,11 @@
 
   <p>【アクセス解析について】本サイトではアクセス数の把握のためCloudflare Web Analyticsを利用しており、閲覧時の通信情報が同社へ送信されます。Cloudflareによれば、同サービスはアクセス解析のためのCookieを使用しません。個人を特定する情報は取得しません。計測を希望されない場合は <a href="?noanalytics=1">以後、計測なしで開く</a> をご利用ください(その端末では以後この計測を行いません。<a href="privacy.html">この設定はCookieとlocalStorageへ保存されます</a>)。</p>
   
-  <p><a href="./privacy.html">プライバシーポリシー(全文)</a></p>
+  <p><a class="srclink" href="./privacy.html">プライバシーポリシー(全文)</a></p>
 
-  <p><a href="./tester.html">お試し版を一緒に見てくださる方を探しています(謝礼はありません)</a></p>
-  
-  <p><a href="./about.html">運営者と、この調査について</a></p>
+  <p><a class="srclink" href="./tester.html">お試し版を一緒に見てくださる方を探しています(謝礼はありません)</a></p>
+
+  <p><a class="srclink" href="./about.html">運営者と、この調査について</a></p>
   <p>運営者: 高中工業 / 連絡先: soichiro039@gmail.com</p>
   <p>© 2026</p>
 </footer>
