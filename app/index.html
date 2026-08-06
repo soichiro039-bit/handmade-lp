@@ -1712,6 +1712,29 @@ function armRetype(){
     el.addEventListener("input", function(){ el.dataset.autofill = ""; });
   }
 }
+/* 請求する送料を打ち直したら、まだ作家が打っていない実費は連れて行かない。
+
+   なぜ要るか（2026-08-06、実機の通し操作で再現した）: 前回の作品から
+   請求額185円と実費230円の**2つ**を差し出していた。作家が請求額だけ 185→300 と打ち直すと、
+   実費は前回の230円のまま残り、原価は300円ではなく230円で計算される。
+   ずれは**手取りを多く見せる側**（原価が70円安く出る）で、画面には警告が1つも出ない。
+   合計と内訳は互いに一致したままなので、**値どうしを突き合わせる検査では原理的に見つからない**。
+
+   直し方の考え方: 実費は請求額と対になっている値であって、単独では意味を持たない。
+   **対の片方が変わった時点で、まだ作家が打っていない側は無効**とみなし、空欄へ戻す。
+   空欄は「上と同じ」＝請求額そのものなので、原価は必ず請求額まで上がる（安全側）。
+   自分で打った実費（autofill が外れている）は**触らない**——打ち直しは作家の意思である。 */
+function wireShipCostPairing(){
+  if(!wShip || !wShipCost || wShip.dataset.pairWired === "1") return;
+  wShip.dataset.pairWired = "1";
+  wShip.addEventListener("input", function(){
+    if(wShipCost.dataset.autofill === "1" && wShipCost.value !== ""){
+      wShipCost.value = "";
+      wShipCost.dataset.autofill = "";
+      syncShipCostRow();
+    }
+  });
+}
 function offerLastWork(){
   const last = db.works[db.works.length-1];
   const note = document.getElementById("wAgain");
@@ -1724,6 +1747,7 @@ function offerLastWork(){
     wShipCost.value = last.shipCost;
   syncShipCostRow();
   armRetype(wMin, wShip, wShipCost);
+  wireShipCostPairing();
   note.textContent = `前回の「${last.name}」と同じ ${last.min}分 ／ ${yen(+last.ship||0)}${last.shipMode === "sep" ? "（送料別）" : "（送料込み）"} を入れています。違うときは、その欄をタップしてそのまま打ち直してください。`;
 }
 /** 作品の複製。色違い・サイズ違いを1件ずつ手入力し直す手間をなくす。
@@ -1736,6 +1760,7 @@ function dupWork(id){
   wShipCost.value = (w.shipCost === null || w.shipCost === undefined) ? "" : w.shipCost;
   syncShipCostRow();
   armRetype(wMin, wShip, wPrice, wShipCost);   // 複製は写した値を打ち直す前提の機能
+  wireShipCostPairing();
   go('s-work');
   wName.value = w.name + " のコピー";
   document.getElementById("wAgain").textContent =
