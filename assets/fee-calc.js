@@ -28,6 +28,21 @@
      分からない側へ倒すときは、作家の手取りを多く見せない方向を選ぶ。 */
   var FEE_ROUND = { minne: Math.floor, creema: Math.ceil, base: Math.round, mercari: Math.floor };
 
+  /* BASEだけは合算を1回丸めてはいけない（2026-08-06）。
+     公式は2費目を別々の整数として控除する形を示す（help.thebase.in 記事206418941、
+     および記事46610591761177 の計算例＝合計1,000円×5.9%＝59円が単独の整数）。
+     四捨五入が明記されているのは「かんたん決済手数料（3.6%＋40円）」の行だけで、
+     「サービス利用料（3%）」の行の備考は空＝丸め方向の明記はヘルプ全1,019記事に0件。
+     合算（6.6%＋40円）を1回四捨五入すると gross 1〜50,000円のうち12,501条件で1円ずれ、
+     うち6,365条件は手数料を少なく＝手取りを多く見せる危険側へ倒れていた
+     （独立した2つの実装で同じ値を再現して確認）。
+     サービス利用料は明記が無いので切り上げ＝作家の手取りを多く見せない側（Creemaと同じ扱い）。
+     ここは base（手数料の基数）を見ないと決まらないので FEE_ROUND では表せない。
+     **channels[].fee は逆算のprobeが使うので生の式のまま置く（触らないこと）。** */
+  var FEE_EXACT = {
+    base: function (t) { return Math.round(t * 0.036 + 40) + Math.ceil(t * 0.03); }
+  };
+
   /* 振込にかかる費用。販売手数料とは必ず別に持つ。 */
   var PAYOUT = {
     minne:   { fee: function () { return 220; }, conf: "primary" },
@@ -43,8 +58,10 @@
 
   /** 販路手数料。base は「購入者が払う合計（送料をふくむ）」＝手数料の基数 */
   function channelFee(key, base) {
+    if (!(base > 0)) { return 0; }
+    if (FEE_EXACT[key]) { return FEE_EXACT[key](base); }
     var r = FEE_ROUND[key] || Math.round;
-    return base > 0 ? r(find(key).fee(base)) : 0;
+    return r(find(key).fee(base));
   }
 
   /** 1点あたりが負担する振込費用。振込は月1回・ひと月に n 点売る前提。
@@ -146,10 +163,10 @@
         rateSrc: "help.thebase.in 記事5701758066585",
         taxBaseConf: "primary",
         taxBaseText: "1注文ごとの合計金額（送料をふくむ）",
-        /* 四捨五入が公式に明記されているのは「かんたん決済手数料」の側だけで、
-           サービス利用料の丸め方向は公式に記載が無い。ここでは合算(6.6%＋40円)を
-           1回四捨五入している＝明記の範囲を超えるので「公式に明記」とは名乗らない。 */
-        roundText: "四捨五入",
+        /* 見出しは実装に合わせてある。合算を1回四捨五入していた間は「四捨五入」とだけ
+           名乗っていたが、2費目を別々に丸める形へ変えたので両方を書く（FEE_EXACT を参照）。
+           **明記が在る側と無い側の書き分けは変えていない。** */
+        roundText: "かんたん決済手数料は四捨五入（公式に明記）、サービス利用料は切り上げ（丸め方向は明記が見つかっていません）",
         payoutText: "250円／回（振込申請額2万円未満はさらに500円）", payoutConf: "primary",
         payoutSrc: "help.thebase.in 記事206341302",
         payoutNote: "売上残高751円以下では振込申請ができません"
@@ -171,6 +188,7 @@
   global.FeeCalc = {
     channels: channels,
     FEE_ROUND: FEE_ROUND,
+    FEE_EXACT: FEE_EXACT,
     PAYOUT: PAYOUT,
     channelFee: channelFee,
     payoutPerItem: payoutPerItem,

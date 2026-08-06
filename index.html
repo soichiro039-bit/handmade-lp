@@ -235,10 +235,23 @@
      channels配列とは必ず別に持つ——channelsはプロトタイプのCHANNELSと1円もずれてはならず
      、そこへ丸め関数を混ぜると照合が壊れるため。 */
   const FEE_ROUND = { minne: Math.floor, creema: Math.ceil, base: Math.round, mercari: Math.floor };
+  /* BASEだけは合算を1回丸めてはいけない(2026-08-06)。
+     公式は2費目を別々の整数として控除する形を示す(help.thebase.in 記事206418941、および
+     記事46610591761177 の計算例＝合計1,000円×5.9%＝59円が単独の整数)。四捨五入が明記されて
+     いるのは「かんたん決済手数料(3.6%＋40円)」の行だけで、「サービス利用料(3%)」の行の備考は
+     空＝丸め方向の明記はヘルプ全1,019記事に0件。合算(6.6%＋40円)を1回四捨五入すると
+     gross 1〜50,000円のうち12,501条件で1円ずれ、うち6,365条件は手数料を少なく＝手取りを
+     多く見せる危険側へ倒れていた(独立した2つの実装で同じ値を再現して確認)。
+     サービス利用料は明記が無いので切り上げ＝作家の手取りを多く見せない側(Creemaと同じ扱い)。
+     baseを見ないと決まらないのでFEE_ROUNDでは表せない。
+     **channels[].fee は逆算のprobeが使うので生の式のまま置く(触らないこと)。** */
+  const FEE_EXACT = { base: t => Math.round(t*0.036 + 40) + Math.ceil(t*0.03) };
   /** 販路手数料(丸め込み)。基数は「購入者が払う合計」。 */
   function channelFee(c, base) {
+    if (!(base > 0)) { return 0; }
+    if (FEE_EXACT[c.key]) { return FEE_EXACT[c.key](base); }
     const r = FEE_ROUND[c.key] || Math.round;
-    return base > 0 ? r(c.fee(base)) : 0;
+    return r(c.fee(base));
   }
 
   /* ===== 振込にかかる費用 =====
