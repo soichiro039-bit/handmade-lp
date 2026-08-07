@@ -85,7 +85,7 @@
     /* 枠の色は「ここが入力欄だ」と分かる唯一の手がかり。内側も外側も#fffなので、
        枠が薄いと欄の在り処そのものが見えなくなる。#ddd0c5 は白に対し 1.51:1 しかなく、
        WCAG 2.2 SC 1.4.11 Non-text Contrast(Level AA)の 3:1 に届いていなかった。
-       #9c8b7e は 3.28:1（2026-08-06 デザイン部実測）。色味は既存の --muted 系に合わせている */
+       #9c8b7e は 3.28:1（2026-08-06 実測）。色味は既存の --muted 系に合わせている */
     width:100%; padding:11px 12px; font-size:max(1rem, 16px); border:1px solid #9c8b7e;
     border-radius:10px; background:#fff; color:var(--text); font-family:inherit;
     -webkit-appearance:none; appearance:none; min-height:44px; box-sizing:border-box;
@@ -1691,6 +1691,10 @@ function applyShipPreset(){
   const sep = wShipMode.value === "sep";
   const target = sep ? document.getElementById("wShipCost") : document.getElementById("wShip");
   target.value = presetAmount(it);
+  /* 配送方法から選ぶのは、差し出された値をそのままにしているのとは違う——作家の意思表示である。
+     印を付けないと、このあと請求送料を打ち直したときに対の処理が黙って捨てる
+     （2026-08-07 実測: 選んだ185円が消え、原価には請求額の735円が乗った） */
+  target.dataset.chosen = "1";
   const where = sep ? "「そのうち、あなたが実際に払う額」" : "「梱包・発送」";
   /* 箱代を黙って落とさない。判明していない販路では、こちらで金額を作らず作家に足してもらう(37) */
   const boxMsg = (it.box === "unknown")
@@ -1719,6 +1723,7 @@ function armRetype(){
   for(const el of arguments){
     if(!el || el.value === "") continue;
     el.dataset.autofill = "1";
+    el.dataset.chosen = "";        // 別の作品から差し出し直した値は「選んだ額」ではない
     if(el.dataset.retypeWired === "1") continue;
     el.dataset.retypeWired = "1";
     el.addEventListener("click", function(){
@@ -1737,17 +1742,28 @@ function armRetype(){
 
    直し方の考え方: 実費は請求額と対になっている値であって、単独では意味を持たない。
    **対の片方が変わった時点で、まだ作家が打っていない側は無効**とみなし、空欄へ戻す。
-   空欄は「上と同じ」＝請求額そのものなので、原価は必ず請求額まで上がる（安全側）。
-   自分で打った実費（autofill が外れている）は**触らない**——打ち直しは作家の意思である。 */
+   自分で打った実費（autofill が外れている）は**触らない**——打ち直しは作家の意思である。
+
+   【2026-08-07 是正・向きが片方しか合っていなかった】空欄へ戻すのを**無条件**にしていた。
+   旧版の但し書きは「空欄は上と同じ＝請求額そのものなので、原価は必ず請求額まで上がる（安全側）」
+   だったが、**これは実費≦請求額のときしか成り立たない**。実費が請求額より大きいとき、
+   空欄へ戻すことは原価を**下げる**。実測（実費650・請求300）で原価に乗る送料が
+   650→300へ落ち、**350円の過小＝手取りを多く見せる側**になっていた。
+   よって空欄へ戻すのは**それが原価を下げない場合だけ**にする。下げる向きなら残す——
+   **残った額は欄に見えているので作家が直せるが、消した額は二度と見えない。**
+   配送方法から選んだ額（chosen）も捨てない。**選ぶのは差し出しではなく作家の意思表示である。** */
 function wireShipCostPairing(){
   if(!wShip || !wShipCost || wShip.dataset.pairWired === "1") return;
   wShip.dataset.pairWired = "1";
   wShip.addEventListener("input", function(){
-    if(wShipCost.dataset.autofill === "1" && wShipCost.value !== ""){
-      wShipCost.value = "";
-      wShipCost.dataset.autofill = "";
-      syncShipCostRow();
-    }
+    if(wShipCost.dataset.autofill !== "1" || wShipCost.value === "") return;
+    if(wShipCost.dataset.chosen === "1") return;      // 作家が配送方法から選んだ額
+    const staleCost = Math.max(0, +wShipCost.value || 0);
+    const billed = Math.max(0, +wShip.value || 0);
+    if(staleCost > billed) return;                    // 空欄へ戻すと原価が下がる向き
+    wShipCost.value = "";
+    wShipCost.dataset.autofill = "";
+    syncShipCostRow();
   });
 }
 function offerLastWork(){
