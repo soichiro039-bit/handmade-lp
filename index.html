@@ -26,8 +26,12 @@
   label { display: block; font-size: .85rem; color: var(--muted); margin-top: 12px; }
   /* 入力欄の高さは44px以上を確保する(指で押せる最小サイズ。iOS HIG / WCAG 2.2 SC2.5.8)。
       の実測で40pxだったため min-height で下限を固定した。 */
+  /* 枠の色は「ここが入力欄だ」と分かる唯一の手がかり。内側も外側も#fffなので、
+     枠が薄いと欄の在り処そのものが見えなくなる。#ddd0c5 は白に対し 1.51:1 しかなく、
+     WCAG 2.2 SC 1.4.11 Non-text Contrast(Level AA)の 3:1 に届いていなかった。
+     #9c8b7e は 3.28:1（公開版アプリ app/index.html と同じ色・同じ根拠） */
   input[type=number], select { width: 100%; min-height: 44px; padding: 11px 10px; font-size: max(1rem, 16px);
-    border: 1px solid #ddd0c5; border-radius: 8px; margin-top: 4px; background: #fff; color: var(--text); }
+    border: 1px solid #9c8b7e; border-radius: 8px; margin-top: 4px; background: #fff; color: var(--text); }
   table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: .92rem; }
   th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid #eee3d8; }
   th:first-child, td:first-child { text-align: left; }

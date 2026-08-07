@@ -7,9 +7,15 @@
 <title>使ってみたあとのアンケート｜高中工業</title>
 
 <style>
-  :root{ --ink:#1f2328; --muted:#5c6672; --line:#e3e6ea; --accent:#d98324; --bg:#fff; --soft:rgba(217,131,36,.05); }
+  /* --line は見出しの罫や囲みの飾りで、薄くてよい（装飾は3:1を求められない）。
+     入力欄の枠は違う＝その線が「ここに書ける」という唯一の手がかりなので
+     WCAG 2.2 SC 1.4.11 Non-text Contrast(Level AA)の 3:1 が要る。
+     --line(#e3e6ea)は白に対し 1.25:1、dark(#333a42)は#16191dに対し 1.53:1 しかなかった。
+     飾りの色を道連れに濃くしないため、入力欄専用の --ctl-line を分けて持つ。
+     #7f8894 は #fff に対し 3.59:1、#697280 は #16191d に対し 3.63:1。 */
+  :root{ --ink:#1f2328; --muted:#5c6672; --line:#e3e6ea; --ctl-line:#7f8894; --accent:#d98324; --bg:#fff; --soft:rgba(217,131,36,.05); }
   @media (prefers-color-scheme: dark){
-    :root{ --ink:#e8eaed; --muted:#a2abb5; --line:#333a42; --bg:#16191d; --soft:rgba(217,131,36,.10); }
+    :root{ --ink:#e8eaed; --muted:#a2abb5; --line:#333a42; --ctl-line:#697280; --bg:#16191d; --soft:rgba(217,131,36,.10); }
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
@@ -33,7 +39,7 @@
   .opt input{margin-right:10px;width:20px;height:20px;vertical-align:-4px}
   textarea{width:100%;min-height:84px;font-family:inherit;font-size:16px;color:var(--ink);
            background:var(--bg);
-           border:1px solid var(--line);border-radius:6px;padding:10px;line-height:1.7}
+           border:1px solid var(--ctl-line);border-radius:6px;padding:10px;line-height:1.7}
   .sub{margin:8px 0 0}
   .sub span{display:block;font-size:.92rem;color:var(--muted);margin-bottom:4px}
   .btn{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;border:0;
@@ -142,7 +148,7 @@
 <fieldset>
 <legend>集計用（お手数ですが、そのままで結構です）</legend>
 <p class="sub"><span>テスター番号（ご案内に記載がある場合のみ。無ければ空欄で構いません）</span>
-<input type="text" id="tid" name="tid" style="width:100%;max-width:220px;padding:8px;border:1px solid var(--line);border-radius:6px" placeholder="例: T-7K4P"></p>
+<input type="text" id="tid" name="tid" style="width:100%;max-width:220px;padding:8px;border:1px solid var(--ctl-line);border-radius:6px" placeholder="例: T-7K4P"></p>
 <p class="muted" style="margin:6px 0 0">ご利用の版（Web／iOS）は、この画面を開いたリンクから自動で記録されます。<strong>ご入力は不要です。</strong>分からない場合は空欄のままお進みください。</p>
 </fieldset>
 
