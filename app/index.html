@@ -28,7 +28,18 @@
   /* 文字サイズの基準を固定pxで置かず、端末・ブラウザの文字サイズ設定に追従させる
      (iOSのDynamic Type相当)。以下のすべての指定がremのため、ここが伸びれば画面全体が伸びる。
      16pxを直接書くと、端末で「文字を大きく」にしても1文字も大きくならない */
-  html { font-size:100%; }
+  html {
+    font-size:100%;
+    /* フォーカス移動・アンカー跳びは要素を「窓の中」へ入れるところまでしかしない。
+       窓の下端が固定タブバーの裏なら、そこへ入れた時点で丸ごと隠れる
+       （WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum)・Level AA / F110）。
+       body の padding-bottom:6.5rem は「本文の最後」を守るが、
+       「フォーカスの着地点」は守らない——守る物が違うので、両方要る。
+       実測(2026-08-07・公開版): のべ900回のフォーカスのうち11回が丸ごと隠れていた
+       （375x667のパーツタブの複製/×ボタン6回・430x932の設定タブの宛先リンク3回ほか）。
+       単位をremで持つ理由は body と同じで、文字を大きくするとタブバーの背も高くなるため。 */
+    scroll-padding-bottom:calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  }
   body {
     /* @public-doc: 丸ゴシックを第一候補にする。iOS/macOSにはヒラギノ丸ゴが
        標準搭載されているため、Webフォントを読み込まずに済む(端末の外へ通信しない)。
@@ -71,7 +82,11 @@
   input[type=text], input[type=number], input[type=search], select {
     /* 文字設定に追従させつつ16pxを下回らせない。16px未満だとiOSが入力欄タップ時に
        画面を勝手に拡大するため、下限だけmax()で固定する(上へは自由に伸びる) */
-    width:100%; padding:11px 12px; font-size:max(1rem, 16px); border:1px solid #ddd0c5;
+    /* 枠の色は「ここが入力欄だ」と分かる唯一の手がかり。内側も外側も#fffなので、
+       枠が薄いと欄の在り処そのものが見えなくなる。#ddd0c5 は白に対し 1.51:1 しかなく、
+       WCAG 2.2 SC 1.4.11 Non-text Contrast(Level AA)の 3:1 に届いていなかった。
+       #9c8b7e は 3.28:1（2026-08-06 デザイン部実測）。色味は既存の --muted 系に合わせている */
+    width:100%; padding:11px 12px; font-size:max(1rem, 16px); border:1px solid #9c8b7e;
     border-radius:10px; background:#fff; color:var(--text); font-family:inherit;
     -webkit-appearance:none; appearance:none; min-height:44px; box-sizing:border-box;
   }
